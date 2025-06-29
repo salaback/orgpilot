@@ -37,9 +37,6 @@ class Customer extends Model
         'postal_code',
         'country',
         'country_code',
-        // Individual-specific fields
-        'first_name',
-        'last_name',
         // Organization-specific fields
         'company_registration',
         'vat_number',
@@ -60,6 +57,13 @@ class Customer extends Model
         'employee_count' => 'integer',
         'type' => 'string',
     ];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = ['full_name'];
 
     /**
      * Get the users associated with the customer.
@@ -98,14 +102,57 @@ class Customer extends Model
     }
 
     /**
-     * Get full name for individual customers (combines first and last name).
+     * Get the primary user associated with this customer.
+     * For individual customers, this is the only associated user.
+     * For organizations, this is typically the first user added.
+     *
+     * @return User|null
+     */
+    public function getPrimaryUser(): ?User
+    {
+        return $this->users()->first();
+    }
+
+    /**
+     * Get full name for individual customers from the associated user.
      *
      * @return string|null
      */
     public function getFullNameAttribute(): ?string
     {
-        if ($this->isIndividual() && ($this->first_name || $this->last_name)) {
-            return trim($this->first_name . ' ' . $this->last_name);
+        if ($this->isIndividual()) {
+            $user = $this->getPrimaryUser();
+            return $user ? $user->full_name : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get first name for individual customers from the associated user.
+     *
+     * @return string|null
+     */
+    public function getFirstNameAttribute(): ?string
+    {
+        if ($this->isIndividual()) {
+            $user = $this->getPrimaryUser();
+            return $user ? $user->first_name : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get last name for individual customers from the associated user.
+     *
+     * @return string|null
+     */
+    public function getLastNameAttribute(): ?string
+    {
+        if ($this->isIndividual()) {
+            $user = $this->getPrimaryUser();
+            return $user ? $user->last_name : null;
         }
 
         return null;
@@ -124,9 +171,7 @@ class Customer extends Model
     {
         $customer = new self([
             'type' => self::TYPE_INDIVIDUAL,
-            'name' => $user->name,
-            'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
+            'name' => $user->full_name,
             'email' => $user->email,
         ] + $additionalData);
 
@@ -150,6 +195,10 @@ class Customer extends Model
         if ($this->isIndividual()) {
             // For individual customers, detach all existing users first
             $this->users()->detach();
+
+            // Update customer name to match the user's name
+            $this->name = $user->full_name;
+            $this->save();
         }
 
         // Attach the new user
@@ -178,20 +227,9 @@ class Customer extends Model
 
         $changed = false;
 
-        // Update name fields from user
-        if ($user->first_name && $this->first_name !== $user->first_name) {
-            $this->first_name = $user->first_name;
-            $changed = true;
-        }
-
-        if ($user->last_name && $this->last_name !== $user->last_name) {
-            $this->last_name = $user->last_name;
-            $changed = true;
-        }
-
-        // Set the display name to match the user's name
-        if ($user->name && $this->name !== $user->name) {
-            $this->name = $user->name;
+        // Set the display name to match the user's full name
+        if ($this->name !== $user->full_name) {
+            $this->name = $user->full_name;
             $changed = true;
         }
 
@@ -320,8 +358,17 @@ class Customer extends Model
             ];
         }
 
+        if ($this->isIndividual()) {
+            $user = $this->getPrimaryUser();
+            return [
+                'name' => $user ? $user->full_name : $this->name,
+                'email' => $this->email,
+                'phone' => $this->phone,
+            ];
+        }
+
         return [
-            'name' => $this->isIndividual() ? $this->getFullNameAttribute() : $this->name,
+            'name' => $this->name,
             'email' => $this->email,
             'phone' => $this->phone,
         ];

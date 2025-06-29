@@ -19,7 +19,6 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
         'first_name',
         'last_name',
         'email',
@@ -60,35 +59,21 @@ class User extends Authenticatable
 
     /**
      * Get the full name by combining first and last name.
-     * Falls back to the name field if first_name/last_name are not available.
      *
      * @return string
      */
     public function getFullNameAttribute(): string
     {
-        if ($this->first_name || $this->last_name) {
-            return trim($this->first_name . ' ' . $this->last_name);
-        }
-
-        return $this->name;
+        return trim($this->first_name . ' ' . $this->last_name);
     }
 
     /**
-     * Set the name attribute to automatically update
-     * first_name and last_name when setting the name.
+     * Get the display name for the user.
      *
-     * @param string $value
-     * @return void
+     * @return string
      */
-    public function setNameAttribute($value): void
+    public function getNameAttribute(): string
     {
-        $this->attributes['name'] = $value;
-
-        // Only try to parse the name if first/last name aren't already set
-        if ((!$this->first_name && !$this->last_name) && $value) {
-            $nameParts = explode(' ', $value, 2);
-            $this->attributes['first_name'] = $nameParts[0] ?? null;
-            $this->attributes['last_name'] = $nameParts[1] ?? null;
-        }
+        return $this->getFullNameAttribute();
     }
 }

@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('licenses', function (Blueprint $table) {
-            $table-$table->foreignId('customer_id')->constrained()->onDelete('cascade');
+            $table->id();
+            $table->foreignId('customer_id')->constrained()->onDelete('cascade');
             $table->enum('type', ['individual', 'group', 'enterprise']);
             $table->timestamp('valid_until')->nullable();
             $table->boolean('is_active')->default(true);
