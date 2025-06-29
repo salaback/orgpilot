@@ -33,11 +33,41 @@ export interface SharedData {
 
 export interface User {
     id: number;
-    name: string;
+    first_name: string;
+    last_name: string;
     email: string;
-    avatar?: string;
-    email_verified_at: string | null;
+    avatar: string;
+    name?: string; // Virtual attribute
+}
+
+// Organization Types
+export interface OrgNode {
+    id: number;
+    org_structure_id: number;
+    name: string;
+    title: string;
+    email: string | null;
+    status: 'active' | 'open' | 'former';
+    node_type: 'person' | 'placeholder';
+    manager_id: number | null;
+    start_date: string | null;
+    end_date: string | null;
+    tags: string[] | null;
     created_at: string;
     updated_at: string;
-    [key: string]: unknown; // This allows for additional properties...
+    directReports?: OrgNode[];
+    direct_reports_count?: number;
+    first_name: string;
+    last_name: string;
+    full_name: string;
+}
+
+export interface OrgStructure {
+    id: number;
+    user_id: number;
+    name: string;
+    description: string | null;
+    is_primary: boolean;
+    created_at: string;
+    updated_at: string;
 }

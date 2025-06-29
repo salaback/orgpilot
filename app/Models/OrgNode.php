@@ -31,7 +31,8 @@ class OrgNode extends Model
      */
     protected $fillable = [
         'org_structure_id',
-        'name',
+        'first_name',
+        'last_name',
         'title',
         'email',
         'status',
@@ -52,6 +53,23 @@ class OrgNode extends Model
         'end_date' => 'date',
         'tags' => 'array',
     ];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array<int, string>
+     */
+    protected $appends = ['full_name'];
+
+    /**
+     * Get the full name attribute.
+     *
+     * @return string
+     */
+    public function getFullNameAttribute(): string
+    {
+        return trim($this->first_name . ' ' . $this->last_name);
+    }
 
     /**
      * Get the organization structure this node belongs to.
