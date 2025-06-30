@@ -41,7 +41,7 @@ const InitiativesPage: React.FC<InitiativesPageProps> = ({ initiatives, assignee
   ).map(i => defaultAssignees(i));
 
   return (
-    <div>
+    <div style={{ padding: 24 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h1>Initiatives</h1>
         <div style={{ display: 'flex', gap: 8 }}>

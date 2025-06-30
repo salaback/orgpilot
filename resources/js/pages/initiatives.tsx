@@ -1,6 +1,6 @@
 import React from 'react';
 import { PageProps } from '@inertiajs/inertia';
-import AppLayout from '@/layouts/AppLayout';
+import AppLayout from '@/layouts/app-layout';
 import InitiativesPage from '../features/initiatives/InitiativesPage';
 
 interface Initiative {
