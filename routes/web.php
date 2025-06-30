@@ -86,9 +86,32 @@ Route::middleware([
 
         $orgNodes = \App\Models\OrgNode::where('node_type', 'person')->where('status', 'active')->get(['id', 'first_name', 'last_name', 'email', 'title']);
 
+        // Load notes for this initiative with their tags
+        $notes = \App\Models\Note::where('notable_type', 'App\\Models\\Initiative')
+            ->where('notable_id', $initiative->id)
+            ->with('tags')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($note) {
+                return [
+                    'id' => $note->id,
+                    'title' => $note->title,
+                    'content' => $note->content,
+                    'created_at' => $note->created_at,
+                    'updated_at' => $note->updated_at,
+                    'tags' => $note->tags->map(function ($tag) {
+                        return [
+                            'id' => $tag->id,
+                            'name' => $tag->name,
+                        ];
+                    })->toArray(),
+                ];
+            });
+
         return Inertia::render('initiative', [
             'initiative' => $initiativeData,
             'assignees' => $orgNodes,
+            'notes' => $notes,
         ]);
     })->name('initiative.show');
 
@@ -98,6 +121,54 @@ Route::middleware([
     Route::get('api/tags/{type}/{id}', [TagController::class, 'show']);
     Route::post('api/tags/{type}/{id}/attach', [TagController::class, 'attach']);
     Route::post('api/tags/{type}/{id}/detach', [TagController::class, 'detach']);
+
+    // Notes API endpoints
+    Route::get('api/notes', [\App\Http\Controllers\Api\NoteController::class, 'index']);
+    Route::post('api/notes', [\App\Http\Controllers\Api\NoteController::class, 'store']);
+    Route::get('api/notes/{note}', [\App\Http\Controllers\Api\NoteController::class, 'show']);
+    Route::put('api/notes/{note}', [\App\Http\Controllers\Api\NoteController::class, 'update']);
+    Route::delete('api/notes/{note}', [\App\Http\Controllers\Api\NoteController::class, 'destroy']);
+
+    // Notes creation route for Inertia
+    Route::post('initiatives/{initiative}/notes', function (\App\Models\Initiative $initiative, \Illuminate\Http\Request $request) {
+        $validated = $request->validate([
+            'title' => 'nullable|string|max:255',
+            'content' => 'required|string',
+            'tags' => 'nullable|array',
+            'tags.*' => 'string|max:50',
+            'mentions' => 'nullable|array',
+            'mentions.*' => 'integer|exists:org_nodes,id',
+        ]);
+
+        $note = \App\Models\Note::create([
+            'title' => $validated['title'],
+            'content' => $validated['content'],
+            'notable_type' => 'App\\Models\\Initiative',
+            'notable_id' => $initiative->id,
+        ]);
+
+        // Process and attach tags if they exist
+        if (!empty($validated['tags'])) {
+            $tagIds = [];
+            foreach ($validated['tags'] as $tagName) {
+                // Create or find the tag
+                $tag = \App\Models\Tag::firstOrCreate(['name' => $tagName]);
+                $tagIds[] = $tag->id;
+            }
+
+            // Attach tags to the note using the polymorphic relationship
+            $note->tags()->attach($tagIds);
+        }
+
+        // Process and store mentions if they exist
+        if (!empty($validated['mentions'])) {
+            // You can store mentions in a separate table or as metadata
+            // For now, we'll just log them or handle them as needed
+            \Log::info('Note mentions: ', $validated['mentions']);
+        }
+
+        return redirect()->route('initiative.show', $initiative)->with('success', 'Note created successfully');
+    })->name('initiative.notes.store');
 
     // Initiative API resource routes
     Route::apiResource('api/initiatives', InitiativeController::class);

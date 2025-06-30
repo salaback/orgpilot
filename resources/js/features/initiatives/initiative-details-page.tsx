@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Initiative, InitiativeStatus } from './types';
+import { Initiative } from './types';
 import InitiativeModal from './initiative-modal';
 import { Inertia } from '@inertiajs/inertia';
+import NotesSection from '../../components/notes-section';
 
 interface OrgNode {
   id: number;
@@ -11,9 +12,18 @@ interface OrgNode {
   title: string;
 }
 
+interface Note {
+  id: number;
+  title?: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface InitiativeDetailsPageProps {
   initiative: Initiative;
   assignees: OrgNode[];
+  notes?: Note[];
 }
 
 const statusLabels: Record<string, string> = {
@@ -32,7 +42,7 @@ const statusColors: Record<string, string> = {
   cancelled: '#ff6b6b',
 };
 
-const InitiativeDetailsPage: React.FC<InitiativeDetailsPageProps> = ({ initiative, assignees }) => {
+const InitiativeDetailsPage: React.FC<InitiativeDetailsPageProps> = ({ initiative, assignees, notes = [] }) => {
   const [modalOpen, setModalOpen] = useState(false);
 
   const handleEdit = () => {
@@ -217,6 +227,14 @@ const InitiativeDetailsPage: React.FC<InitiativeDetailsPageProps> = ({ initiativ
               </div>
             </section>
           )}
+
+          {/* Notes Section */}
+          <NotesSection
+            notes={notes}
+            entityType="App\\Models\\Initiative"
+            entityId={initiative.id}
+            orgNodes={assignees}
+          />
         </div>
 
         {/* Sidebar */}

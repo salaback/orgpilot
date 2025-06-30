@@ -27,15 +27,24 @@ interface OrgNode {
   title: string;
 }
 
+interface Note {
+  id: number;
+  title?: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface InitiativePageProps extends PageProps {
   initiative: Initiative;
   assignees: OrgNode[];
+  notes?: Note[];
 }
 
-const Initiative: React.FC<InitiativePageProps> = ({ initiative, assignees }) => {
+const Initiative: React.FC<InitiativePageProps> = ({ initiative, assignees, notes }) => {
   return (
     <AppLayout>
-      <InitiativeDetailsPage initiative={initiative} assignees={assignees} />
+      <InitiativeDetailsPage initiative={initiative} assignees={assignees} notes={notes} />
     </AppLayout>
   );
 };
