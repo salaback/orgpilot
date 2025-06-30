@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class Initiative extends Model
@@ -149,5 +150,13 @@ class Initiative extends Model
     public function assignees()
     {
         return $this->belongsToMany(OrgNode::class, 'initiative_assignees', 'initiative_id', 'org_node_id');
+    }
+
+    /**
+     * Get all tasks for this initiative
+     */
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(Task::class);
     }
 }

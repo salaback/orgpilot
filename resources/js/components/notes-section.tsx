@@ -77,7 +77,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
   const getMentionSuggestions = (query: string) => {
     if (!query || query.length < 2) return [];
 
-    const results = orgNodes.filter(node => {
+    return orgNodes.filter(node => {
       // Add null checks for all fields
       const firstName = node.first_name?.toLowerCase() || '';
       const lastName = node.last_name?.toLowerCase() || '';
@@ -92,8 +92,6 @@ const NotesSection: React.FC<NotesSectionProps> = ({
              lastName.includes(searchQuery) ||
              email.includes(searchQuery);
     }).slice(0, 5);
-
-    return results;
   };
 
   // Process content to replace hashtags and mentions with styled spans for display

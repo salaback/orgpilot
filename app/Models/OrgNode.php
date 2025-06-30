@@ -198,4 +198,20 @@ class OrgNode extends Model
 
         return $descendants;
     }
+
+    /**
+     * Get all tasks assigned to this org node
+     */
+    public function assignedTasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'assigned_to');
+    }
+
+    /**
+     * Get all tasks created by this org node (if they have a user account)
+     */
+    public function createdTasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'created_by');
+    }
 }

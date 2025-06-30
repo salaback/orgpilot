@@ -3,6 +3,7 @@
 use App\Http\Controllers\InitiativeController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\TagController;
+use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\WorkOS\Http\Middleware\ValidateSessionWithWorkOS;
@@ -172,6 +173,42 @@ Route::middleware([
 
     // Initiative API resource routes
     Route::apiResource('api/initiatives', InitiativeController::class);
+
+    // Task routes
+    Route::resource('tasks', TaskController::class);
+    Route::patch('tasks/{task}/progress', [TaskController::class, 'updateProgress'])->name('tasks.update-progress');
+    Route::get('tasks-overdue', [TaskController::class, 'overdue'])->name('tasks.overdue');
+    Route::get('tasks-due-soon', [TaskController::class, 'dueSoon'])->name('tasks.due-soon');
+    Route::get('api/initiatives/{initiative}/tasks', [TaskController::class, 'forInitiative'])->name('api.initiatives.tasks');
+
+    // Task notes creation route
+    Route::post('tasks/{task}/notes', function (\App\Models\Task $task, \Illuminate\Http\Request $request) {
+        $validated = $request->validate([
+            'title' => 'nullable|string|max:255',
+            'content' => 'required|string',
+            'tags' => 'nullable|array',
+            'tags.*' => 'string|max:50',
+        ]);
+
+        $note = \App\Models\Note::create([
+            'title' => $validated['title'],
+            'content' => $validated['content'],
+            'notable_type' => 'App\\Models\\Task',
+            'notable_id' => $task->id,
+        ]);
+
+        // Process and attach tags if they exist
+        if (!empty($validated['tags'])) {
+            $tagIds = [];
+            foreach ($validated['tags'] as $tagName) {
+                $tag = \App\Models\Tag::firstOrCreate(['name' => $tagName]);
+                $tagIds[] = $tag->id;
+            }
+            $note->tags()->attach($tagIds);
+        }
+
+        return redirect()->route('tasks.show', $task)->with('success', 'Note created successfully');
+    })->name('task.notes.store');
 });
 
 require __DIR__.'/settings.php';
