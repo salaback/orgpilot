@@ -1,11 +1,10 @@
 import React, { useEffect } from 'react';
 import { useForm } from '@inertiajs/react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from '@/components/ui/sheet';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { SheetPanel } from '@/components/SheetPanel';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { OrgNode } from '@/types';
+import { TextField } from '@/components/form/TextField';
+import { Label } from '@/components/ui/label';
 
 interface AddDirectReportSheetProps {
   isOpen: boolean;
@@ -47,110 +46,91 @@ export function AddDirectReportSheet({ isOpen, onClose, managerId, onSuccess }: 
   }
 
   return (
-    <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent className="w-full sm:max-w-md overflow-y-auto p-6">
-        <SheetHeader className="mb-6">
-          <SheetTitle>Add Direct Report</SheetTitle>
-          <SheetDescription>
-            Add a new team member or placeholder position to your organization chart.
-          </SheetDescription>
-        </SheetHeader>
+    <SheetPanel
+      open={isOpen}
+      onClose={onClose}
+      title="Add Direct Report"
+      description="Add a new team member or placeholder position to your organization chart."
+      footer={
+        <div className="flex justify-end space-x-2 w-full">
+          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="submit" disabled={processing} form="add-direct-report-form">Add Direct Report</Button>
+        </div>
+      }
+    >
+      <form id="add-direct-report-form" onSubmit={handleSubmit} className="space-y-6">
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-4">
+            <TextField
+              id="first_name"
+              label="First Name"
+              value={data.first_name}
+              onChange={e => setData('first_name', e.target.value)}
+              placeholder="Jane"
+              error={errors.first_name}
+            />
+            <TextField
+              id="last_name"
+              label="Last Name"
+              value={data.last_name}
+              onChange={e => setData('last_name', e.target.value)}
+              placeholder="Doe"
+              error={errors.last_name}
+            />
+          </div>
+          <TextField
+            id="title"
+            label="Title"
+            value={data.title}
+            onChange={e => setData('title', e.target.value)}
+            placeholder="Engineering Manager"
+            error={errors.title}
+          />
+          <TextField
+            id="email"
+            label="Email (optional)"
+            value={data.email}
+            onChange={e => setData('email', e.target.value)}
+            placeholder="jane.doe@example.com"
+            error={errors.email}
+            type="email"
+          />
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="first_name">First Name</Label>
-                <Input
-                  id="first_name"
-                  value={data.first_name}
-                  onChange={(e) => setData('first_name', e.target.value)}
-                  placeholder="Jane"
-                  className="mt-2"
-                />
-                {errors.first_name && <p className="text-sm text-red-500 mt-1">{errors.first_name}</p>}
-              </div>
-              <div>
-                <Label htmlFor="last_name">Last Name</Label>
-                <Input
-                  id="last_name"
-                  value={data.last_name}
-                  onChange={(e) => setData('last_name', e.target.value)}
-                  placeholder="Doe"
-                  className="mt-2"
-                />
-                {errors.last_name && <p className="text-sm text-red-500 mt-1">{errors.last_name}</p>}
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                value={data.title}
-                onChange={(e) => setData('title', e.target.value)}
-                placeholder="Engineering Manager"
-                className="mt-2"
-              />
-              {errors.title && <p className="text-sm text-red-500 mt-1">{errors.title}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="email">Email (optional)</Label>
-              <Input
-                id="email"
-                type="email"
-                value={data.email}
-                onChange={(e) => setData('email', e.target.value)}
-                placeholder="jane.doe@example.com"
-                className="mt-2"
-              />
-              {errors.email && <p className="text-sm text-red-500 mt-1">{errors.email}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="status">Status</Label>
-              <Select
-                value={data.status}
-                onValueChange={(value) => setData('status', value)}
-              >
-                <SelectTrigger id="status" className="mt-2">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="open">Open Position</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.status && <p className="text-sm text-red-500 mt-1">{errors.status}</p>}
-            </div>
-
-            <div>
-              <Label htmlFor="node_type">Type</Label>
-              <Select
-                value={data.node_type}
-                onValueChange={(value) => setData('node_type', value)}
-              >
-                <SelectTrigger id="node_type" className="mt-2">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="person">Person</SelectItem>
-                  <SelectItem value="placeholder">Placeholder</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.node_type && <p className="text-sm text-red-500 mt-1">{errors.node_type}</p>}
-            </div>
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <Select
+              value={data.status}
+              onValueChange={(value) => setData('status', value)}
+            >
+              <SelectTrigger id="status" className="mt-2">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="open">Open Position</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.status && <p className="text-sm text-red-500 mt-1">{errors.status}</p>}
           </div>
 
-          <SheetFooter className="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex justify-end space-x-2 w-full">
-              <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
-              <Button type="submit" disabled={processing}>Add Direct Report</Button>
-            </div>
-          </SheetFooter>
-        </form>
-      </SheetContent>
-    </Sheet>
+          <div>
+            <Label htmlFor="node_type">Type</Label>
+            <Select
+              value={data.node_type}
+              onValueChange={(value) => setData('node_type', value)}
+            >
+              <SelectTrigger id="node_type" className="mt-2">
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="person">Person</SelectItem>
+                <SelectItem value="placeholder">Placeholder</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.node_type && <p className="text-sm text-red-500 mt-1">{errors.node_type}</p>}
+          </div>
+        </div>
+      </form>
+    </SheetPanel>
   );
 }

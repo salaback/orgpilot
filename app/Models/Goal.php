@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class Goal extends Model
 {
@@ -145,5 +146,13 @@ class Goal extends Model
     public function isPublic(): bool
     {
         return !$this->private;
+    }
+
+    /**
+     * Tags polymorphic relationship
+     */
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(Tag::class, 'taggable');
     }
 }
