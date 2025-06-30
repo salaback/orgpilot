@@ -20,8 +20,6 @@ export interface Initiative {
 // Helper to ensure Initiative always has assignees as an array
 export function defaultAssignees(initiative: Partial<Initiative>): Initiative {
   return {
-    assignees: [],
-    tags: [],
     ...initiative,
     assignees: initiative.assignees ?? [],
     tags: initiative.tags ?? [],
