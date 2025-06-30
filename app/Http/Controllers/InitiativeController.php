@@ -2,134 +2,125 @@
 namespace App\Http\Controllers;
 
 use App\Models\Initiative;
-use App\Models\OrgStructure;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class InitiativeController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(): JsonResponse
     {
-        $initiatives = Initiative::all();
+        $initiatives = Initiative::with(['assignees', 'tags'])
+            ->orderBy('status')
+            ->orderBy('order')
+            ->get();
+
         return response()->json($initiatives);
     }
 
-    public function show($id): JsonResponse
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request): JsonResponse
     {
-        $initiative = Initiative::findOrFail($id);
-        return response()->json($initiative);
-    }
-
-    public function store(Request $request)
-    {
-        $data = $request->validate([
+        $validated = $request->validate([
+            'org_structure_id' => 'required|exists:org_structures,id',
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'required|string',
-            'tags' => 'array',
-            'tags.*' => 'string', // Validate each tag ID is a string
-            'assignees' => 'array',
-            'assignees.*' => 'integer|exists:org_nodes,id', // Validate each assignee ID exists
-            'due_date' => 'nullable|date',
-            'dueDate' => 'nullable|date', // Accept both field names
-            'org_structure_id' => 'required|integer|exists:org_structures,id',
+            'status' => ['required', Rule::in(['planned', 'in-progress', 'complete', 'on-hold', 'cancelled'])],
+            'order' => 'nullable|integer',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+            'dueDate' => 'nullable|date',
+            'assignees' => 'nullable|array',
+            'assignees.*' => 'exists:org_nodes,id',
+            'tags' => 'nullable|array',
         ]);
 
-        // Validate that the org_structure_id belongs to the current user
-        $org = OrgStructure::where('id', $data['org_structure_id'])
-            ->where('user_id', Auth::id())
-            ->first();
-        if (!$org) {
-            return redirect()->back()->withErrors(['org_structure_id' => 'Unauthorized org structure.']);
+        // Handle dueDate -> end_date conversion
+        if (isset($validated['dueDate'])) {
+            $validated['end_date'] = $validated['dueDate'];
+            unset($validated['dueDate']);
         }
 
-        // Extract tags and assignees from the data
-        $tags = $data['tags'] ?? [];
-        $assignees = $data['assignees'] ?? [];
-
-        // Handle due date field name variations
-        if (isset($data['dueDate']) && !isset($data['due_date'])) {
-            $data['end_date'] = $data['dueDate'];
-        } elseif (isset($data['due_date'])) {
-            $data['end_date'] = $data['due_date'];
+        // Set default order if not provided
+        if (!isset($validated['order'])) {
+            $maxOrder = Initiative::where('status', $validated['status'])->max('order') ?? -1;
+            $validated['order'] = $maxOrder + 1;
         }
 
-        // Remove tags, assignees, and dueDate from data before creating the initiative
-        unset($data['tags'], $data['assignees'], $data['dueDate'], $data['due_date']);
+        $initiative = Initiative::create($validated);
 
-        $initiative = Initiative::create($data);
-
-        // Attach tags to the newly created initiative
-        if (!empty($tags)) {
-            $initiative->tags()->attach($tags);
+        // Sync assignees if provided
+        if (isset($validated['assignees'])) {
+            $initiative->assignees()->sync($validated['assignees']);
         }
 
-        // Attach assignees to the newly created initiative
-        if (!empty($assignees)) {
-            $initiative->assignees()->attach($assignees);
+        // Sync tags if provided
+        if (isset($validated['tags'])) {
+            $initiative->tags()->sync($validated['tags']);
         }
 
-        // Return an Inertia redirect instead of JSON
-        return redirect()->route('initiatives')->with('success', 'Initiative created!');
+        return response()->json($initiative->load(['assignees', 'tags']), 201);
     }
 
-    public function update(Request $request, $id)
+    /**
+     * Display the specified resource.
+     */
+    public function show(Initiative $initiative): JsonResponse
     {
-        $initiative = Initiative::findOrFail($id);
+        return response()->json($initiative->load(['assignees', 'tags']));
+    }
 
-        $data = $request->validate([
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, Initiative $initiative): JsonResponse
+    {
+        $validated = $request->validate([
             'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
-            'status' => 'sometimes|required|string',
-            'tags' => 'array',
-            'tags.*' => 'string', // Validate each tag ID is a string
-            'assignees' => 'array',
-            'assignees.*' => 'integer|exists:org_nodes,id', // Validate each assignee ID exists
-            'due_date' => 'nullable|date',
-            'dueDate' => 'nullable|date', // Accept both field names
-            // Add other fields as needed
+            'status' => ['sometimes', 'required', Rule::in(['planned', 'in-progress', 'complete', 'on-hold', 'cancelled'])],
+            'order' => 'nullable|numeric',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+            'dueDate' => 'nullable|date',
+            'assignees' => 'nullable|array',
+            'assignees.*' => 'exists:org_nodes,id',
+            'tags' => 'nullable|array',
         ]);
 
-        // Extract tags and assignees from the data
-        $tags = $data['tags'] ?? [];
-        $assignees = $data['assignees'] ?? [];
-
-        // Handle due date field name variations
-        if (isset($data['dueDate']) && !isset($data['due_date'])) {
-            $data['end_date'] = $data['dueDate'];
-        } elseif (isset($data['due_date'])) {
-            $data['end_date'] = $data['due_date'];
+        // Handle dueDate -> end_date conversion
+        if (isset($validated['dueDate'])) {
+            $validated['end_date'] = $validated['dueDate'];
+            unset($validated['dueDate']);
         }
 
-        // Remove tags, assignees, and dueDate from data before updating the initiative
-        unset($data['tags'], $data['assignees'], $data['dueDate'], $data['due_date']);
+        $initiative->update($validated);
 
-        // Update the initiative basic fields
-        $initiative->update($data);
-
-        // Sync tags (this will add/remove tags as needed)
-        if (!empty($tags)) {
-            $initiative->tags()->sync($tags);
-        } else {
-            $initiative->tags()->detach(); // Remove all tags if none provided
+        // Sync assignees if provided
+        if (isset($validated['assignees'])) {
+            $initiative->assignees()->sync($validated['assignees']);
         }
 
-        // Sync assignees (this will add/remove assignees as needed)
-        if (!empty($assignees)) {
-            $initiative->assignees()->sync($assignees);
-        } else {
-            $initiative->assignees()->detach(); // Remove all assignees if none provided
+        // Sync tags if provided
+        if (isset($validated['tags'])) {
+            $initiative->tags()->sync($validated['tags']);
         }
 
-        // Return an Inertia redirect instead of JSON
-        return redirect()->route('initiatives')->with('success', 'Initiative updated!');
+        return response()->json($initiative->load(['assignees', 'tags']));
     }
 
-    public function destroy($id): JsonResponse
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(Initiative $initiative): JsonResponse
     {
-        $initiative = Initiative::findOrFail($id);
         $initiative->delete();
-        return response()->json(['success' => true]);
+
+        return response()->json(['message' => 'Initiative deleted successfully']);
     }
 }

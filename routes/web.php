@@ -26,12 +26,16 @@ Route::middleware([
     Route::get('organisation/person/{nodeId}/direct-reports', [OrganizationController::class, 'getNodeDirectReports'])->name('organisation.person.direct-reports');
 
     Route::get('initiatives', function () {
-        $initiatives = \App\Models\Initiative::with(['assignees', 'tags'])->get()->map(function ($initiative) {
+        $initiatives = \App\Models\Initiative::with(['assignees', 'tags'])
+            ->orderBy('status')
+            ->orderBy('order')
+            ->get()->map(function ($initiative) {
             return [
                 'id' => $initiative->id,
                 'title' => $initiative->title,
                 'description' => $initiative->description,
                 'status' => $initiative->status,
+                'order' => $initiative->order,
                 'due_date' => $initiative->end_date,
                 'dueDate' => $initiative->end_date,
                 'assignees' => $initiative->assignees->pluck('id')->toArray(),

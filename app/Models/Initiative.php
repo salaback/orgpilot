@@ -30,6 +30,7 @@ class Initiative extends Model
         'title',
         'description',
         'status',
+        'order',
         'start_date',
         'end_date',
         'owner_node_id',
