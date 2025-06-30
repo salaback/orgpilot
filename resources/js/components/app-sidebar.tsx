@@ -20,7 +20,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'My Organization',
-        href: '/organization',
+        href: '/organisation',
         icon: Users
     },
 ];

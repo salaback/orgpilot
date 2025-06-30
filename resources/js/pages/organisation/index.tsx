@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { OrgNode } from '@/types';
-import { OrgNodeCard } from '@/pages/organization/org-node-card';
-import { AddDirectReportSheet } from '@/pages/organization/add-direct-report-sheet';
+import { OrgNodeCard } from '@/pages/organisation/org-node-card';
+import { AddDirectReportSheet } from '@/pages/organisation/add-direct-report-sheet';
 import { ChevronUp, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
@@ -60,7 +60,7 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
     setIsLoading(true);
     try {
       console.log(`Loading direct reports for node ${nodeId}`);
-      const response = await axios.get(`/organization/person/${nodeId}/direct-reports`);
+      const response = await axios.get(`/organisation/person/${nodeId}/direct-reports`);
       const reports = response.data.directReports || [];
       console.log(`Received ${reports.length} direct reports`, reports);
       setCurrentReports(reports);
@@ -85,7 +85,7 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
         setHighlightedManagerId(null);
       }, 2000);
 
-      // Always focus on the manager's organization when adding a direct report
+      // Always focus on the manager's organisation when adding a direct report
       // This ensures the user sees the manager's team with the new direct report
       await handleFocusNode(managerNode);
     }
@@ -106,8 +106,8 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
     if (node.id === rootNode.id) {
       setNodeHierarchy([]);
 
-      // Navigate to the main organization view
-      router.visit('/organization', { preserveState: true, replace: true });
+      // Navigate to the main organisation view
+      router.visit('/organisation', { preserveState: true, replace: true });
     } else {
       // When focusing on a direct report, we need to check if we're:
       // 1. Going deeper from root (need to start a new path)
@@ -136,7 +136,7 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
       setNodeHierarchy(newHierarchy);
 
       // Update the URL to reflect the current node
-      router.visit(`/organization/person/${node.id}`, { preserveState: true, replace: true });
+      router.visit(`/organisation/person/${node.id}`, { preserveState: true, replace: true });
     }
 
     // Load direct reports for the focused node
@@ -168,17 +168,17 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
     setNodeHierarchy(newHierarchy);
 
     // Update the URL to reflect the current node
-    router.replace(`/organization/${newHierarchy[newHierarchy.length - 1]?.id || rootNode.id}`);
+    router.replace(`/organisation/${newHierarchy[newHierarchy.length - 1]?.id || rootNode.id}`);
   };
 
-  // Navigate to the root level organization
+  // Navigate to the root level organisation
   const handleNavigateToRoot = async () => {
     setFocusedNode(null);
     setNodeHierarchy([]);
     await loadDirectReportsForNode(rootNode.id);
 
-    // Update the URL to reflect the root organization view
-    router.visit('/organization', { preserveState: true, replace: true });
+    // Update the URL to reflect the root organisation view
+    router.visit('/organisation', { preserveState: true, replace: true });
   };
 
   // Handler for viewing a node's profile
@@ -203,10 +203,10 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
             {/* Organization hierarchy header */}
             <div className="flex justify-between items-center mb-6">
               <div>
-                <h1 className="text-2xl font-semibold">{orgStructure.name}</h1>
+                <h1 className="text-2xl font-semibold">{orgStructure.name.replace('Organization', 'Organisation')}</h1>
                 {focusedNode && (
                   <p className="text-sm text-muted-foreground mt-1">
-                    Currently viewing: <span className="font-medium">{focusedNode.full_name}'s Organization</span>
+                    Currently viewing: <span className="font-medium">{focusedNode.full_name}'s Organisation</span>
                     {/* Show manager indicator if not viewing the root node */}
                     {focusedNode.manager_id && focusedNode.id !== rootNode.id && (
                       <span className="text-sm text-muted-foreground ml-1">

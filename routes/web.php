@@ -19,11 +19,11 @@ Route::middleware([
         return Inertia::render('dashboard');
     })->name('dashboard');
 
-    // Organization routes
-    Route::get('organization', [OrganizationController::class, 'index'])->name('organization');
-    Route::get('organization/person/{nodeId}', [OrganizationController::class, 'viewNode'])->name('organization.person');
-    Route::post('organization/direct-report', [OrganizationController::class, 'storeDirectReport'])->name('organization.direct-report.store');
-    Route::get('organization/person/{nodeId}/direct-reports', [OrganizationController::class, 'getNodeDirectReports'])->name('organization.person.direct-reports');
+    // Organisation routes
+    Route::get('organisation', [OrganizationController::class, 'index'])->name('organisation');
+    Route::get('organisation/person/{nodeId}', [OrganizationController::class, 'viewNode'])->name('organisation.person');
+    Route::post('organisation/direct-report', [OrganizationController::class, 'storeDirectReport'])->name('organisation.direct-report.store');
+    Route::get('organisation/person/{nodeId}/direct-reports', [OrganizationController::class, 'getNodeDirectReports'])->name('organisation.person.direct-reports');
 
     Route::get('initiatives', function () {
         $initiatives = \App\Models\Initiative::all();

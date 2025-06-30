@@ -33,7 +33,7 @@ export function AddDirectReportSheet({ isOpen, onClose, managerId, onSuccess }: 
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    post(route('organization.direct-report.store'), {
+    post(route('organisation.direct-report.store'), {
       onSuccess: () => {
         reset();
         onClose();
@@ -50,7 +50,7 @@ export function AddDirectReportSheet({ isOpen, onClose, managerId, onSuccess }: 
       open={isOpen}
       onClose={onClose}
       title="Add Direct Report"
-      description="Add a new team member or placeholder position to your organization chart."
+      description="Add a new team member or placeholder position to your organisation chart."
       footer={
         <div className="flex justify-end space-x-2 w-full">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
