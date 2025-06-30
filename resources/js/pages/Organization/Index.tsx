@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/Layouts/AppLayout';
 import { OrgNode } from '@/types';
 import { OrgNodeCard } from '@/Pages/Organization/OrgNodeCard';
@@ -18,14 +18,18 @@ interface IndexProps {
   };
   rootNode: OrgNode;
   directReports: OrgNode[];
+  // New props for direct node navigation
+  focusedNode?: OrgNode | null;
+  currentReports?: OrgNode[];
+  initialFocus?: boolean;
 }
 
-export default function Index({ orgStructure, rootNode, directReports }: IndexProps) {
+export default function Index({ orgStructure, rootNode, directReports, focusedNode: initialFocusedNode, currentReports: initialCurrentReports }: IndexProps) {
   const [isAddingDirectReport, setIsAddingDirectReport] = useState(false);
   const [selectedManagerId, setSelectedManagerId] = useState<number | null>(null);
-  const [focusedNode, setFocusedNode] = useState<OrgNode | null>(null);
+  const [focusedNode, setFocusedNode] = useState<OrgNode | null>(initialFocusedNode || null);
   const [nodeHierarchy, setNodeHierarchy] = useState<OrgNode[]>([]);
-  const [currentReports, setCurrentReports] = useState<OrgNode[]>(directReports);
+  const [currentReports, setCurrentReports] = useState<OrgNode[]>(initialCurrentReports || directReports);
   const [highlightedManagerId, setHighlightedManagerId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false); // Loading indicator
 
@@ -101,6 +105,9 @@ export default function Index({ orgStructure, rootNode, directReports }: IndexPr
     // If we're focusing on the root node, reset the hierarchy
     if (node.id === rootNode.id) {
       setNodeHierarchy([]);
+
+      // Navigate to the main organization view
+      router.visit('/organization', { preserveState: true, replace: true });
     } else {
       // When focusing on a direct report, we need to check if we're:
       // 1. Going deeper from root (need to start a new path)
@@ -127,6 +134,9 @@ export default function Index({ orgStructure, rootNode, directReports }: IndexPr
       }
 
       setNodeHierarchy(newHierarchy);
+
+      // Update the URL to reflect the current node
+      router.visit(`/organization/node/${node.id}`, { preserveState: true, replace: true });
     }
 
     // Load direct reports for the focused node
@@ -156,6 +166,9 @@ export default function Index({ orgStructure, rootNode, directReports }: IndexPr
     }
 
     setNodeHierarchy(newHierarchy);
+
+    // Update the URL to reflect the current node
+    router.replace(`/organization/${newHierarchy[newHierarchy.length - 1]?.id || rootNode.id}`);
   };
 
   // Navigate to the root level organization
@@ -163,6 +176,16 @@ export default function Index({ orgStructure, rootNode, directReports }: IndexPr
     setFocusedNode(null);
     setNodeHierarchy([]);
     await loadDirectReportsForNode(rootNode.id);
+
+    // Update the URL to reflect the root organization view
+    router.visit('/organization', { preserveState: true, replace: true });
+  };
+
+  // Handler for viewing a node's profile
+  const handleViewProfile = (node: OrgNode) => {
+    // For now, we'll just log the action - this would typically open a profile page or modal
+    console.log('View profile for:', node.full_name);
+    // You can implement your profile view here, e.g., open a modal or navigate to a profile page
   };
 
   return (
@@ -276,6 +299,7 @@ export default function Index({ orgStructure, rootNode, directReports }: IndexPr
                 <OrgNodeCard
                   node={focusedNode || rootNode}
                   onAddDirectReport={handleAddDirectReport}
+                  onViewProfile={handleViewProfile} // Pass the view profile handler
                 />
 
                 {/* Back up button if we're not at the root - Hide since we don't allow drilling down */}
@@ -320,6 +344,7 @@ export default function Index({ orgStructure, rootNode, directReports }: IndexPr
                           <OrgNodeCard
                             node={report}
                             onAddDirectReport={handleAddDirectReport}
+                            onViewProfile={handleViewProfile} // Pass the view profile handler
                             // Remove the ability to focus on direct reports
                             onFocus={handleFocusNode}
                           />

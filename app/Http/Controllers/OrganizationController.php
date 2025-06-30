@@ -166,4 +166,56 @@ class OrganizationController extends Controller
             'currentNode' => $node,
         ]);
     }
+
+    /**
+     * View a specific node and its direct reports.
+     *
+     * @param int $nodeId
+     * @return \Inertia\Response
+     */
+    public function viewNode($nodeId)
+    {
+        $user = Auth::user();
+
+        // Get the user's primary org structure
+        $orgStructure = $this->getOrCreatePrimaryOrgStructure($user);
+
+        // Get the root node
+        $rootNode = $this->getOrCreateRootNode($orgStructure, $user);
+
+        // If the nodeId is the root node, redirect to the main organization page
+        if ($nodeId == $rootNode->id) {
+            return redirect()->route('organization');
+        }
+
+        // Find the requested node
+        $focusedNode = OrgNode::with('manager')
+            ->where('org_structure_id', $orgStructure->id)
+            ->findOrFail($nodeId);
+
+        // Check if the user has access to this node's organization structure
+        if ($focusedNode->orgStructure->user_id !== $user->id) {
+            return redirect()->route('organization')
+                ->with('error', 'You do not have permission to view this organization node.');
+        }
+
+        // Get direct reports for the focused node
+        $directReports = $focusedNode->directReports()
+            ->withCount('directReports')
+            ->get();
+
+        // Get the root node's direct reports for context
+        $rootDirectReports = $rootNode->directReports()
+            ->withCount('directReports')
+            ->get();
+
+        return Inertia::render('Organization/Index', [
+            'orgStructure' => $orgStructure,
+            'rootNode' => $rootNode,
+            'directReports' => $rootDirectReports,
+            'focusedNode' => $focusedNode,
+            'currentReports' => $directReports,
+            'initialFocus' => true,
+        ]);
+    }
 }

@@ -19,6 +19,7 @@ Route::middleware([
 
     // Organization routes
     Route::get('organization', [OrganizationController::class, 'index'])->name('organization');
+    Route::get('organization/node/{nodeId}', [OrganizationController::class, 'viewNode'])->name('organization.node');
     Route::post('organization/direct-report', [OrganizationController::class, 'storeDirectReport'])->name('organization.direct-report.store');
     Route::get('organization/node/{nodeId}/direct-reports', [OrganizationController::class, 'getNodeDirectReports'])->name('organization.node.direct-reports');
 });
