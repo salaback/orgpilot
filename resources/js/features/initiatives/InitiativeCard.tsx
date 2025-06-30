@@ -59,7 +59,7 @@ const InitiativeCard: React.FC<InitiativeCardProps> = ({ initiative, users, comp
       {!compact && <div style={{ color: '#666', fontSize: 13, margin: '4px 0 2px 0' }}>{initiative.description}</div>}
       <div style={{ display: 'flex', alignItems: 'center', marginTop: 4 }}>
         {assigneeAvatars.length > 0 ? assigneeAvatars : <span style={{ color: '#aaa', fontSize: 12 }}>Backlog</span>}
-        <span style={{ marginLeft: 8, color: '#868e96', fontSize: 12 }}>{(initiative.tags || []).join(', ')}</span>
+        <span style={{ marginLeft: 8, color: '#868e96', fontSize: 12 }}>{Array.isArray(initiative.tags) ? initiative.tags.join(', ') : ''}</span>
         {initiative.dueDate && <span style={{ marginLeft: 8, color: '#fa5252', fontSize: 12 }}>Due: {initiative.dueDate}</span>}
       </div>
       {allocationBar}
