@@ -48,7 +48,16 @@ const InitiativeList: React.FC<InitiativeListProps> = ({ initiatives, assignees 
                   })
                 )}
               </td>
-              <td style={{ padding: 8 }}>{initiative.tags.join(', ')}</td>
+              <td style={{ padding: 8 }}>
+                {Array.isArray(initiative.tags) && initiative.tags.length > 0 ? (
+                  initiative.tags.map(tag => {
+                    const tagName = typeof tag === 'object' ? tag.name : tag;
+                    return tagName;
+                  }).join(', ')
+                ) : (
+                  <span style={{ color: '#aaa' }}>No tags</span>
+                )}
+              </td>
               <td style={{ padding: 8 }}>{initiative.dueDate || <span style={{ color: '#aaa' }}>No due date</span>}</td>
             </tr>
           ))}

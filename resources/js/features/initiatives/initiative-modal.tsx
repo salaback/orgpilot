@@ -37,10 +37,24 @@ const statusOptions = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-const normalizeInitiative = (data: any): Initiative => ({
-  ...data,
-  dueDate: data.dueDate || data.due_date || '',
-});
+const normalizeInitiative = (data: any): Initiative => {
+  // Convert tag objects to string IDs for the form
+  let tags = [];
+  if (Array.isArray(data.tags)) {
+    tags = data.tags.map(tag => {
+      if (typeof tag === 'object' && tag.id) {
+        return String(tag.id);
+      }
+      return String(tag);
+    });
+  }
+
+  return {
+    ...data,
+    dueDate: data.dueDate || data.due_date || '',
+    tags: tags,
+  };
+};
 
 const InitiativeModal: React.FC<InitiativeModalProps> = ({ open, onClose, initiative, users, onSave }) => {
   const { options: tagOptions, createTag } = useTagOptions();
