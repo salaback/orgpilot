@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Initiative } from './types';
 import InitiativeModal from './initiative-modal';
 import { Inertia } from '@inertiajs/inertia';
 import NotesSection from '../../components/notes-section';
+import TaskManagement from '../../components/task-management';
 
 interface OrgNode {
   id: number;
@@ -44,6 +45,26 @@ const statusColors: Record<string, string> = {
 
 const InitiativeDetailsPage: React.FC<InitiativeDetailsPageProps> = ({ initiative, assignees, notes = [] }) => {
   const [modalOpen, setModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(false);
+
+  // Load tasks for this initiative
+  useEffect(() => {
+    if (activeTab === 'tasks') {
+      setLoadingTasks(true);
+      fetch(`/api/initiatives/${initiative.id}/tasks`)
+        .then(response => response.json())
+        .then(data => {
+          setTasks(data);
+          setLoadingTasks(false);
+        })
+        .catch(error => {
+          console.error('Failed to load tasks:', error);
+          setLoadingTasks(false);
+        });
+    }
+  }, [activeTab, initiative.id]);
 
   const handleEdit = () => {
     setModalOpen(true);
@@ -99,194 +120,287 @@ const InitiativeDetailsPage: React.FC<InitiativeDetailsPageProps> = ({ initiativ
       .join(', ');
   };
 
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: '📋' },
+    { id: 'tasks', label: 'Tasks', icon: '✅', count: tasks.length },
+    { id: 'notes', label: 'Notes', icon: '📝', count: notes.length }
+  ];
+
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
-      {/* Header */}
+    <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors">
       <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 32,
-        borderBottom: '1px solid #e9ecef',
-        paddingBottom: 24
+        maxWidth: '1400px',
+        margin: '0 auto'
       }}>
-        <div style={{ flex: 1 }}>
-          <button
-            onClick={() => Inertia.visit('/initiatives')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#666',
-              fontSize: 14,
-              cursor: 'pointer',
-              marginBottom: 16,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}
-          >
-            ← Back to Initiatives
-          </button>
-
-          <h1 style={{
-            fontSize: 32,
-            fontWeight: 600,
-            margin: '0 0 8px 0',
-            color: '#222'
+        {/* Header */}
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-6 mb-5 shadow-lg transition-colors">
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            marginBottom: '16px'
           }}>
-            {initiative.title}
-          </h1>
+            <div>
+              <h1 className="text-[32px] font-semibold mb-2 text-gray-900 dark:text-gray-100">
+                {initiative.title}
+              </h1>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
-            <span
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                flexWrap: 'wrap'
+              }}>
+                <span style={{
+                  background: statusColors[initiative.status] || '#6c757d',
+                  color: '#fff',
+                  padding: '4px 12px',
+                  borderRadius: '16px',
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  textTransform: 'uppercase'
+                }}>
+                  {statusLabels[initiative.status] || initiative.status}
+                </span>
+
+                <span style={{ color: '#666', fontSize: '14px' }}>
+                  Due: {formatDate(initiative.dueDate || initiative.due_date)}
+                </span>
+
+                <span style={{ color: '#666', fontSize: '14px' }}>
+                  Assigned: {getAssigneeNames()}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleEdit}
               style={{
-                background: statusColors[initiative.status] || '#666',
+                background: '#007bff',
                 color: '#fff',
-                padding: '4px 12px',
-                borderRadius: 16,
-                fontSize: 14,
+                border: 'none',
+                borderRadius: '8px',
+                padding: '10px 20px',
+                fontSize: '14px',
                 fontWeight: 500,
-                textTransform: 'capitalize'
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
               }}
             >
-              {statusLabels[initiative.status] || initiative.status}
-            </span>
-
-            {initiative.dueDate && (
-              <span style={{ color: '#666', fontSize: 14 }}>
-                Due: {formatDate(initiative.dueDate)}
-              </span>
-            )}
+              ✏️ Edit Initiative
+            </button>
           </div>
-        </div>
 
-        <button
-          onClick={handleEdit}
-          style={{
-            background: '#228be6',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 6,
-            padding: '8px 16px',
-            cursor: 'pointer',
-            fontSize: 14,
-            fontWeight: 500
-          }}
-        >
-          Edit Initiative
-        </button>
-      </div>
-
-      {/* Content */}
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 32 }}>
-        {/* Main Content */}
-        <div>
-          {/* Description */}
-          <section style={{ marginBottom: 32 }}>
-            <h3 style={{ fontSize: 18, fontWeight: 500, marginBottom: 12, color: '#222' }}>
-              Description
-            </h3>
-            <div style={{
-              color: '#666',
-              lineHeight: 1.6,
-              fontSize: 16,
-              background: '#f8f9fa',
-              padding: 16,
-              borderRadius: 8,
-              border: '1px solid #e9ecef'
+          {initiative.description && (
+            <p style={{
+              color: '#555',
+              fontSize: '16px',
+              lineHeight: 1.5,
+              margin: '0 0 16px 0'
             }}>
-              {initiative.description || 'No description provided.'}
-            </div>
-          </section>
-
-          {/* Tags */}
-          {Array.isArray(initiative.tags) && initiative.tags.length > 0 && (
-            <section style={{ marginBottom: 32 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 500, marginBottom: 12, color: '#222' }}>
-                Tags
-              </h3>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {initiative.tags.map((tag, index) => (
-                  <span
-                    key={typeof tag === 'object' ? tag.id : index}
-                    style={{
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      color: '#fff',
-                      fontSize: 12,
-                      fontWeight: 500,
-                      padding: '4px 12px',
-                      borderRadius: 16,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-                    }}
-                  >
-                    {typeof tag === 'object' ? tag.name : tag}
-                  </span>
-                ))}
-              </div>
-            </section>
+              {initiative.description}
+            </p>
           )}
 
-          {/* Notes Section */}
-          <NotesSection
-            notes={notes}
-            entityType="App\\Models\\Initiative"
-            entityId={initiative.id}
-            orgNodes={assignees}
-          />
+          {/* Tags */}
+          {initiative.tags && initiative.tags.length > 0 && (
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '8px',
+              marginTop: '16px'
+            }}>
+              {initiative.tags.map((tag) => (
+                <span
+                  key={tag.id}
+                  style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: '#fff',
+                    padding: '4px 12px',
+                    borderRadius: '16px',
+                    fontSize: '12px',
+                    fontWeight: 500
+                  }}
+                >
+                  {tag.name}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Sidebar */}
-        <div>
-          <div style={{
-            background: '#f8f9fa',
-            borderRadius: 8,
-            padding: 20,
-            border: '1px solid #e9ecef'
-          }}>
-            {/* Assignees */}
-            <div style={{ marginBottom: 24 }}>
-              <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: '#222', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Assignees
-              </h4>
-              <div style={{ color: '#666', fontSize: 14 }}>
-                {getAssigneeNames()}
-              </div>
-            </div>
-
-            {/* Due Date */}
-            <div style={{ marginBottom: 24 }}>
-              <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: '#222', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Due Date
-              </h4>
-              <div style={{ color: '#666', fontSize: 14 }}>
-                {formatDate(initiative.dueDate)}
-              </div>
-            </div>
-
-            {/* Created/Updated */}
-            <div>
-              <h4 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: '#222', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                Timeline
-              </h4>
-              <div style={{ color: '#666', fontSize: 12, lineHeight: 1.4 }}>
-                <div>Created: {new Date(initiative.created_at).toLocaleDateString()}</div>
-                <div>Updated: {new Date(initiative.updated_at).toLocaleDateString()}</div>
-              </div>
-            </div>
+        {/* Tab Navigation */}
+        <div className="bg-white dark:bg-gray-800 rounded-t-2xl p-0 mb-0 shadow-lg border-b border-gray-200 dark:border-gray-700 transition-colors">
+          <div className="flex gap-0">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  px-6 py-4 text-base font-medium flex items-center gap-2 transition-all
+                  border-b-4
+                  ${activeTab === tab.id
+                    ? 'border-blue-600 bg-white dark:bg-gray-900 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent bg-transparent text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}
+                  rounded-t-2xl
+                `}
+                style={{ outline: 'none' }}
+              >
+                <span>{tab.icon}</span>
+                {tab.label}
+                {tab.count !== undefined && (
+                  <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-semibold
+                    ${activeTab === tab.id
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}
+                  >
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="bg-white dark:bg-gray-800 rounded-b-2xl p-6 min-h-[60vh] shadow-lg transition-colors">
+          {activeTab === 'overview' && (
+            <div>
+              <h2 className="text-2xl font-semibold mb-5 text-gray-900 dark:text-gray-100">Initiative Overview</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Summary Card */}
+                <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
+                  <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 500 }}>Summary</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div>
+                      <strong>Status:</strong> {statusLabels[initiative.status] || initiative.status}
+                    </div>
+                    <div>
+                      <strong>Due Date:</strong> {formatDate(initiative.dueDate || initiative.due_date)}
+                    </div>
+                    <div>
+                      <strong>Assignees:</strong> {getAssigneeNames()}
+                    </div>
+                    <div>
+                      <strong>Tasks:</strong> {tasks.length} task{tasks.length !== 1 ? 's' : ''}
+                    </div>
+                    <div>
+                      <strong>Notes:</strong> {notes.length} note{notes.length !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
+                  <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', fontWeight: 500 }}>Quick Actions</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <button
+                      onClick={() => setActiveTab('tasks')}
+                      style={{
+                        background: '#28a745',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '10px 16px',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        textAlign: 'left'
+                      }}
+                    >
+                      ✅ View Tasks ({tasks.length})
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('notes')}
+                      style={{
+                        background: '#17a2b8',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '10px 16px',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        textAlign: 'left'
+                      }}
+                    >
+                      📝 View Notes ({notes.length})
+                    </button>
+                    <button
+                      onClick={() => window.open(`/tasks/create?initiative_id=${initiative.id}`, '_blank')}
+                      style={{
+                        background: '#007bff',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '10px 16px',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        textAlign: 'left'
+                      }}
+                    >
+                      ➕ Create New Task
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent Activity */}
+              <div className="mt-6">
+                <h3 className="text-xl font-medium mb-4 text-gray-900 dark:text-gray-100">Recent Activity</h3>
+                <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
+                  <p style={{ color: '#666', fontStyle: 'italic', margin: 0 }}>
+                    Activity tracking coming soon...
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'tasks' && (
+            <div>
+              {loadingTasks ? (
+                <div style={{ textAlign: 'center', padding: '40px' }}>
+                  <p>Loading tasks...</p>
+                </div>
+              ) : (
+                <TaskManagement
+                  tasks={tasks}
+                  initiatives={[initiative]}
+                  orgNodes={assignees}
+                  initiativeId={initiative.id}
+                  showCreateForm={false}
+                  onTaskCreated={(task) => setTasks([...tasks, task])}
+                  onTaskUpdated={(updatedTask) => {
+                    setTasks(tasks.map(t => t.id === updatedTask.id ? updatedTask : t));
+                  }}
+                />
+              )}
+            </div>
+          )}
+
+          {activeTab === 'notes' && (
+            <div>
+              <NotesSection
+                notes={notes}
+                entityType="initiative"
+                entityId={initiative.id}
+                orgNodes={assignees}
+              />
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Edit Modal */}
-      <InitiativeModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        initiative={initiative}
-        users={assignees}
-        onSave={handleSave}
-      />
+      {/* Modal */}
+      {modalOpen && (
+        <InitiativeModal
+          initiative={initiative}
+          assignees={assignees}
+          onSave={handleSave}
+          onCancel={() => setModalOpen(false)}
+        />
+      )}
     </div>
   );
 };

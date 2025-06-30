@@ -1,7 +1,7 @@
 import React from 'react';
 import { Head } from '@inertiajs/react';
-import Layout from '../layout';
-import TaskDetail from '../components/task-detail';
+import Layout from '../../layouts/app-layout';
+import TaskDetail from '../../components/task-detail';
 
 interface Task {
   id: number;

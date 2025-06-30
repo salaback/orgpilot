@@ -37,6 +37,10 @@ const NotesSection: React.FC<NotesSectionProps> = ({
   const [currentMentionQuery, setCurrentMentionQuery] = useState('');
   const textareaRef = useRef<HTMLDivElement>(null);
 
+  const HASHTAG_CLASS = "text-indigo-600 dark:text-indigo-300 font-semibold mr-1";
+  const MENTION_CLASS_VALID = "text-green-600 dark:text-green-400 font-bold mr-1";
+  const MENTION_CLASS_INVALID = "text-gray-500 dark:text-gray-400 font-semibold mr-1";
+
   // Extract hashtags from content
   const extractHashtags = (text: string): string[] => {
     const hashtagRegex = /#([^\s\t]+)(?=\s|\t|$)/g;
@@ -98,63 +102,43 @@ const NotesSection: React.FC<NotesSectionProps> = ({
   const processContentForDisplay = (content: string): React.ReactNode[] => {
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
-
-    // Combined regex for both hashtags and mentions
     const combinedRegex = /(#[^\s\t]+|@[^\s\t]+)(?=\s|\t|$)/g;
     let match;
-
     while ((match = combinedRegex.exec(content)) !== null) {
-      // Add text before match
       if (match.index > lastIndex) {
         parts.push(content.substring(lastIndex, match.index));
       }
-
       if (match[1].startsWith('#')) {
-        // Handle hashtag
         parts.push(
           <span
             key={`tag-${match.index}`}
-            style={{
-              color: '#667eea',
-              fontWeight: 600,
-              marginRight: '4px'
-            }}
+            className={HASHTAG_CLASS}
           >
             {match[1]}
           </span>
         );
       } else if (match[1].startsWith('@')) {
-        // Handle mention - check if it's a valid org node
         const mentionName = match[1].substring(1);
         const foundNode = orgNodes.find(node =>
           `${node.first_name}${node.last_name}`.toLowerCase().replace(/\s/g, '') === mentionName.toLowerCase() ||
-          `${node.first_name}.${node.last_name}`.toLowerCase() === mentionName.toLowerCase() ||
+          `${node.first_name}.${node.lastName}`.toLowerCase() === mentionName.toLowerCase() ||
           node.first_name.toLowerCase() === mentionName.toLowerCase() ||
           node.last_name.toLowerCase() === mentionName.toLowerCase()
         );
-
         parts.push(
           <span
             key={`mention-${match.index}`}
-            style={{
-              color: foundNode ? '#28a745' : '#666',
-              fontWeight: foundNode ? 700 : 600,
-              marginRight: '4px'
-            }}
+            className={foundNode ? MENTION_CLASS_VALID : MENTION_CLASS_INVALID}
           >
             {match[1]}
           </span>
         );
       }
-
       lastIndex = match.index + match[0].length;
     }
-
-    // Add remaining text
     if (lastIndex < content.length) {
       parts.push(content.substring(lastIndex));
     }
-
     return parts;
   };
 
@@ -347,57 +331,25 @@ const NotesSection: React.FC<NotesSectionProps> = ({
   };
 
   return (
-    <div style={{ marginTop: 32 }}>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16
-      }}>
-        <h3 style={{
-          fontSize: 18,
-          fontWeight: 500,
-          color: '#222',
-          margin: 0
-        }}>
+    <div className="mt-8">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 m-0">
           Notes ({notes.length})
         </h3>
-
         {!isAdding && (
           <Button
             onClick={() => setIsAdding(true)}
-            style={{
-              background: '#228be6',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 6,
-              padding: '6px 12px',
-              fontSize: 14,
-              fontWeight: 500,
-              cursor: 'pointer'
-            }}
+            className="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-3 py-1.5 text-sm font-medium shadow dark:bg-blue-500 dark:hover:bg-blue-600 border-none"
           >
             Add Note
           </Button>
         )}
       </div>
-
       {/* Add New Note Form */}
       {isAdding && (
-        <Card style={{
-          padding: 16,
-          marginBottom: 16,
-          border: '2px solid #228be6',
-          borderRadius: 8
-        }}>
-          <div style={{ marginBottom: 12 }}>
-            <Label htmlFor="note-title" style={{
-              fontSize: 14,
-              fontWeight: 500,
-              marginBottom: 4,
-              display: 'block',
-              color: '#222'
-            }}>
+        <Card className="p-4 mb-4 border-2 border-blue-600 dark:border-blue-400 rounded-lg bg-white dark:bg-gray-800">
+          <div className="mb-3">
+            <Label htmlFor="note-title" className="text-sm font-medium mb-1 block text-gray-900 dark:text-gray-200">
               Title (optional)
             </Label>
             <Input
@@ -406,93 +358,39 @@ const NotesSection: React.FC<NotesSectionProps> = ({
               placeholder="Note title..."
               value={newNote.title}
               onChange={(e) => setNewNote({ ...newNote, title: e.target.value })}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                border: '1px solid #e9ecef',
-                borderRadius: 6,
-                fontSize: 14
-              }}
+              className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md text-sm bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
             />
           </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <Label htmlFor="note-content" style={{
-              fontSize: 14,
-              fontWeight: 500,
-              marginBottom: 4,
-              display: 'block',
-              color: '#222'
-            }}>
-              Content * <span style={{ fontSize: 12, color: '#666' }}>Use #hashtags to create tags</span>
+          <div className="mb-4">
+            <Label htmlFor="note-content" className="text-sm font-medium mb-1 block text-gray-900 dark:text-gray-200">
+              Content * <span className="text-xs text-gray-500 dark:text-gray-400">Use #hashtags to create tags</span>
             </Label>
-
-            {/* Contenteditable div instead of textarea for inline hashtag styling */}
-            <div style={{ position: 'relative' }}>
+            <div className="relative">
               <div
                 ref={textareaRef}
                 contentEditable
                 onInput={handleContentChange}
                 onKeyDown={handleKeyDown}
-                style={{
-                  width: '100%',
-                  minHeight: '100px',
-                  padding: '8px 12px',
-                  border: '1px solid #e9ecef',
-                  borderRadius: 6,
-                  fontSize: 14,
-                  fontFamily: 'inherit',
-                  lineHeight: '1.4',
-                  outline: 'none',
-                  backgroundColor: '#fff',
-                  whiteSpace: 'pre-wrap',
-                  wordWrap: 'break-word',
-                  overflow: 'auto',
-                  resize: 'vertical'
-                }}
-                className="content-editable-placeholder"
+                className="w-full min-h-[100px] px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md text-sm font-sans leading-relaxed outline-none bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 whitespace-pre-wrap break-words overflow-auto resize-y content-editable-placeholder"
               />
-
-              {/* Show placeholder when empty */}
               {!newNote.content && (
                 <div
-                  style={{
-                    position: 'absolute',
-                    top: '8px',
-                    left: '12px',
-                    color: '#999',
-                    fontSize: 14,
-                    fontStyle: 'italic',
-                    pointerEvents: 'none',
-                    zIndex: 1
-                  }}
+                  className="absolute top-2 left-3 text-gray-400 dark:text-gray-500 text-sm italic pointer-events-none z-10"
                 >
                   Write your note here... Use #hashtags to create tags automatically
                 </div>
               )}
             </div>
-
-            {/* Show detected tags and mentions preview */}
             {(detectedTags.length > 0 || detectedMentions.length > 0) && (
-              <div style={{ marginTop: 8 }}>
+              <div className="mt-2">
                 {detectedTags.length > 0 && (
-                  <div style={{ marginBottom: 4 }}>
-                    <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>
-                      Detected tags:
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  <div className="mb-1">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Detected tags:</div>
+                    <div className="flex flex-wrap gap-1">
                       {detectedTags.map((tag, index) => (
                         <span
                           key={`preview-${index}`}
-                          style={{
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                            color: '#fff',
-                            fontSize: 11,
-                            fontWeight: 500,
-                            padding: '2px 8px',
-                            borderRadius: 12,
-                            opacity: 0.8
-                          }}
+                          className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-medium px-2 py-0.5 rounded-full opacity-80"
                         >
                           {tag}
                         </span>
@@ -500,38 +398,15 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                     </div>
                   </div>
                 )}
-
                 {detectedMentions.length > 0 && (
                   <div>
-                    <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>
-                      Detected mentions:
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                      {detectedMentions.map((mention) => (
+                    <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Detected mentions:</div>
+                    <div className="flex flex-wrap gap-1">
+                      {detectedMentions.map((mention, index) => (
                         <span
-                          key={`mention-preview-${mention.id}`}
-                          style={{
-                            background: 'rgba(40, 167, 69, 0.1)',
-                            color: '#28a745',
-                            fontSize: 11,
-                            fontWeight: 500,
-                            padding: '2px 8px',
-                            borderRadius: 12,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 4
-                          }}
+                          key={`mention-preview-${index}`}
+                          className="bg-green-500 text-white text-xs font-medium px-2 py-0.5 rounded-full opacity-80"
                         >
-                          <img
-                            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(mention.name)}&background=28a745&color=fff`}
-                            alt={mention.name}
-                            style={{
-                              width: 16,
-                              height: 16,
-                              borderRadius: '50%',
-                              flexShrink: 0
-                            }}
-                          />
                           {mention.name}
                         </span>
                       ))}
@@ -540,220 +415,52 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                 )}
               </div>
             )}
-
-            {/* Mention suggestions dropdown */}
-            {showMentionSuggestions && currentMentionQuery && (
-              <div style={{
-                border: '1px solid #e9ecef',
-                borderRadius: 6,
-                background: '#fff',
-                marginTop: 8,
-                maxHeight: 200,
-                overflowY: 'auto',
-                zIndex: 1000,
-                position: 'absolute',
-                width: 'calc(100% - 32px)',
-                padding: '8px 0',
-                boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
-              }}>
-                {mentionSuggestions.length === 0 ? (
-                  <div style={{
-                    padding: '8px 12px',
-                    color: '#666',
-                    fontSize: 14,
-                    textAlign: 'center'
-                  }}>
-                    No suggestions found
-                  </div>
-                ) : (
-                  mentionSuggestions.map((suggestion) => (
-                    <div
-                      key={suggestion.id}
-                      onClick={() => {
-                        // Simplified approach: Replace the entire content with proper mention
-                        const currentContent = newNote.content;
-                        const mentionTag = `@${suggestion.first_name}${suggestion.last_name}`;
-
-                        // Find the @ symbol and replace from there
-                        const atIndex = currentContent.lastIndexOf('@' + currentMentionQuery);
-
-                        if (atIndex !== -1) {
-                          // Replace the @query with the full mention
-                          const beforeMention = currentContent.substring(0, atIndex);
-                          const afterMention = currentContent.substring(atIndex + 1 + currentMentionQuery.length);
-                          const newContent = beforeMention + mentionTag + ' ' + afterMention;
-
-
-                          // Update the content
-                          setNewNote({ ...newNote, content: newContent });
-
-                          // Hide suggestions
-                          setShowMentionSuggestions(false);
-                          setCurrentMentionQuery('');
-
-                          // Focus back to editor
-                          setTimeout(() => {
-                            if (textareaRef.current) {
-                              textareaRef.current.focus();
-
-                              // Place cursor at the end
-                              const range = document.createRange();
-                              range.selectNodeContents(textareaRef.current);
-                              range.collapse(false);
-                              const selection = window.getSelection();
-                              if (selection) {
-                                selection.removeAllRanges();
-                                selection.addRange(range);
-                              }
-                            }
-                          }, 10);
-                        }
-                      }}
-                      style={{
-                        padding: '8px 12px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        transition: 'background 0.2s'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#f8f9fa';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }}
-                    >
-                      <img
-                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(suggestion.first_name + ' ' + suggestion.last_name)}&background=28a745&color=fff`}
-                        alt={suggestion.first_name + ' ' + suggestion.last_name}
-                        style={{
-                          width: 24,
-                          height: 24,
-                          borderRadius: '50%',
-                          flexShrink: 0
-                        }}
-                      />
-                      <div style={{
-                        flexGrow: 1,
-                        fontSize: 14,
-                        color: '#222',
-                        fontWeight: 600
-                      }}>
-                        {suggestion.first_name} {suggestion.last_name}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
           </div>
-
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <Button
-              onClick={() => {
-                setIsAdding(false);
-                setNewNote({ title: '', content: '' });
-                setDetectedTags([]);
-                setDetectedMentions([]);
-              }}
-              disabled={isSubmitting}
-              style={{
-                background: '#6c757d',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 6,
-                padding: '8px 16px',
-                fontSize: 14,
-                cursor: 'pointer'
-              }}
-            >
-              Cancel
-            </Button>
+          <div className="flex gap-2">
             <Button
               onClick={handleAddNote}
-              disabled={isSubmitting || !newNote.content.trim()}
-              style={{
-                background: newNote.content.trim() ? '#228be6' : '#6c757d',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 6,
-                padding: '8px 16px',
-                fontSize: 14,
-                cursor: newNote.content.trim() ? 'pointer' : 'not-allowed',
-                opacity: isSubmitting ? 0.7 : 1
-              }}
+              disabled={isSubmitting}
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-md px-3 py-1.5 text-sm font-medium shadow dark:bg-blue-500 dark:hover:bg-blue-600 border-none"
             >
               {isSubmitting ? 'Saving...' : 'Save Note'}
+            </Button>
+            <Button
+              onClick={() => setIsAdding(false)}
+              disabled={isSubmitting}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-md px-3 py-1.5 text-sm font-medium shadow dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 border-none"
+              variant="secondary"
+            >
+              Cancel
             </Button>
           </div>
         </Card>
       )}
-
       {/* Notes List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div className="flex flex-col gap-3">
         {notes.length === 0 ? (
-          <Card style={{
-            padding: 24,
-            textAlign: 'center',
-            border: '1px solid #e9ecef',
-            borderRadius: 8,
-            background: '#f8f9fa'
-          }}>
-            <p style={{
-              color: '#666',
-              fontSize: 14,
-              margin: 0,
-              fontStyle: 'italic'
-            }}>
+          <Card className="p-6 text-center border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
+            <p className="text-gray-500 dark:text-gray-400 text-sm italic m-0">
               No notes yet. Add your first note to get started.
             </p>
           </Card>
         ) : (
           notes.map((note) => (
-            <Card key={note.id} style={{
-              padding: 16,
-              border: '1px solid #e9ecef',
-              borderRadius: 8,
-              background: '#fff'
-            }}>
+            <Card key={note.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
               {note.title && (
-                <h4 style={{
-                  fontSize: 16,
-                  fontWeight: 500,
-                  marginBottom: 8,
-                  color: '#222',
-                  margin: '0 0 8px 0'
-                }}>
+                <h4 className="text-md font-medium mb-2 text-gray-900 dark:text-gray-100">
                   {note.title}
                 </h4>
               )}
-
-              <div style={{
-                color: '#444',
-                fontSize: 14,
-                lineHeight: 1.5,
-                margin: '0 0 12px 0',
-                whiteSpace: 'pre-wrap'
-              }}>
+              <div className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed mb-3">
                 {processContentForDisplay(note.content)}
               </div>
-
-              {/* Display note tags if they exist */}
               {note.tags && note.tags.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                <div className="mb-3">
+                  <div className="flex flex-wrap gap-1">
                     {note.tags.map((tag) => (
                       <span
                         key={tag.id}
-                        style={{
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          color: '#fff',
-                          fontSize: 11,
-                          fontWeight: 500,
-                          padding: '2px 8px',
-                          borderRadius: 12,
-                        }}
+                        className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs font-medium px-2 py-0.5 rounded-full"
                       >
                         {tag.name}
                       </span>
@@ -761,15 +468,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                   </div>
                 </div>
               )}
-
-              <div style={{
-                fontSize: 12,
-                color: '#666',
-                borderTop: '1px solid #f0f0f0',
-                paddingTop: 8,
-                display: 'flex',
-                justifyContent: 'space-between'
-              }}>
+              <div className="text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between">
                 <span>Created: {formatDate(note.created_at)}</span>
                 {note.updated_at !== note.created_at && (
                   <span>Updated: {formatDate(note.updated_at)}</span>

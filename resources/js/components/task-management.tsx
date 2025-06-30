@@ -5,7 +5,8 @@ import { Card } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Badge } from './ui/badge';
-import NotesSection from './notes-section';
+import TaskFormSheet from './task-form';
+import { PieChart } from 'lucide-react';
 
 interface Task {
   id: number;
@@ -72,8 +73,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
   onTaskCreated,
   onTaskUpdated
 }) => {
-  const [isCreating, setIsCreating] = useState(showCreateForm);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskList, setTaskList] = useState<Task[]>(tasks);
   const [filters, setFilters] = useState({
@@ -83,21 +83,15 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
     search: ''
   });
 
-  const [newTask, setNewTask] = useState({
-    title: '',
-    description: '',
-    initiative_id: initiativeId || '',
-    assigned_to: '',
-    due_date: '',
-    priority: 'medium' as const,
-    status: 'not_started' as const,
-    percentage_complete: 0,
-    tags: [] as string[]
-  });
-
   useEffect(() => {
     setTaskList(tasks);
   }, [tasks]);
+
+  useEffect(() => {
+    if (showCreateForm) {
+      setIsCreating(true);
+    }
+  }, [showCreateForm]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -132,52 +126,12 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
     return new Date(dueDate) < new Date() && true;
   };
 
-  const handleCreateTask = () => {
-    if (!newTask.title.trim()) return;
-
-    const taskData = {
-      ...newTask,
-      initiative_id: newTask.initiative_id || null,
-      assigned_to: newTask.assigned_to || null,
-      due_date: newTask.due_date || null,
-    };
-
-    Inertia.post('/tasks', taskData, {
-      onSuccess: (page) => {
-        setNewTask({
-          title: '',
-          description: '',
-          initiative_id: initiativeId || '',
-          assigned_to: '',
-          due_date: '',
-          priority: 'medium',
-          status: 'not_started',
-          percentage_complete: 0,
-          tags: []
-        });
-        setIsCreating(false);
-        if (onTaskCreated && page.props.task) {
-          onTaskCreated(page.props.task);
-        }
-      },
-      onError: (errors) => {
-        console.error('Failed to create task:', errors);
-      }
-    });
-  };
-
-  const handleUpdateTask = (task: Task, updates: Partial<Task>) => {
-    Inertia.patch(`/tasks/${task.id}`, updates, {
-      onSuccess: () => {
-        setEditingTask(null);
-        if (onTaskUpdated) {
-          onTaskUpdated({ ...task, ...updates });
-        }
-      },
-      onError: (errors) => {
-        console.error('Failed to update task:', errors);
-      }
-    });
+  const handleTaskCreated = (task: Task) => {
+    setTaskList(prev => [task, ...prev]);
+    setIsCreating(false);
+    if (onTaskCreated) {
+      onTaskCreated(task);
+    }
   };
 
   const handleUpdateProgress = (task: Task, percentage: number) => {
@@ -225,23 +179,21 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
           Tasks ({filteredTasks.length})
         </h3>
 
-        {!isCreating && (
-          <Button
-            onClick={() => setIsCreating(true)}
-            style={{
-              background: '#228be6',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 6,
-              padding: '6px 12px',
-              fontSize: 14,
-              fontWeight: 500,
-              cursor: 'pointer'
-            }}
-          >
-            Add Task
-          </Button>
-        )}
+        <Button
+          onClick={() => setIsCreating(true)}
+          style={{
+            background: '#228be6',
+            color: '#fff',
+            border: 'none',
+            borderRadius: 6,
+            padding: '6px 12px',
+            fontSize: 14,
+            fontWeight: 500,
+            cursor: 'pointer'
+          }}
+        >
+          Add Task
+        </Button>
       </div>
 
       {/* Filters */}
@@ -313,180 +265,11 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
         </select>
       </div>
 
-      {/* Create Task Form */}
-      {isCreating && (
-        <Card style={{
-          padding: 16,
-          marginBottom: 16,
-          border: '2px solid #228be6',
-          borderRadius: 8
-        }}>
-          <h4 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 500 }}>Create New Task</h4>
-
-          <div style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
-            <div>
-              <Label>Title *</Label>
-              <Input
-                type="text"
-                value={newTask.title}
-                onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                placeholder="Task title..."
-              />
-            </div>
-
-            <div>
-              <Label>Assigned To</Label>
-              <select
-                value={newTask.assigned_to}
-                onChange={(e) => setNewTask({ ...newTask, assigned_to: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  border: '1px solid #e9ecef',
-                  borderRadius: 6,
-                  fontSize: 14
-                }}
-              >
-                <option value="">Unassigned</option>
-                {orgNodes.map(node => (
-                  <option key={node.id} value={node.id}>
-                    {node.first_name} {node.last_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <Label>Initiative</Label>
-              <select
-                value={newTask.initiative_id}
-                onChange={(e) => setNewTask({ ...newTask, initiative_id: e.target.value })}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  border: '1px solid #e9ecef',
-                  borderRadius: 6,
-                  fontSize: 14
-                }}
-              >
-                <option value="">No Initiative</option>
-                {initiatives.map(initiative => (
-                  <option key={initiative.id} value={initiative.id}>
-                    {initiative.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <Label>Due Date</Label>
-              <Input
-                type="date"
-                value={newTask.due_date}
-                onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <Label>Priority</Label>
-              <select
-                value={newTask.priority}
-                onChange={(e) => setNewTask({ ...newTask, priority: e.target.value as any })}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  border: '1px solid #e9ecef',
-                  borderRadius: 6,
-                  fontSize: 14
-                }}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-            </div>
-
-            <div>
-              <Label>Status</Label>
-              <select
-                value={newTask.status}
-                onChange={(e) => setNewTask({ ...newTask, status: e.target.value as any })}
-                style={{
-                  width: '100%',
-                  padding: '8px 12px',
-                  border: '1px solid #e9ecef',
-                  borderRadius: 6,
-                  fontSize: 14
-                }}
-              >
-                <option value="not_started">Not Started</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="on_hold">On Hold</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-            </div>
-          </div>
-
-          <div style={{ marginTop: 12 }}>
-            <Label>Description</Label>
-            <textarea
-              value={newTask.description}
-              onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
-              placeholder="Task description..."
-              style={{
-                width: '100%',
-                minHeight: '80px',
-                padding: '8px 12px',
-                border: '1px solid #e9ecef',
-                borderRadius: 6,
-                fontSize: 14,
-                fontFamily: 'inherit',
-                resize: 'vertical'
-              }}
-            />
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
-            <Button
-              onClick={() => setIsCreating(false)}
-              style={{
-                background: '#6c757d',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 6,
-                padding: '8px 16px',
-                fontSize: 14,
-                cursor: 'pointer'
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreateTask}
-              disabled={!newTask.title.trim()}
-              style={{
-                background: newTask.title.trim() ? '#228be6' : '#6c757d',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 6,
-                padding: '8px 16px',
-                fontSize: 14,
-                cursor: newTask.title.trim() ? 'pointer' : 'not-allowed'
-              }}
-            >
-              Create Task
-            </Button>
-          </div>
-        </Card>
-      )}
-
       {/* Task List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
         {filteredTasks.length === 0 ? (
           <Card style={{
-            padding: 24,
+            padding: 16,
             textAlign: 'center',
             border: '1px solid #e9ecef',
             borderRadius: 8,
@@ -494,7 +277,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
           }}>
             <p style={{
               color: '#666',
-              fontSize: 14,
+              fontSize: 13,
               margin: 0,
               fontStyle: 'italic'
             }}>
@@ -505,202 +288,91 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
             </p>
           </Card>
         ) : (
-          filteredTasks.map((task) => (
-            <Card
-              key={task.id}
-              style={{
-                padding: 16,
-                border: selectedTask?.id === task.id ? '2px solid #228be6' : '1px solid #e9ecef',
-                borderRadius: 8,
-                background: '#fff',
-                cursor: 'pointer'
-              }}
-              onClick={() => setSelectedTask(selectedTask?.id === task.id ? null : task)}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                <h4 style={{
-                  fontSize: 16,
-                  fontWeight: 500,
-                  margin: 0,
-                  color: '#222'
-                }}>
+          <div style={{ border: '1px solid #e9ecef', borderRadius: 6, overflow: 'hidden' }}>
+            {filteredTasks.map((task) => (
+              <div
+                key={task.id}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '6px 10px',
+                  fontSize: 13,
+                  borderBottom: '1px solid #f1f3f5',
+                  background: '#fff',
+                  cursor: 'pointer',
+                  ...(selectedTask?.id === task.id ? { background: '#f0f6ff' } : {})
+                }}
+                onClick={() => setSelectedTask(selectedTask?.id === task.id ? null : task)}
+              >
+                <span style={{ flex: 2, fontWeight: 500, color: '#222', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {task.title}
                   {isOverdue(task.due_date || '') && (
                     <Badge style={{
-                      marginLeft: 8,
+                      marginLeft: 6,
                       background: '#dc3545',
                       color: '#fff',
-                      fontSize: 10
+                      fontSize: 10,
+                      padding: '1px 6px',
+                      borderRadius: 4
                     }}>
                       OVERDUE
                     </Badge>
                   )}
-                </h4>
-
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                </span>
+                <span style={{ flex: 1, color: '#555', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {task.assigned_to_node ? `${task.assigned_to_node.first_name} ${task.assigned_to_node.last_name}` : 'Unassigned'}
+                </span>
+                <span style={{ flex: 1, color: '#555', whiteSpace: 'nowrap' }}>
+                  {task.due_date ? formatDate(task.due_date) : ''}
+                </span>
+                <span style={{ flex: 0.7 }}>
                   <Badge style={{
                     background: getPriorityColor(task.priority),
                     color: '#fff',
-                    fontSize: 10
+                    fontSize: 10,
+                    padding: '1px 6px',
+                    borderRadius: 4
                   }}>
-                    {task.priority.toUpperCase()}
+                    {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
                   </Badge>
-
+                </span>
+                <span style={{ flex: 0.9 }}>
                   <Badge style={{
                     background: getStatusColor(task.status),
                     color: '#fff',
-                    fontSize: 10
+                    fontSize: 10,
+                    padding: '1px 6px',
+                    borderRadius: 4
                   }}>
-                    {task.status.replace('_', ' ').toUpperCase()}
+                    {task.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
                   </Badge>
-                </div>
+                </span>
+                <span style={{ flex: 0.7, color: '#555', textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
+                  <PieChart
+                    style={{ width: 18, height: 18 }}
+                    strokeWidth={2}
+                    color="#228be6"
+                    fill="none"
+                  />
+                  <span>{task.percentage_complete}%</span>
+                </span>
               </div>
-
-              {task.description && (
-                <p style={{
-                  color: '#666',
-                  fontSize: 14,
-                  margin: '0 0 12px 0',
-                  lineHeight: 1.4
-                }}>
-                  {task.description}
-                </p>
-              )}
-
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: 12
-              }}>
-                <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#666' }}>
-                  {task.assigned_to_node && (
-                    <span>
-                      Assigned: {task.assigned_to_node.first_name} {task.assigned_to_node.last_name}
-                    </span>
-                  )}
-                  {task.due_date && (
-                    <span>
-                      Due: {formatDate(task.due_date)}
-                    </span>
-                  )}
-                  {task.initiative && (
-                    <span>
-                      Initiative: {task.initiative.title}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* Progress Bar */}
-              <div style={{ marginBottom: 12 }}>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: 4
-                }}>
-                  <span style={{ fontSize: 12, color: '#666' }}>Progress</span>
-                  <span style={{ fontSize: 12, color: '#666' }}>{task.percentage_complete}%</span>
-                </div>
-
-                <div style={{
-                  width: '100%',
-                  height: 8,
-                  background: '#e9ecef',
-                  borderRadius: 4,
-                  overflow: 'hidden'
-                }}>
-                  <div style={{
-                    width: `${task.percentage_complete}%`,
-                    height: '100%',
-                    background: task.percentage_complete === 100 ? '#28a745' : '#007bff',
-                    transition: 'width 0.3s ease'
-                  }} />
-                </div>
-              </div>
-
-              {/* Quick Progress Update */}
-              {selectedTask?.id === task.id && (
-                <div style={{
-                  marginTop: 16,
-                  padding: 16,
-                  background: '#f8f9fa',
-                  borderRadius: 6,
-                  border: '1px solid #e9ecef'
-                }}>
-                  <div style={{ marginBottom: 12 }}>
-                    <Label style={{ fontSize: 12, color: '#666' }}>
-                      Update Progress: {task.percentage_complete}%
-                    </Label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={task.percentage_complete}
-                      onChange={(e) => handleUpdateProgress(task, parseInt(e.target.value))}
-                      style={{
-                        width: '100%',
-                        marginTop: 4
-                      }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <Button
-                      onClick={() => window.open(`/tasks/${task.id}`, '_blank')}
-                      style={{
-                        background: '#007bff',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 4,
-                        padding: '6px 12px',
-                        fontSize: 12,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      View Details
-                    </Button>
-
-                    <Button
-                      onClick={() => window.open(`/tasks/${task.id}/edit`, '_blank')}
-                      style={{
-                        background: '#6c757d',
-                        color: '#fff',
-                        border: 'none',
-                        borderRadius: 4,
-                        padding: '6px 12px',
-                        fontSize: 12,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Edit
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {/* Tags */}
-              {task.tags && task.tags.length > 0 && (
-                <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                  {task.tags.map((tag) => (
-                    <Badge
-                      key={tag.id}
-                      style={{
-                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                        color: '#fff',
-                        fontSize: 10
-                      }}
-                    >
-                      {tag.name}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </Card>
-          ))
+            ))}
+          </div>
         )}
       </div>
+
+      {/* Task Form Sheet for Task Creation */}
+      <TaskFormSheet
+        open={isCreating}
+        onClose={() => setIsCreating(false)}
+        title="Create New Task"
+        size="lg"
+        initiatives={initiatives}
+        orgNodes={orgNodes}
+        initiativeId={initiativeId}
+        onSuccess={handleTaskCreated}
+      />
     </div>
   );
 };
