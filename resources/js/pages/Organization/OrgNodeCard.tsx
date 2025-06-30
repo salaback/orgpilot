@@ -107,7 +107,8 @@ export function OrgNodeCard({
             </Button>
           )}
 
-          {onFocus && (
+          {/* Only show View Team button if the person has direct reports */}
+          {onFocus && node.direct_reports_count > 0 && (
             <Button
               variant="outline"
               size="sm"

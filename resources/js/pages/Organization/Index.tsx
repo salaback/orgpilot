@@ -60,7 +60,7 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
     setIsLoading(true);
     try {
       console.log(`Loading direct reports for node ${nodeId}`);
-      const response = await axios.get(`/organization/node/${nodeId}/direct-reports`);
+      const response = await axios.get(`/organization/person/${nodeId}/direct-reports`);
       const reports = response.data.directReports || [];
       console.log(`Received ${reports.length} direct reports`, reports);
       setCurrentReports(reports);
@@ -136,7 +136,7 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
       setNodeHierarchy(newHierarchy);
 
       // Update the URL to reflect the current node
-      router.visit(`/organization/node/${node.id}`, { preserveState: true, replace: true });
+      router.visit(`/organization/person/${node.id}`, { preserveState: true, replace: true });
     }
 
     // Load direct reports for the focused node
