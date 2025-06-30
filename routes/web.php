@@ -60,6 +60,38 @@ Route::middleware([
         ]);
     })->name('initiatives');
 
+    Route::get('initiatives/{initiative}', function (\App\Models\Initiative $initiative) {
+        $initiative->load(['assignees', 'tags']);
+
+        $initiativeData = [
+            'id' => $initiative->id,
+            'title' => $initiative->title,
+            'description' => $initiative->description,
+            'status' => $initiative->status,
+            'order' => $initiative->order,
+            'due_date' => $initiative->end_date,
+            'dueDate' => $initiative->end_date,
+            'assignees' => $initiative->assignees->pluck('id')->toArray(),
+            'tags' => $initiative->tags->map(function ($tag) {
+                return [
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                ];
+            })->toArray(),
+            'teamLabel' => $initiative->teamLabel ?? '',
+            'allocations' => $initiative->allocations ?? [],
+            'created_at' => $initiative->created_at,
+            'updated_at' => $initiative->updated_at,
+        ];
+
+        $orgNodes = \App\Models\OrgNode::where('node_type', 'person')->where('status', 'active')->get(['id', 'first_name', 'last_name', 'email', 'title']);
+
+        return Inertia::render('initiative', [
+            'initiative' => $initiativeData,
+            'assignees' => $orgNodes,
+        ]);
+    })->name('initiative.show');
+
     // Tag API endpoints
     Route::get('api/tags', [TagController::class, 'index']);
     Route::post('api/tags', [TagController::class, 'store']);

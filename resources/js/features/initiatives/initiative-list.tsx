@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Initiative } from './types';
 import InitiativeCard from './initiative-card';
 import InitiativeModal from './initiative-modal';
+import { Inertia } from '@inertiajs/inertia';
 
 interface InitiativeListProps {
   initiatives: Initiative[];
@@ -13,8 +14,7 @@ const InitiativeList: React.FC<InitiativeListProps> = ({ initiatives, assignees 
   const [selected, setSelected] = useState<Initiative | undefined>(undefined);
 
   const handleCardClick = (initiative: Initiative) => {
-    setSelected(initiative);
-    setModalOpen(true);
+    Inertia.visit(`/initiatives/${initiative.id}`);
   };
 
   return (

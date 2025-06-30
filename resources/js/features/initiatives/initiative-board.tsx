@@ -152,8 +152,7 @@ const InitiativeBoard: React.FC<InitiativeBoardProps> = ({ initiatives, assignee
   );
 
   const handleCardClick = (initiative: Initiative) => {
-    setSelected(initiative);
-    setModalOpen(true);
+    Inertia.visit(`/initiatives/${initiative.id}`);
   };
 
   const handleNewClick = () => {
