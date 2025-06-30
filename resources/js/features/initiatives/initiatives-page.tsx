@@ -34,11 +34,36 @@ const InitiativesPage: React.FC<InitiativesPageProps> = ({ initiatives, assignee
   const [view, setView] = useState<'board' | 'list'>('board');
   const [search, setSearch] = useState('');
 
-  // Filter initiatives by search term (case-insensitive, matches title or description)
-  const filteredInitiatives = initiatives.filter(i =>
-    i.title.toLowerCase().includes(search.toLowerCase()) ||
-    (i.description && i.description.toLowerCase().includes(search.toLowerCase()))
-  ).map(i => defaultAssignees(i));
+  // Filter initiatives by search term (case-insensitive, matches title, description, or assignee names)
+  const filteredInitiatives = initiatives.filter(i => {
+    const searchLower = search.toLowerCase();
+
+    // Check title and description
+    const titleMatch = i.title.toLowerCase().includes(searchLower);
+    const descriptionMatch = i.description && i.description.toLowerCase().includes(searchLower);
+
+    // Check assignee names
+    const assigneeMatch = (i.assignees || []).some(assigneeId => {
+      const assignee = assignees.find(a => a.id === assigneeId);
+      if (!assignee) return false;
+
+      const fullName = `${assignee.first_name} ${assignee.last_name}`.trim().toLowerCase();
+      const firstName = (assignee.first_name || '').toLowerCase();
+      const lastName = (assignee.last_name || '').toLowerCase();
+
+      return fullName.includes(searchLower) ||
+             firstName.includes(searchLower) ||
+             lastName.includes(searchLower);
+    });
+
+    // Check tag names
+    const tagMatch = Array.isArray(i.tags) && i.tags.some(tag => {
+      const tagName = typeof tag === 'object' ? tag.name : tag;
+      return tagName.toLowerCase().includes(searchLower);
+    });
+
+    return titleMatch || descriptionMatch || assigneeMatch || tagMatch;
+  }).map(i => defaultAssignees(i));
 
   return (
     <div style={{ padding: 24 }}>
@@ -96,7 +121,12 @@ const InitiativesPage: React.FC<InitiativesPageProps> = ({ initiatives, assignee
       <FilterBar search={search} onSearchChange={setSearch} />
       <div style={{ marginTop: 24 }}>
         {view === 'board' ? (
-          <InitiativeBoard initiatives={filteredInitiatives} assignees={assignees} defaultOrgStructureId={defaultOrgStructureId} />
+          <InitiativeBoard
+            initiatives={filteredInitiatives}
+            assignees={assignees}
+            defaultOrgStructureId={defaultOrgStructureId}
+            onSearchChange={setSearch}
+          />
         ) : (
           <InitiativeList initiatives={filteredInitiatives} assignees={assignees} />
         )}

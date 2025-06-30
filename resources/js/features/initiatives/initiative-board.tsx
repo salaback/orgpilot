@@ -54,6 +54,7 @@ interface InitiativeBoardProps {
     title: string;
   }>;
   defaultOrgStructureId: number | null;
+  onSearchChange: (value: string) => void;
 }
 
 // Create a draggable card component
@@ -67,9 +68,10 @@ interface DraggableCardProps {
     title: string;
   }>;
   onClick: () => void;
+  onSearchChange: (value: string) => void;
 }
 
-const DraggableCard: React.FC<DraggableCardProps> = ({ initiative, users, onClick }) => {
+const DraggableCard: React.FC<DraggableCardProps> = ({ initiative, users, onClick, onSearchChange }) => {
   const {
     attributes,
     listeners,
@@ -91,6 +93,7 @@ const DraggableCard: React.FC<DraggableCardProps> = ({ initiative, users, onClic
         initiative={initiative}
         users={users}
         onClick={onClick}
+        onSearchChange={onSearchChange}
       />
     </div>
   );
@@ -130,7 +133,7 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({ id, title, children, 
   );
 };
 
-const InitiativeBoard: React.FC<InitiativeBoardProps> = ({ initiatives, assignees, defaultOrgStructureId }) => {
+const InitiativeBoard: React.FC<InitiativeBoardProps> = ({ initiatives, assignees, defaultOrgStructureId, onSearchChange }) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [newModalOpen, setNewModalOpen] = useState(false);
   const [selected, setSelected] = useState<Initiative | undefined>(undefined);
@@ -415,6 +418,7 @@ const InitiativeBoard: React.FC<InitiativeBoardProps> = ({ initiatives, assignee
                     initiative={defaultAssignees(initiative)}
                     users={assignees}
                     onClick={() => handleCardClick(initiative)}
+                    onSearchChange={onSearchChange}
                   />
                 ))}
               </DroppableColumn>
@@ -437,6 +441,7 @@ const InitiativeBoard: React.FC<InitiativeBoardProps> = ({ initiatives, assignee
                   initiative={defaultAssignees(initiative)}
                   users={assignees}
                   onClick={() => handleCardClick(initiative)}
+                  onSearchChange={onSearchChange}
                 />
               ))}
             </DroppableColumn>

@@ -14,9 +14,10 @@ interface InitiativeCardProps {
   users: User[];
   compact?: boolean;
   onClick?: () => void;
+  onSearchChange?: (value: string) => void;
 }
 
-const InitiativeCard: React.FC<InitiativeCardProps> = ({ initiative, users, compact, onClick }) => {
+const InitiativeCard: React.FC<InitiativeCardProps> = ({ initiative, users, compact, onClick, onSearchChange }) => {
   const assigneeAvatars = (initiative.assignees || []).map(id => {
     const user = users.find(u => u.id === id);
     if (!user) return null;
@@ -46,7 +47,36 @@ const InitiativeCard: React.FC<InitiativeCardProps> = ({ initiative, users, comp
     }
 
     return (
-      <span key={id} style={{ marginRight: 4, background: '#dee2e6', borderRadius: '50%', padding: '2px 8px', fontSize: 12 }}>{initials}</span>
+      <span
+        key={id}
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent card click
+          if (onSearchChange) {
+            onSearchChange(fullName);
+          }
+        }}
+        title={`Click to search for ${fullName}`}
+        style={{
+          marginRight: 4,
+          background: '#dee2e6',
+          borderRadius: '50%',
+          padding: '2px 8px',
+          fontSize: 12,
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          ':hover': {
+            background: '#adb5bd',
+          }
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = '#adb5bd';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = '#dee2e6';
+        }}
+      >
+        {initials}
+      </span>
     );
   }).filter(Boolean); // Remove any null entries
 
@@ -95,9 +125,52 @@ const InitiativeCard: React.FC<InitiativeCardProps> = ({ initiative, users, comp
     >
       <div style={{ fontWeight: 500 }}>{initiative.title}</div>
       {!compact && <div style={{ color: '#666', fontSize: 13, margin: '4px 0 2px 0' }}>{initiative.description}</div>}
-      <div style={{ display: 'flex', alignItems: 'center', marginTop: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'center', marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
         {assigneeAvatars.length > 0 ? assigneeAvatars : <span style={{ color: '#aaa', fontSize: 12 }}>Backlog</span>}
-        <span style={{ marginLeft: 8, color: '#868e96', fontSize: 12 }}>{Array.isArray(initiative.tags) ? initiative.tags.join(', ') : ''}</span>
+
+        {/* Display tags with proper styling */}
+        {Array.isArray(initiative.tags) && initiative.tags.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginLeft: 8 }}>
+            {initiative.tags.map((tag, index) => (
+              <span
+                key={typeof tag === 'object' ? tag.id : index}
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent card click
+                  if (onSearchChange) {
+                    const tagName = typeof tag === 'object' ? tag.name : tag;
+                    onSearchChange(tagName);
+                  }
+                }}
+                title={`Click to search for ${typeof tag === 'object' ? tag.name : tag}`}
+                style={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: '#fff',
+                  fontSize: 10,
+                  fontWeight: 500,
+                  padding: '2px 6px',
+                  borderRadius: 12,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12)';
+                }}
+              >
+                {typeof tag === 'object' ? tag.name : tag}
+              </span>
+            ))}
+          </div>
+        )}
+
         {initiative.dueDate && <span style={{ marginLeft: 8, color: '#fa5252', fontSize: 12 }}>Due: {formatDueDate(initiative.dueDate)}</span>}
       </div>
       {allocationBar}

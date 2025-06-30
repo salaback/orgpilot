@@ -39,7 +39,12 @@ Route::middleware([
                 'due_date' => $initiative->end_date,
                 'dueDate' => $initiative->end_date,
                 'assignees' => $initiative->assignees->pluck('id')->toArray(),
-                'tags' => $initiative->tags->pluck('id')->map('strval')->toArray(),
+                'tags' => $initiative->tags->map(function ($tag) {
+                    return [
+                        'id' => $tag->id,
+                        'name' => $tag->name,
+                    ];
+                })->toArray(),
                 'teamLabel' => $initiative->teamLabel ?? '',
                 'allocations' => $initiative->allocations ?? [],
                 'created_at' => $initiative->created_at,
