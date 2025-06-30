@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import InitiativeBoard from './InitiativeBoard';
-import InitiativeList from './InitiativeList';
-import FilterBar from './FilterBar';
+import InitiativeBoard from './initiative-board';
+import InitiativeList from './initiative-list';
+import FilterBar from './filter-bar';
 import { defaultAssignees } from './types';
 
 interface Initiative {

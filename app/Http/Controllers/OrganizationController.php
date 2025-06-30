@@ -30,7 +30,7 @@ class OrganizationController extends Controller
             ->withCount('directReports')
             ->get();
 
-        return Inertia::render('Organization/Index', [
+        return Inertia::render('organization/index', [
             'orgStructure' => $orgStructure,
             'rootNode' => $rootNode,
             'directReports' => $directReports,
@@ -209,7 +209,7 @@ class OrganizationController extends Controller
             ->withCount('directReports')
             ->get();
 
-        return Inertia::render('Organization/Index', [
+        return Inertia::render('organization/index', [
             'orgStructure' => $orgStructure,
             'rootNode' => $rootNode,
             'directReports' => $rootDirectReports,

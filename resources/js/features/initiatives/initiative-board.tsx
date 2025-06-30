@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { mockUsers } from './mockData';
 import { Initiative, InitiativeStatus, defaultAssignees } from './types';
-import InitiativeCard from './InitiativeCard';
-import InitiativeModal from './InitiativeModal';
+import InitiativeCard from './initiative-card';
+import InitiativeModal from './initiative-modal';
 import { Inertia } from '@inertiajs/inertia';
 
 const statusLabels: Record<InitiativeStatus, string> = {

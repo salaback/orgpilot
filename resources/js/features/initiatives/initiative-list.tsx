@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { mockUsers } from './mockData';
 import { Initiative } from './types';
-import InitiativeCard from './InitiativeCard';
-import InitiativeModal from './InitiativeModal';
+import InitiativeCard from './initiative-card';
+import InitiativeModal from './initiative-modal';
 
 interface InitiativeListProps {
   initiatives: Initiative[];

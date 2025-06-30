@@ -1,9 +1,9 @@
 import React, { useEffect } from 'react';
 import { useForm } from '@inertiajs/react';
-import { SheetPanel } from '@/components/SheetPanel';
+import { SheetPanel } from '@/components/sheet-panel';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TextField } from '@/components/form/TextField';
+import { TextField } from '@/components/form/text-field';
 import { Label } from '@/components/ui/label';
 
 interface AddDirectReportSheetProps {

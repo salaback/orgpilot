@@ -1,7 +1,7 @@
 import React from 'react';
 import { PageProps } from '@inertiajs/inertia';
 import AppLayout from '@/layouts/app-layout';
-import InitiativesPage from '../features/initiatives/InitiativesPage';
+import InitiativesPage from '../features/initiatives/initiatives-page';
 
 interface Initiative {
   id: number;
@@ -12,7 +12,7 @@ interface Initiative {
   due_date?: string;
   assignees?: number[];
   teamLabel?: string;
-  allocations?: any[];
+  allocations?: unknown[];
 }
 
 interface OrgNode {
@@ -31,7 +31,7 @@ interface InitiativesPageProps extends PageProps {
 
 const Initiatives: React.FC<InitiativesPageProps> = ({ initiatives, assignees, default_org_structure_id }) => {
   return (
-    <AppLayout title="Initiatives">
+    <AppLayout>
       <InitiativesPage initiatives={initiatives} assignees={assignees} defaultOrgStructureId={default_org_structure_id} />
     </AppLayout>
   );
