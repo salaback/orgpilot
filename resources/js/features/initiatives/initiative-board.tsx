@@ -5,17 +5,19 @@ import InitiativeModal from './initiative-modal';
 import { Inertia } from '@inertiajs/inertia';
 
 const statusLabels: Record<InitiativeStatus, string> = {
-  not_started: 'Not Started',
-  in_progress: 'In Progress',
-  blocked: 'Blocked',
-  completed: 'Completed',
+  planned: 'Planned',
+  'in-progress': 'In Progress',
+  complete: 'Complete',
+  'on-hold': 'On Hold',
+  cancelled: 'Cancelled',
 };
 
 const statusOrder: InitiativeStatus[] = [
-  'not_started',
-  'in_progress',
-  'blocked',
-  'completed',
+  'planned',
+  'in-progress',
+  'on-hold',
+  'complete',
+  'cancelled',
 ];
 
 interface InitiativeBoardProps {
@@ -53,8 +55,23 @@ const InitiativeBoard: React.FC<InitiativeBoardProps> = ({ initiatives, assignee
     });
   };
 
-  // Add a no-op handleSave to fix missing reference error for InitiativeModal's onSave prop
-  const handleSave = () => {};
+  // Fix the handleSave function to actually update existing initiatives
+  const handleSave = (updatedInitiative: Initiative) => {
+    if (!updatedInitiative.id) {
+      alert('Initiative ID is missing.');
+      return;
+    }
+
+    Inertia.put(`/api/initiatives/${updatedInitiative.id}`, {
+      ...updatedInitiative,
+    }, {
+      onSuccess: () => setModalOpen(false),
+      onError: (errors) => {
+        console.error('Failed to update initiative:', errors);
+        alert('Failed to update initiative. Please try again.');
+      }
+    });
+  };
 
   return (
     <div style={{ width: '100%' }}>

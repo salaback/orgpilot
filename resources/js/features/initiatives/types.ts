@@ -1,4 +1,4 @@
-export type InitiativeStatus = 'not_started' | 'in_progress' | 'blocked' | 'completed';
+export type InitiativeStatus = 'planned' | 'in-progress' | 'complete' | 'on-hold' | 'cancelled';
 
 export interface InitiativeAllocation {
   userId: number;

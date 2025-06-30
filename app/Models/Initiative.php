@@ -141,4 +141,12 @@ class Initiative extends Model
     {
         return $this->morphToMany(Tag::class, 'taggable');
     }
+
+    /**
+     * Get the assignees for this initiative
+     */
+    public function assignees()
+    {
+        return $this->belongsToMany(OrgNode::class, 'initiative_assignees', 'initiative_id', 'org_node_id');
+    }
 }

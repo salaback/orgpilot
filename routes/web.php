@@ -26,7 +26,22 @@ Route::middleware([
     Route::get('organisation/person/{nodeId}/direct-reports', [OrganizationController::class, 'getNodeDirectReports'])->name('organisation.person.direct-reports');
 
     Route::get('initiatives', function () {
-        $initiatives = \App\Models\Initiative::all();
+        $initiatives = \App\Models\Initiative::with(['assignees', 'tags'])->get()->map(function ($initiative) {
+            return [
+                'id' => $initiative->id,
+                'title' => $initiative->title,
+                'description' => $initiative->description,
+                'status' => $initiative->status,
+                'due_date' => $initiative->end_date,
+                'dueDate' => $initiative->end_date,
+                'assignees' => $initiative->assignees->pluck('id')->toArray(),
+                'tags' => $initiative->tags->pluck('id')->map('strval')->toArray(),
+                'teamLabel' => $initiative->teamLabel ?? '',
+                'allocations' => $initiative->allocations ?? [],
+                'created_at' => $initiative->created_at,
+                'updated_at' => $initiative->updated_at,
+            ];
+        });
         $orgNodes = \App\Models\OrgNode::where('node_type', 'person')->where('status', 'active')->get(['id', 'first_name', 'last_name', 'email', 'title']);
         $defaultOrg = \App\Models\OrgStructure::where('user_id', auth()->id())->orderBy('id')->first();
         return Inertia::render('initiatives', [
