@@ -296,10 +296,14 @@ const NotesSection: React.FC<NotesSectionProps> = ({
       // Extract tags from content before submitting
       const tags = extractHashtags(newNote.content);
 
+      // Extract mention IDs (only numeric IDs, not full objects)
+      const mentionIds = detectedMentions.map(mention => mention.id).filter(id => typeof id === 'number');
+
       Inertia.post(`/initiatives/${entityId}/notes`, {
         title: newNote.title || null,
         content: newNote.content,
         tags: tags, // Send extracted tags
+        mentions: mentionIds, // Send only the numeric IDs
       }, {
         onSuccess: () => {
           setNewNote({ title: '', content: '' });

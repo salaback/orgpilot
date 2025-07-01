@@ -77,6 +77,20 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
     percentage_complete: task.percentage_complete
   });
 
+  const PRIORITY_CLASS = {
+    urgent: "bg-red-600 dark:bg-red-500 text-white",
+    high: "bg-orange-500 dark:bg-orange-400 text-white",
+    medium: "bg-yellow-500 dark:bg-yellow-400 text-white",
+    low: "bg-green-600 dark:bg-green-400 text-white"
+  };
+  const STATUS_CLASS = {
+    completed: "bg-green-600 dark:bg-green-500 text-white",
+    in_progress: "bg-blue-600 dark:bg-blue-400 text-white",
+    on_hold: "bg-yellow-500 dark:bg-yellow-400 text-white",
+    cancelled: "bg-red-600 dark:bg-red-500 text-white",
+    not_started: "bg-gray-500 dark:bg-gray-400 text-white"
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return '#28a745';
@@ -111,9 +125,27 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
   };
 
   const handleSave = () => {
-    Inertia.patch(`/tasks/${task.id}`, editData, {
+    // Create a sanitized version of the data
+    const sanitizedData = {
+      ...editData,
+      // Ensure assigned_to is just an ID or null
+      assigned_to: editData.assigned_to && typeof editData.assigned_to === 'object'
+        ? editData.assigned_to.id
+        : (editData.assigned_to || null),
+      redirect_back: true
+    };
+
+    // Store initiative ID locally (in case it's needed for redirect)
+    const initiativeId = task.initiative_id;
+
+    Inertia.patch(`/tasks/${task.id}`, sanitizedData, {
       onSuccess: () => {
         setIsEditing(false);
+
+        // If task belongs to an initiative, manually redirect to initiative page
+        if (initiativeId) {
+          window.location.href = `/initiatives/${initiativeId}`;
+        }
       },
       onError: (errors) => {
         console.error('Failed to update task:', errors);
@@ -148,107 +180,47 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
   };
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: 20 }}>
+    <div className="max-w-5xl mx-auto p-5">
       {/* Header */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 24
-      }}>
+      <div className="flex justify-between items-start mb-6 flex-wrap gap-4">
         <div>
-          <h1 style={{
-            fontSize: 28,
-            fontWeight: 600,
-            margin: '0 0 8px 0',
-            color: '#222'
-          }}>
+          <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-gray-100 flex items-center gap-3">
             {isEditing ? (
               <input
                 type="text"
                 value={editData.title}
                 onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-                style={{
-                  fontSize: 28,
-                  fontWeight: 600,
-                  border: '2px solid #007bff',
-                  borderRadius: 6,
-                  padding: '8px 12px',
-                  width: '100%',
-                  maxWidth: 600
-                }}
+                className="text-3xl font-bold border-2 border-blue-600 dark:border-blue-400 rounded-md px-3 py-2 w-full max-w-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
               />
             ) : (
               task.title
             )}
             {isOverdue(task.due_date || '') && (
-              <Badge style={{
-                marginLeft: 12,
-                background: '#dc3545',
-                color: '#fff',
-                fontSize: 12,
-                padding: '4px 8px'
-              }}>
-                OVERDUE
-              </Badge>
+              <Badge className="ml-3 bg-red-600 dark:bg-red-500 text-white text-xs px-2 py-1 rounded">OVERDUE</Badge>
             )}
           </h1>
-
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <Badge style={{
-              background: getPriorityColor(task.priority),
-              color: '#fff',
-              fontSize: 12
-            }}>
-              {task.priority.toUpperCase()} PRIORITY
-            </Badge>
-
-            <Badge style={{
-              background: getStatusColor(task.status),
-              color: '#fff',
-              fontSize: 12
-            }}>
-              {task.status.replace('_', ' ').toUpperCase()}
-            </Badge>
-
+          <div className="flex gap-3 items-center flex-wrap">
+            <Badge className={`text-xs px-2 py-1 rounded ${PRIORITY_CLASS[task.priority]}`}>{task.priority.toUpperCase()} PRIORITY</Badge>
+            <Badge className={`text-xs px-2 py-1 rounded ${STATUS_CLASS[task.status]}`}>{task.status.replace('_', ' ').toUpperCase()}</Badge>
             {task.initiative && (
-              <span style={{ fontSize: 14, color: '#666' }}>
-                Initiative: <a href={`/initiatives/${task.initiative.id}`} style={{ color: '#007bff' }}>
-                  {task.initiative.title}
-                </a>
+              <span className="text-sm text-gray-600 dark:text-gray-300">
+                Initiative: <a href={`/initiatives/${task.initiative.id}`} className="text-blue-600 dark:text-blue-400 underline">{task.initiative.title}</a>
               </span>
             )}
           </div>
         </div>
-
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div className="flex gap-2">
           {!isEditing ? (
             <>
               <Button
                 onClick={() => setIsEditing(true)}
-                style={{
-                  background: '#007bff',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 6,
-                  padding: '8px 16px',
-                  fontSize: 14,
-                  cursor: 'pointer'
-                }}
+                className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-md px-4 py-2 text-sm font-medium shadow border-none"
               >
                 Edit
               </Button>
               <Button
                 onClick={handleDelete}
-                style={{
-                  background: '#dc3545',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 6,
-                  padding: '8px 16px',
-                  fontSize: 14,
-                  cursor: 'pointer'
-                }}
+                className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-md px-4 py-2 text-sm font-medium shadow border-none"
               >
                 Delete
               </Button>
@@ -257,15 +229,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
             <>
               <Button
                 onClick={handleSave}
-                style={{
-                  background: '#28a745',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 6,
-                  padding: '8px 16px',
-                  fontSize: 14,
-                  cursor: 'pointer'
-                }}
+                className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white rounded-md px-4 py-2 text-sm font-medium shadow border-none"
               >
                 Save
               </Button>
@@ -282,15 +246,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
                     percentage_complete: task.percentage_complete
                   });
                 }}
-                style={{
-                  background: '#6c757d',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 6,
-                  padding: '8px 16px',
-                  fontSize: 14,
-                  cursor: 'pointer'
-                }}
+                className="bg-gray-500 hover:bg-gray-600 dark:bg-gray-700 dark:hover:bg-gray-600 text-white rounded-md px-4 py-2 text-sm font-medium shadow border-none"
               >
                 Cancel
               </Button>
@@ -299,71 +255,39 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24 }}>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Main Content */}
-        <div>
+        <div className="md:col-span-2">
           {/* Description */}
-          <Card style={{ padding: 20, marginBottom: 20 }}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: 16, fontWeight: 500 }}>Description</h3>
+          <Card className="p-5 mb-5">
+            <h3 className="text-lg font-semibold mb-3">Description</h3>
             {isEditing ? (
               <textarea
                 value={editData.description}
                 onChange={(e) => setEditData({ ...editData, description: e.target.value })}
                 placeholder="Task description..."
-                style={{
-                  width: '100%',
-                  minHeight: 120,
-                  padding: '12px',
-                  border: '2px solid #007bff',
-                  borderRadius: 6,
-                  fontSize: 14,
-                  fontFamily: 'inherit',
-                  resize: 'vertical'
-                }}
+                className="w-full min-h-[120px] p-3 border-2 border-blue-600 dark:border-blue-400 rounded-md text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900 resize-y"
               />
             ) : (
-              <p style={{
-                color: task.description ? '#444' : '#999',
-                fontSize: 14,
-                lineHeight: 1.5,
-                margin: 0,
-                fontStyle: task.description ? 'normal' : 'italic'
-              }}>
+              <p className={`text-gray-900 dark:text-gray-100 ${task.description ? 'font-normal' : 'font-italic text-gray-500'}`}>
                 {task.description || 'No description provided.'}
               </p>
             )}
           </Card>
 
           {/* Progress */}
-          <Card style={{ padding: 20, marginBottom: 20 }}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: 16, fontWeight: 500 }}>Progress</h3>
+          <Card className="p-5 mb-5">
+            <h3 className="text-lg font-semibold mb-3">Progress</h3>
 
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 8
-            }}>
-              <span style={{ fontSize: 14, color: '#666' }}>Completion</span>
-              <span style={{ fontSize: 16, fontWeight: 600, color: '#222' }}>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm text-gray-600 dark:text-gray-300">Completion</span>
+              <span className="text-lg font-bold text-gray-900 dark:text-gray-100">
                 {editData.percentage_complete}%
               </span>
             </div>
 
-            <div style={{
-              width: '100%',
-              height: 12,
-              background: '#e9ecef',
-              borderRadius: 6,
-              overflow: 'hidden',
-              marginBottom: 12
-            }}>
-              <div style={{
-                width: `${editData.percentage_complete}%`,
-                height: '100%',
-                background: editData.percentage_complete === 100 ? '#28a745' : '#007bff',
-                transition: 'width 0.3s ease'
-              }} />
+            <div className="w-full h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mb-3">
+              <div className="h-full bg-blue-600 dark:bg-blue-500 transition-all" style={{ width: `${editData.percentage_complete}%` }} />
             </div>
 
             <input
@@ -376,16 +300,10 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
                 setEditData({ ...editData, percentage_complete: percentage });
                 handleProgressChange(percentage);
               }}
-              style={{ width: '100%' }}
+              className="w-full"
             />
 
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              fontSize: 12,
-              color: '#666',
-              marginTop: 4
-            }}>
+            <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
               <span>0%</span>
               <span>25%</span>
               <span>50%</span>
@@ -405,26 +323,20 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
 
         {/* Sidebar */}
         <div>
-          <Card style={{ padding: 20, marginBottom: 20 }}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 500 }}>Task Details</h3>
+          <Card className="p-5 mb-5">
+            <h3 className="text-lg font-semibold mb-4">Task Details</h3>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="flex flex-col gap-4">
               {/* Assigned To */}
               <div>
-                <label style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>
+                <label className="text-sm text-gray-600 dark:text-gray-300 mb-1 block">
                   Assigned To
                 </label>
                 {isEditing ? (
                   <select
                     value={editData.assigned_to}
                     onChange={(e) => setEditData({ ...editData, assigned_to: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      border: '2px solid #007bff',
-                      borderRadius: 6,
-                      fontSize: 14
-                    }}
+                    className="w-full p-2 border-2 border-blue-600 dark:border-blue-400 rounded-md text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900"
                   >
                     <option value="">Unassigned</option>
                     {orgNodes.map(node => (
@@ -434,22 +346,18 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
                     ))}
                   </select>
                 ) : (
-                  <div style={{ fontSize: 14, color: '#222' }}>
+                  <div className="text-gray-900 dark:text-gray-100">
                     {task.assigned_to_node ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div className="flex items-center gap-2">
                         <img
                           src={`https://ui-avatars.com/api/?name=${encodeURIComponent(task.assigned_to_node.first_name + ' ' + task.assigned_to_node.last_name)}&background=007bff&color=fff`}
                           alt={`${task.assigned_to_node.first_name} ${task.assigned_to_node.last_name}`}
-                          style={{
-                            width: 24,
-                            height: 24,
-                            borderRadius: '50%'
-                          }}
+                          className="w-6 h-6 rounded-full"
                         />
                         {task.assigned_to_node.first_name} {task.assigned_to_node.last_name}
                       </div>
                     ) : (
-                      <span style={{ color: '#999', fontStyle: 'italic' }}>Unassigned</span>
+                      <span className="text-gray-500 italic">Unassigned</span>
                     )}
                   </div>
                 )}
@@ -457,7 +365,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
 
               {/* Due Date */}
               <div>
-                <label style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>
+                <label className="text-sm text-gray-600 dark:text-gray-300 mb-1 block">
                   Due Date
                 </label>
                 {isEditing ? (
@@ -465,16 +373,10 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
                     type="date"
                     value={editData.due_date}
                     onChange={(e) => setEditData({ ...editData, due_date: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      border: '2px solid #007bff',
-                      borderRadius: 6,
-                      fontSize: 14
-                    }}
+                    className="w-full p-2 border-2 border-blue-600 dark:border-blue-400 rounded-md text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900"
                   />
                 ) : (
-                  <div style={{ fontSize: 14, color: task.due_date ? '#222' : '#999' }}>
+                  <div className="text-gray-900 dark:text-gray-100">
                     {task.due_date ? formatDate(task.due_date) : 'No due date'}
                   </div>
                 )}
@@ -482,20 +384,14 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
 
               {/* Priority */}
               <div>
-                <label style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>
+                <label className="text-sm text-gray-600 dark:text-gray-300 mb-1 block">
                   Priority
                 </label>
                 {isEditing ? (
                   <select
                     value={editData.priority}
                     onChange={(e) => setEditData({ ...editData, priority: e.target.value as any })}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      border: '2px solid #007bff',
-                      borderRadius: 6,
-                      fontSize: 14
-                    }}
+                    className="w-full p-2 border-2 border-blue-600 dark:border-blue-400 rounded-md text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900"
                   >
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -503,11 +399,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
                     <option value="urgent">Urgent</option>
                   </select>
                 ) : (
-                  <Badge style={{
-                    background: getPriorityColor(task.priority),
-                    color: '#fff',
-                    fontSize: 12
-                  }}>
+                  <Badge className={`text-xs px-2 py-1 rounded ${PRIORITY_CLASS[task.priority]}`}>
                     {task.priority.toUpperCase()}
                   </Badge>
                 )}
@@ -515,20 +407,14 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
 
               {/* Status */}
               <div>
-                <label style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>
+                <label className="text-sm text-gray-600 dark:text-gray-300 mb-1 block">
                   Status
                 </label>
                 {isEditing ? (
                   <select
                     value={editData.status}
                     onChange={(e) => setEditData({ ...editData, status: e.target.value as any })}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      border: '2px solid #007bff',
-                      borderRadius: 6,
-                      fontSize: 14
-                    }}
+                    className="w-full p-2 border-2 border-blue-600 dark:border-blue-400 rounded-md text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900"
                   >
                     <option value="not_started">Not Started</option>
                     <option value="in_progress">In Progress</option>
@@ -537,11 +423,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
                     <option value="cancelled">Cancelled</option>
                   </select>
                 ) : (
-                  <Badge style={{
-                    background: getStatusColor(task.status),
-                    color: '#fff',
-                    fontSize: 12
-                  }}>
+                  <Badge className={`text-xs px-2 py-1 rounded ${STATUS_CLASS[task.status]}`}>
                     {task.status.replace('_', ' ').toUpperCase()}
                   </Badge>
                 )}
@@ -549,10 +431,10 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
 
               {/* Created By */}
               <div>
-                <label style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>
+                <label className="text-sm text-gray-600 dark:text-gray-300 mb-1 block">
                   Created By
                 </label>
-                <div style={{ fontSize: 14, color: '#222' }}>
+                <div className="text-gray-900 dark:text-gray-100">
                   {task.created_by_user ? (
                     `${task.created_by_user.first_name} ${task.created_by_user.last_name}`
                   ) : (
@@ -563,10 +445,10 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
 
               {/* Created At */}
               <div>
-                <label style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>
+                <label className="text-sm text-gray-600 dark:text-gray-300 mb-1 block">
                   Created
                 </label>
-                <div style={{ fontSize: 14, color: '#222' }}>
+                <div className="text-gray-900 dark:text-gray-100">
                   {formatDate(task.created_at)}
                 </div>
               </div>
@@ -574,10 +456,10 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
               {/* Updated At */}
               {task.updated_at !== task.created_at && (
                 <div>
-                  <label style={{ fontSize: 12, color: '#666', marginBottom: 4, display: 'block' }}>
+                  <label className="text-sm text-gray-600 dark:text-gray-300 mb-1 block">
                     Last Updated
                   </label>
-                  <div style={{ fontSize: 14, color: '#222' }}>
+                  <div className="text-gray-900 dark:text-gray-100">
                     {formatDate(task.updated_at)}
                   </div>
                 </div>
@@ -587,17 +469,13 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
 
           {/* Tags */}
           {task.tags && task.tags.length > 0 && (
-            <Card style={{ padding: 20 }}>
-              <h3 style={{ margin: '0 0 12px 0', fontSize: 16, fontWeight: 500 }}>Tags</h3>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            <Card className="p-5">
+              <h3 className="text-lg font-semibold mb-3">Tags</h3>
+              <div className="flex flex-wrap gap-2">
                 {task.tags.map((tag) => (
                   <Badge
                     key={tag.id}
-                    style={{
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      color: '#fff',
-                      fontSize: 11
-                    }}
+                    className="bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-xs px-3 py-1 rounded"
                   >
                     {tag.name}
                   </Badge>

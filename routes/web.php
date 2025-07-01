@@ -138,8 +138,21 @@ Route::middleware([
             'tags' => 'nullable|array',
             'tags.*' => 'string|max:50',
             'mentions' => 'nullable|array',
-            'mentions.*' => 'integer|exists:org_nodes,id',
         ]);
+
+        // Manually validate and filter mentions to ensure only valid numeric IDs
+        $mentionIds = [];
+        if (!empty($validated['mentions'])) {
+            foreach ($validated['mentions'] as $mention) {
+                if (is_numeric($mention)) {
+                    $mentionId = (int) $mention;
+                    // Check if this ID exists in org_nodes table
+                    if (\App\Models\OrgNode::where('id', $mentionId)->exists()) {
+                        $mentionIds[] = $mentionId;
+                    }
+                }
+            }
+        }
 
         $note = \App\Models\Note::create([
             'title' => $validated['title'],
@@ -162,10 +175,10 @@ Route::middleware([
         }
 
         // Process and store mentions if they exist
-        if (!empty($validated['mentions'])) {
+        if (!empty($mentionIds)) {
             // You can store mentions in a separate table or as metadata
             // For now, we'll just log them or handle them as needed
-            \Log::info('Note mentions: ', $validated['mentions']);
+            \Log::info('Note mentions: ', $mentionIds);
         }
 
         return redirect()->route('initiative.show', $initiative)->with('success', 'Note created successfully');

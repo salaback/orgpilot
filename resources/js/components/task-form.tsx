@@ -63,6 +63,7 @@ const TaskForm: React.FC<Omit<TaskFormProps, 'open' | 'onClose'>> = ({
       initiative_id: formData.initiative_id || null,
       assigned_to: formData.assigned_to || null,
       due_date: formData.due_date || null,
+      redirect_back: !!initiativeId, // Add redirect_back parameter when creating from an initiative
     };
 
     Inertia.post('/tasks', taskData, {

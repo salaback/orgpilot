@@ -87,6 +87,9 @@ class TaskController extends Controller
             'tags.*' => 'string|max:255',
         ]);
 
+        // Get the redirect_back parameter directly from the request
+        $redirectBack = $request->boolean('redirect_back');
+
         $validated['created_by'] = auth()->id();
 
         $task = Task::create($validated);
@@ -100,6 +103,13 @@ class TaskController extends Controller
             $task->tags()->sync($tags->pluck('id'));
         }
 
+        // If redirect_back is true and we have an initiative_id, redirect to the initiative page
+        if ($redirectBack && $task->initiative_id) {
+            return redirect()->route('initiative.show', $task->initiative_id)
+                ->with('success', 'Task created successfully.');
+        }
+
+        // Otherwise use the default redirect
         return redirect()->route('tasks.show', $task)
             ->with('success', 'Task created successfully.');
     }
@@ -149,6 +159,9 @@ class TaskController extends Controller
             'tags.*' => 'string|max:255',
         ]);
 
+        // Get the redirect_back parameter directly from the request
+        $redirectBack = $request->boolean('redirect_back');
+
         $task->update($validated);
 
         // Handle tags
@@ -160,6 +173,13 @@ class TaskController extends Controller
             $task->tags()->sync($tags->pluck('id'));
         }
 
+        // If redirect_back is true and we have an initiative_id, redirect to the initiative page
+        if ($redirectBack && $task->initiative_id) {
+            return redirect()->route('initiative.show', $task->initiative_id)
+                ->with('success', 'Task updated successfully.');
+        }
+
+        // Otherwise use the default redirect
         return redirect()->route('tasks.show', $task)
             ->with('success', 'Task updated successfully.');
     }

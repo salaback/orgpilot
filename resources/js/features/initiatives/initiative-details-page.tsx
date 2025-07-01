@@ -49,22 +49,20 @@ const InitiativeDetailsPage: React.FC<InitiativeDetailsPageProps> = ({ initiativ
   const [tasks, setTasks] = useState<any[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
 
-  // Load tasks for this initiative
+  // Load tasks for this initiative when the page loads, not just when the tab is clicked
   useEffect(() => {
-    if (activeTab === 'tasks') {
-      setLoadingTasks(true);
-      fetch(`/api/initiatives/${initiative.id}/tasks`)
-        .then(response => response.json())
-        .then(data => {
-          setTasks(data);
-          setLoadingTasks(false);
-        })
-        .catch(error => {
-          console.error('Failed to load tasks:', error);
-          setLoadingTasks(false);
-        });
-    }
-  }, [activeTab, initiative.id]);
+    setLoadingTasks(true);
+    fetch(`/api/initiatives/${initiative.id}/tasks`)
+      .then(response => response.json())
+      .then(data => {
+        setTasks(data);
+        setLoadingTasks(false);
+      })
+      .catch(error => {
+        console.error('Failed to load tasks:', error);
+        setLoadingTasks(false);
+      });
+  }, [initiative.id]);
 
   const handleEdit = () => {
     setModalOpen(true);

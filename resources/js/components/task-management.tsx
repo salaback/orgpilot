@@ -7,6 +7,7 @@ import { Label } from './ui/label';
 import { Badge } from './ui/badge';
 import TaskFormSheet from './task-form';
 import { PieChart } from 'lucide-react';
+import TaskDetail from './task-detail';
 
 interface Task {
   id: number;
@@ -164,203 +165,169 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
 
   return (
     <div style={{ marginTop: 32 }}>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 16
-      }}>
-        <h3 style={{
-          fontSize: 18,
-          fontWeight: 500,
-          color: '#222',
-          margin: 0
-        }}>
-          Tasks ({filteredTasks.length})
-        </h3>
-
-        <Button
-          onClick={() => setIsCreating(true)}
-          style={{
-            background: '#228be6',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 6,
-            padding: '6px 12px',
-            fontSize: 14,
-            fontWeight: 500,
-            cursor: 'pointer'
-          }}
-        >
-          Add Task
-        </Button>
-      </div>
-
-      {/* Filters */}
-      <div style={{
-        display: 'flex',
-        gap: 12,
-        marginBottom: 16,
-        flexWrap: 'wrap'
-      }}>
-        <Input
-          type="text"
-          placeholder="Search tasks..."
-          value={filters.search}
-          onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-          style={{ minWidth: 200 }}
-        />
-
-        <select
-          value={filters.status}
-          onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-          style={{
-            padding: '6px 12px',
-            border: '1px solid #e9ecef',
-            borderRadius: 6,
-            fontSize: 14
-          }}
-        >
-          <option value="">All Status</option>
-          <option value="not_started">Not Started</option>
-          <option value="in_progress">In Progress</option>
-          <option value="completed">Completed</option>
-          <option value="on_hold">On Hold</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
-
-        <select
-          value={filters.priority}
-          onChange={(e) => setFilters({ ...filters, priority: e.target.value })}
-          style={{
-            padding: '6px 12px',
-            border: '1px solid #e9ecef',
-            borderRadius: 6,
-            fontSize: 14
-          }}
-        >
-          <option value="">All Priority</option>
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-          <option value="urgent">Urgent</option>
-        </select>
-
-        <select
-          value={filters.assigned_to}
-          onChange={(e) => setFilters({ ...filters, assigned_to: e.target.value })}
-          style={{
-            padding: '6px 12px',
-            border: '1px solid #e9ecef',
-            borderRadius: 6,
-            fontSize: 14
-          }}
-        >
-          <option value="">All Assignees</option>
-          {orgNodes.map(node => (
-            <option key={node.id} value={node.id}>
-              {node.first_name} {node.last_name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Task List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {filteredTasks.length === 0 ? (
-          <Card style={{
-            padding: 16,
-            textAlign: 'center',
-            border: '1px solid #e9ecef',
-            borderRadius: 8,
-            background: '#f8f9fa'
+      {/* If a task is selected, show the details view */}
+      {selectedTask ? (
+        <div>
+          <Button
+            onClick={() => setSelectedTask(null)}
+            style={{ marginBottom: 16 }}
+          >
+            ← Back to Task List
+          </Button>
+          <TaskDetail task={selectedTask} />
+        </div>
+      ) : (
+        <>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 16
           }}>
-            <p style={{
-              color: '#666',
-              fontSize: 13,
-              margin: 0,
-              fontStyle: 'italic'
-            }}>
-              {filters.search || filters.status || filters.priority || filters.assigned_to
-                ? 'No tasks match your current filters.'
-                : 'No tasks yet. Create your first task to get started.'
-              }
-            </p>
-          </Card>
-        ) : (
-          <div style={{ border: '1px solid #e9ecef', borderRadius: 6, overflow: 'hidden' }}>
-            {filteredTasks.map((task) => (
-              <div
-                key={task.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  padding: '6px 10px',
-                  fontSize: 13,
-                  borderBottom: '1px solid #f1f3f5',
-                  background: '#fff',
-                  cursor: 'pointer',
-                  ...(selectedTask?.id === task.id ? { background: '#f0f6ff' } : {})
-                }}
-                onClick={() => setSelectedTask(selectedTask?.id === task.id ? null : task)}
-              >
-                <span style={{ flex: 2, fontWeight: 500, color: '#222', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {task.title}
-                  {isOverdue(task.due_date || '') && (
-                    <Badge style={{
-                      marginLeft: 6,
-                      background: '#dc3545',
-                      color: '#fff',
-                      fontSize: 10,
-                      padding: '1px 6px',
-                      borderRadius: 4
-                    }}>
-                      OVERDUE
-                    </Badge>
-                  )}
-                </span>
-                <span style={{ flex: 1, color: '#555', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {task.assigned_to_node ? `${task.assigned_to_node.first_name} ${task.assigned_to_node.last_name}` : 'Unassigned'}
-                </span>
-                <span style={{ flex: 1, color: '#555', whiteSpace: 'nowrap' }}>
-                  {task.due_date ? formatDate(task.due_date) : ''}
-                </span>
-                <span style={{ flex: 0.7 }}>
-                  <Badge style={{
-                    background: getPriorityColor(task.priority),
-                    color: '#fff',
-                    fontSize: 10,
-                    padding: '1px 6px',
-                    borderRadius: 4
-                  }}>
-                    {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                  </Badge>
-                </span>
-                <span style={{ flex: 0.9 }}>
-                  <Badge style={{
-                    background: getStatusColor(task.status),
-                    color: '#fff',
-                    fontSize: 10,
-                    padding: '1px 6px',
-                    borderRadius: 4
-                  }}>
-                    {task.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                  </Badge>
-                </span>
-                <span style={{ flex: 0.7, color: '#555', textAlign: 'right', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
-                  <PieChart
-                    style={{ width: 18, height: 18 }}
-                    strokeWidth={2}
-                    color="#228be6"
-                    fill="none"
-                  />
-                  <span>{task.percentage_complete}%</span>
-                </span>
-              </div>
-            ))}
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 m-0">
+              Tasks ({filteredTasks.length})
+            </h3>
+            <Button
+              onClick={() => setIsCreating(true)}
+              style={{
+                background: '#228be6',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                padding: '6px 12px',
+                fontSize: 14,
+                fontWeight: 500,
+                cursor: 'pointer'
+              }}
+            >
+              Add Task
+            </Button>
           </div>
-        )}
-      </div>
+
+          {/* Filters */}
+          <div style={{
+            display: 'flex',
+            gap: 12,
+            marginBottom: 16,
+            flexWrap: 'wrap'
+          }}>
+            <Input
+              type="text"
+              placeholder="Search tasks..."
+              value={filters.search}
+              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+              style={{ minWidth: 200 }}
+            />
+
+            <select
+              value={filters.status}
+              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+              style={{
+                padding: '6px 12px',
+                border: '1px solid #e9ecef',
+                borderRadius: 6,
+                fontSize: 14
+              }}
+            >
+              <option value="">All Status</option>
+              <option value="not_started">Not Started</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="on_hold">On Hold</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+
+            <select
+              value={filters.priority}
+              onChange={(e) => setFilters({ ...filters, priority: e.target.value })}
+              style={{
+                padding: '6px 12px',
+                border: '1px solid #e9ecef',
+                borderRadius: 6,
+                fontSize: 14
+              }}
+            >
+              <option value="">All Priority</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+
+            <select
+              value={filters.assigned_to}
+              onChange={(e) => setFilters({ ...filters, assigned_to: e.target.value })}
+              style={{
+                padding: '6px 12px',
+                border: '1px solid #e9ecef',
+                borderRadius: 6,
+                fontSize: 14
+              }}
+            >
+              <option value="">All Assignees</option>
+              {orgNodes.map(node => (
+                <option key={node.id} value={node.id}>
+                  {node.first_name} {node.last_name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Task List */}
+          <div className="flex flex-col gap-1">
+            {filteredTasks.length === 0 ? (
+              <Card className="p-4 text-center border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800">
+                <p className="text-gray-500 dark:text-gray-400 text-sm italic m-0">
+                  {filters.search || filters.status || filters.priority || filters.assigned_to
+                    ? 'No tasks match your current filters.'
+                    : 'No tasks yet. Create your first task to get started.'
+                  }
+                </p>
+              </Card>
+            ) : (
+              <div className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden divide-y divide-gray-200 dark:divide-gray-700">
+                {filteredTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className={`flex items-center px-4 py-2 text-[15px] cursor-pointer transition-colors
+                      bg-white dark:bg-gray-900
+                      hover:bg-blue-50 dark:hover:bg-blue-950
+                      ${selectedTask && selectedTask.id === task.id ? 'bg-blue-100 dark:bg-blue-900' : ''}`}
+                    onClick={() => setSelectedTask(task)}
+                  >
+                    <span className="flex-2 font-semibold text-gray-900 dark:text-gray-100 truncate">
+                      {task.title}
+                      {isOverdue(task.due_date || '') && (
+                        <Badge className="ml-2 bg-red-600 dark:bg-red-500 text-white text-xs px-2 py-0.5 rounded">OVERDUE</Badge>
+                      )}
+                    </span>
+                    <span className="flex-1 text-gray-700 dark:text-gray-300 truncate">
+                      {task.assigned_to_node ? `${task.assigned_to_node.first_name} ${task.assigned_to_node.last_name}` : 'Unassigned'}
+                    </span>
+                    <span className="flex-1 text-gray-700 dark:text-gray-300">
+                      {task.due_date ? formatDate(task.due_date) : ''}
+                    </span>
+                    <span className="flex-[0.7]">
+                      <Badge className={`text-xs px-2 py-0.5 rounded font-semibold ${getPriorityColor(task.priority) === '#dc3545' ? 'bg-red-600 dark:bg-red-500' : getPriorityColor(task.priority) === '#fd7e14' ? 'bg-orange-500 dark:bg-orange-400' : getPriorityColor(task.priority) === '#ffc107' ? 'bg-yellow-500 dark:bg-yellow-400' : 'bg-green-600 dark:bg-green-400'} text-white`}>
+                        {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                      </Badge>
+                    </span>
+                    <span className="flex-[0.9]">
+                      <Badge className={`text-xs px-2 py-0.5 rounded font-semibold ${getStatusColor(task.status) === '#28a745' ? 'bg-green-600 dark:bg-green-500' : getStatusColor(task.status) === '#007bff' ? 'bg-blue-600 dark:bg-blue-400' : getStatusColor(task.status) === '#ffc107' ? 'bg-yellow-500 dark:bg-yellow-400' : getStatusColor(task.status) === '#dc3545' ? 'bg-red-600 dark:bg-red-500' : 'bg-gray-500 dark:bg-gray-400'} text-white`}>
+                        {task.status.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                      </Badge>
+                    </span>
+                    <span className="flex-[0.7] text-gray-700 dark:text-gray-300 text-right flex items-center justify-end gap-1">
+                      <PieChart className="w-4 h-4 text-blue-600 dark:text-blue-400" strokeWidth={2} />
+                      <span>{task.percentage_complete}%</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Task Form Sheet for Task Creation */}
       <TaskFormSheet
