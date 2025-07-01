@@ -183,9 +183,8 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
 
   // Handler for viewing a node's profile
   const handleViewProfile = (node: OrgNode) => {
-    // For now, we'll just log the action - this would typically open a profile page or modal
-    console.log('View profile for:', node.full_name);
-    // You can implement your profile view here, e.g., open a modal or navigate to a profile page
+    // Navigate to the new profile page
+    router.visit(`/organisation/profile/${node.id}`);
   };
 
   return (

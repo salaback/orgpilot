@@ -23,8 +23,21 @@ Route::middleware([
     // Organisation routes
     Route::get('organisation', [OrganizationController::class, 'index'])->name('organisation');
     Route::get('organisation/person/{nodeId}', [OrganizationController::class, 'viewNode'])->name('organisation.person');
+    Route::get('organisation/profile/{id}', [\App\Http\Controllers\OrgNodeProfileController::class, 'show'])->name('organisation.profile');
     Route::post('organisation/direct-report', [OrganizationController::class, 'storeDirectReport'])->name('organisation.direct-report.store');
     Route::get('organisation/person/{nodeId}/direct-reports', [OrganizationController::class, 'getNodeDirectReports'])->name('organisation.person.direct-reports');
+
+    // 1:1 Meeting routes
+    Route::prefix('organisation/profile/{orgNode}/one-on-one')->name('one-on-one.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\OneOnOneMeetingController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\OneOnOneMeetingController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\OneOnOneMeetingController::class, 'store'])->name('store');
+        Route::get('/{meeting}', [\App\Http\Controllers\OneOnOneMeetingController::class, 'show'])->name('show');
+        Route::get('/{meeting}/edit', [\App\Http\Controllers\OneOnOneMeetingController::class, 'edit'])->name('edit');
+        Route::put('/{meeting}', [\App\Http\Controllers\OneOnOneMeetingController::class, 'update'])->name('update');
+        Route::post('/{meeting}/complete', [\App\Http\Controllers\OneOnOneMeetingController::class, 'complete'])->name('complete');
+        Route::post('/{meeting}/cancel', [\App\Http\Controllers\OneOnOneMeetingController::class, 'cancel'])->name('cancel');
+    });
 
     Route::get('initiatives', function () {
         $initiatives = \App\Models\Initiative::with(['assignees', 'tags'])
@@ -189,10 +202,16 @@ Route::middleware([
 
     // Task routes
     Route::resource('tasks', TaskController::class);
+    Route::get('organisation/profile/{id}/tasks', [TaskController::class, 'profileTasks'])->name('organisation.profile.tasks');
     Route::patch('tasks/{task}/progress', [TaskController::class, 'updateProgress'])->name('tasks.update-progress');
     Route::get('tasks-overdue', [TaskController::class, 'overdue'])->name('tasks.overdue');
     Route::get('tasks-due-soon', [TaskController::class, 'dueSoon'])->name('tasks.due-soon');
     Route::get('api/initiatives/{initiative}/tasks', [TaskController::class, 'forInitiative'])->name('api.initiatives.tasks');
+
+    // Test route to verify Inertia page resolution
+    Route::get('test-page', function() {
+        return Inertia::render('test-page');
+    });
 
     // Task notes creation route
     Route::post('tasks/{task}/notes', function (\App\Models\Task $task, \Illuminate\Http\Request $request) {
@@ -222,6 +241,9 @@ Route::middleware([
 
         return redirect()->route('tasks.show', $task)->with('success', 'Note created successfully');
     })->name('task.notes.store');
+
+    // Initiative profile route
+    Route::get('organisation/profile/{id}/initiatives', [InitiativeController::class, 'profileInitiatives'])->name('organisation.profile.initiatives');
 });
 
 require __DIR__.'/settings.php';

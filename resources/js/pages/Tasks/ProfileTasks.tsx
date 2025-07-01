@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { router } from '@inertiajs/core';
 import { Card } from '@/components/ui/card';
@@ -25,7 +25,9 @@ import {
   Plus,
   Search,
   Filter,
-  X
+  X,
+  ArrowLeft,
+  User
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import AppLayout from '@/layouts/app-layout';
@@ -57,11 +59,14 @@ interface Initiative {
 
 interface OrgNode {
   id: number;
-  first_name: string;
-  last_name: string;
+  full_name: string;
+  title: string;
+  email: string;
+  status: string;
 }
 
-interface IndexProps {
+interface ProfileTasksProps {
+  orgNode: OrgNode;
   tasks: {
     data: Task[];
     links: { url: string | null; label: string; active: boolean }[];
@@ -72,22 +77,17 @@ interface IndexProps {
     total: number;
   };
   filters: {
-    initiative_id?: string;
-    assigned_to?: string;
     status?: string;
     priority?: string;
     search?: string;
   };
   initiatives: Initiative[];
-  orgNodes: OrgNode[];
 }
 
-const Index: React.FC<IndexProps> = ({ tasks, filters, initiatives, orgNodes }) => {
+const ProfileTasks: React.FC<ProfileTasksProps> = ({ orgNode, tasks, filters, initiatives }) => {
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
   const [showFilters, setShowFilters] = useState(false);
   const [filterValues, setFilterValues] = useState({
-    initiative_id: filters.initiative_id || '',
-    assigned_to: filters.assigned_to || '',
     status: filters.status || '',
     priority: filters.priority || '',
   });
@@ -101,6 +101,13 @@ const Index: React.FC<IndexProps> = ({ tasks, filters, initiatives, orgNodes }) 
     cancelled: 'bg-red-200 text-red-800',
   };
 
+  // Profile status color mapping
+  const profileStatusColors: Record<string, string> = {
+    active: 'bg-green-500',
+    open: 'bg-blue-500',
+    former: 'bg-gray-500',
+  };
+
   // Priority color mapping
   const priorityColors: Record<string, string> = {
     low: 'bg-gray-100 text-gray-800',
@@ -112,7 +119,7 @@ const Index: React.FC<IndexProps> = ({ tasks, filters, initiatives, orgNodes }) 
   // Handle search
   const handleSearch = () => {
     router.get(
-      route('tasks.index'),
+      route('organisation.profile.tasks', orgNode.id),
       { search: searchTerm, ...filterValues },
       { preserveState: true, replace: true }
     );
@@ -124,7 +131,7 @@ const Index: React.FC<IndexProps> = ({ tasks, filters, initiatives, orgNodes }) 
     setFilterValues(newFilters);
 
     router.get(
-      route('tasks.index'),
+      route('organisation.profile.tasks', orgNode.id),
       { ...newFilters, search: searchTerm },
       { preserveState: true, replace: true }
     );
@@ -134,14 +141,12 @@ const Index: React.FC<IndexProps> = ({ tasks, filters, initiatives, orgNodes }) 
   const clearFilters = () => {
     setSearchTerm('');
     setFilterValues({
-      initiative_id: '',
-      assigned_to: '',
       status: '',
       priority: '',
     });
 
     router.get(
-      route('tasks.index'),
+      route('organisation.profile.tasks', orgNode.id),
       {},
       { preserveState: true, replace: true }
     );
@@ -157,33 +162,44 @@ const Index: React.FC<IndexProps> = ({ tasks, filters, initiatives, orgNodes }) 
   const hasActiveFilters = () => {
     return (
       searchTerm !== '' ||
-      filterValues.initiative_id !== '' ||
-      filterValues.assigned_to !== '' ||
       filterValues.status !== '' ||
       filterValues.priority !== ''
     );
   };
 
-  // Get person full name
-  const getPersonName = (person: { first_name: string; last_name: string } | undefined) => {
-    if (!person) return 'Unassigned';
-    return `${person.first_name} ${person.last_name}`;
-  };
-
   return (
     <AppLayout>
-      <Head title="Tasks" />
+      <Head title={`${orgNode.full_name}'s Tasks`} />
 
       <div className="w-full py-6 px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Tasks</h1>
-          <Button asChild>
-            <Link href={route('tasks.create')}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Task
-            </Link>
-          </Button>
-        </div>
+        {/* Profile Card */}
+        <Card className="mb-6">
+          <div className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center">
+                <Link
+                  href={route('organisation.profile', orgNode.id)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 mr-3"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Link>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{orgNode.full_name}'s Tasks</h1>
+                  <div className="flex items-center mt-1">
+                    <span className={`inline-block h-2 w-2 rounded-full ${profileStatusColors[orgNode.status] || 'bg-gray-500'} mr-2`}></span>
+                    <span className="text-gray-600 dark:text-gray-400">{orgNode.title}</span>
+                  </div>
+                </div>
+              </div>
+              <Button asChild variant="outline">
+                <Link href={route('tasks.create', { assigned_to: orgNode.id })}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Task
+                </Link>
+              </Button>
+            </div>
+          </div>
+        </Card>
 
         <Card className="mb-6">
           <div className="p-4">
@@ -220,49 +236,7 @@ const Index: React.FC<IndexProps> = ({ tasks, filters, initiatives, orgNodes }) 
             </div>
 
             {showFilters && (
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-                    Initiative
-                  </label>
-                  <Select
-                    value={filterValues.initiative_id}
-                    onValueChange={(value) => handleFilterChange('initiative_id', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All initiatives" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">All initiatives</SelectItem>
-                      {initiatives.map((initiative) => (
-                        <SelectItem key={initiative.id} value={initiative.id.toString()}>
-                          {initiative.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-                    Assigned To
-                  </label>
-                  <Select
-                    value={filterValues.assigned_to}
-                    onValueChange={(value) => handleFilterChange('assigned_to', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All people" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">All people</SelectItem>
-                      {orgNodes.map((person) => (
-                        <SelectItem key={person.id} value={person.id.toString()}>
-                          {person.first_name} {person.last_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
                     Status
@@ -316,7 +290,6 @@ const Index: React.FC<IndexProps> = ({ tasks, filters, initiatives, orgNodes }) 
                 <TableRow>
                   <TableHead>Title</TableHead>
                   <TableHead className="hidden md:table-cell">Due Date</TableHead>
-                  <TableHead className="hidden md:table-cell">Assigned To</TableHead>
                   <TableHead className="hidden lg:table-cell">Status</TableHead>
                   <TableHead className="hidden lg:table-cell">Priority</TableHead>
                 </TableRow>
@@ -350,9 +323,6 @@ const Index: React.FC<IndexProps> = ({ tasks, filters, initiatives, orgNodes }) 
                       <TableCell className="hidden md:table-cell">
                         {formatDate(task.due_date)}
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {getPersonName(task.assignedTo)}
-                      </TableCell>
                       <TableCell className="hidden lg:table-cell">
                         <Badge
                           className={statusColors[task.status] || 'bg-gray-200 text-gray-800'}
@@ -371,7 +341,7 @@ const Index: React.FC<IndexProps> = ({ tasks, filters, initiatives, orgNodes }) 
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
+                    <TableCell colSpan={4} className="text-center py-8">
                       No tasks found. {hasActiveFilters() && "Try adjusting your filters."}
                     </TableCell>
                   </TableRow>
@@ -411,4 +381,4 @@ const Index: React.FC<IndexProps> = ({ tasks, filters, initiatives, orgNodes }) 
   );
 };
 
-export default Index;
+export default ProfileTasks;

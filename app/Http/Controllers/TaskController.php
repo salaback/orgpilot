@@ -258,4 +258,51 @@ class TaskController extends Controller
             'tasks' => $tasks,
         ]);
     }
+
+    /**
+     * Display tasks for a specific org node profile
+     */
+    public function profileTasks($id, Request $request)
+    {
+        // Get the org node
+        $orgNode = OrgNode::findOrFail($id);
+
+        // Get tasks for this org node
+        $query = Task::with(['initiative', 'assignedTo', 'createdBy', 'tags'])
+            ->where('assigned_to', $id);
+
+        // Filter by status if specified
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Filter by priority if specified
+        if ($request->has('priority')) {
+            $query->where('priority', $request->priority);
+        }
+
+        // Search functionality
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        $tasks = $query->orderBy('due_date', 'asc')->paginate(15);
+
+        return Inertia::render('Tasks/ProfileTasks', [
+            'orgNode' => [
+                'id' => $orgNode->id,
+                'full_name' => $orgNode->first_name . ' ' . $orgNode->last_name,
+                'title' => $orgNode->title,
+                'email' => $orgNode->email,
+                'status' => $orgNode->status
+            ],
+            'tasks' => $tasks,
+            'filters' => $request->only(['status', 'priority', 'search']),
+            'initiatives' => Initiative::select('id', 'title')->get()
+        ]);
+    }
 }

@@ -121,6 +121,22 @@ class OrgNode extends Model
     }
 
     /**
+     * Get initiatives this node is assigned to.
+     */
+    public function initiatives()
+    {
+        return $this->belongsToMany(Initiative::class);
+    }
+
+    /**
+     * Get tasks assigned to this node.
+     */
+    public function tasks()
+    {
+        return $this->belongsToMany(Task::class);
+    }
+
+    /**
      * Check if this node is a person.
      */
     public function isPerson(): bool

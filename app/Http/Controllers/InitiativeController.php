@@ -123,4 +123,47 @@ class InitiativeController extends Controller
 
         return response()->json(['message' => 'Initiative deleted successfully']);
     }
+
+    /**
+     * Display initiatives for a specific org node profile
+     */
+    public function profileInitiatives($id, Request $request)
+    {
+        // Get the org node
+        $orgNode = \App\Models\OrgNode::findOrFail($id);
+
+        // Get initiatives for this org node
+        $query = Initiative::with(['assignees', 'tags'])
+            ->whereHas('assignees', function($query) use ($id) {
+                $query->where('org_nodes.id', $id);
+            });
+
+        // Filter by status if specified
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Search functionality
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        $initiatives = $query->orderBy('end_date', 'asc')->paginate(15);
+
+        return \Inertia\Inertia::render('Initiatives/ProfileInitiatives', [
+            'orgNode' => [
+                'id' => $orgNode->id,
+                'full_name' => $orgNode->full_name,
+                'title' => $orgNode->title,
+                'email' => $orgNode->email,
+                'status' => $orgNode->status
+            ],
+            'initiatives' => $initiatives,
+            'filters' => $request->only(['status', 'search']),
+        ]);
+    }
 }
