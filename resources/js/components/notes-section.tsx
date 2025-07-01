@@ -12,19 +12,26 @@ interface Note {
   created_at: string;
   updated_at: string;
   tags?: Array<{id: number, name: string}>;
+  notable_type?: string; // The type of entity where the note was originally created
+  notable_id?: number;   // The ID of the entity where the note was originally created
 }
 
 interface NotesSectionProps {
   notes: Note[];
   entityType: string;
   entityId: number;
+  entityUrl?: string; // Optional direct URL to the entity
+  currentEntityType?: string; // The type of entity where notes are currently being displayed
   orgNodes?: Array<{id: number, first_name: string, last_name: string, email: string}>;
   onNotesUpdate?: (notes: Note[]) => void;
 }
 
 const NotesSection: React.FC<NotesSectionProps> = ({
   notes = [],
+  entityType = 'item',
   entityId,
+  entityUrl,
+  currentEntityType = entityType, // Default to entityType if not specified
   orgNodes = []
 }) => {
   const [isAdding, setIsAdding] = useState(false);
@@ -60,7 +67,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
         // Try to find matching org node
         const foundNode = orgNodes.find(node =>
           `${node.first_name}${node.last_name}`.toLowerCase().replace(/\s/g, '') === mentionName.toLowerCase() ||
-          `${node.first_name}.${node.last_name}`.toLowerCase() === mentionName.toLowerCase() ||
+          `${node.first_name}.${node.lastName}`.toLowerCase() === mentionName.toLowerCase() ||
           node.first_name.toLowerCase() === mentionName.toLowerCase() ||
           node.last_name.toLowerCase() === mentionName.toLowerCase()
         );
@@ -326,11 +333,51 @@ const NotesSection: React.FC<NotesSectionProps> = ({
     }
   };
 
+  // Format date to show relative time (e.g., "2 days ago")
   const formatDate = (dateString: string) => {
     try {
-      return new Date(dateString).toLocaleString();
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffSecs = Math.floor(diffMs / 1000);
+      const diffMins = Math.floor(diffSecs / 60);
+      const diffHours = Math.floor(diffMins / 60);
+      const diffDays = Math.floor(diffHours / 24);
+      const diffMonths = Math.floor(diffDays / 30);
+      const diffYears = Math.floor(diffDays / 365);
+
+      if (diffSecs < 60) {
+        return 'just now';
+      } else if (diffMins < 60) {
+        return `${diffMins} ${diffMins === 1 ? 'minute' : 'minutes'} ago`;
+      } else if (diffHours < 24) {
+        return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+      } else if (diffDays < 30) {
+        return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+      } else if (diffMonths < 12) {
+        return `${diffMonths} ${diffMonths === 1 ? 'month' : 'months'} ago`;
+      } else {
+        return `${diffYears} ${diffYears === 1 ? 'year' : 'years'} ago`;
+      }
     } catch {
       return dateString;
+    }
+  };
+
+  // Generate entity URL based on type and ID if not provided directly
+  const getEntityUrl = (): string => {
+    if (entityUrl) return entityUrl;
+
+    // Default URL patterns for common entity types
+    switch (entityType.toLowerCase()) {
+      case 'initiative':
+        return `/initiatives/${entityId}`;
+      case 'task':
+        return `/tasks/${entityId}`;
+      case 'goal':
+        return `/goals/${entityId}`;
+      default:
+        return `#`;
     }
   };
 
@@ -473,7 +520,16 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                 </div>
               )}
               <div className="text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-2 flex justify-between">
-                <span>Created: {formatDate(note.created_at)}</span>
+                <span>
+                  Created: {formatDate(note.created_at)}
+                  {/* Only show source entity if the note was created on a different entity type than current */}
+                  {note.notable_type &&
+                   note.notable_type.toLowerCase().includes(entityType.toLowerCase()) === false && (
+                    <span className="text-gray-400 dark:text-gray-500">
+                      | From <a href={getEntityUrl()} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline">{entityType}</a>
+                    </span>
+                  )}
+                </span>
                 {note.updated_at !== note.created_at && (
                   <span>Updated: {formatDate(note.updated_at)}</span>
                 )}
