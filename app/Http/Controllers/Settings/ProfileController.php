@@ -23,15 +23,40 @@ class ProfileController extends Controller
     }
 
     /**
+     * Show the profile completion form.
+     */
+    public function complete(): Response
+    {
+        return Inertia::render('Profile/Complete', [
+            'user' => auth()->user(),
+        ]);
+    }
+
+    /**
      * Update the user's profile settings.
      */
     public function update(Request $request): RedirectResponse
     {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-        ]);
+        // Check which fields were submitted - this handles both full profile updates
+        // and the minimal first_name/last_name updates for profile completion
+        $rules = [];
 
-        $request->user()->update(['name' => $request->name]);
+        if ($request->has('name')) {
+            $rules['name'] = ['required', 'string', 'max:255'];
+        }
+
+        if ($request->has('first_name') || $request->has('last_name')) {
+            $rules['first_name'] = ['required', 'string', 'max:255'];
+            $rules['last_name'] = ['required', 'string', 'max:255'];
+        }
+
+        $validated = $request->validate($rules);
+        $request->user()->update($validated);
+
+        // If this was a profile completion request, redirect to the intended URL or dashboard
+        if ($request->has('first_name') || $request->has('last_name')) {
+            return redirect()->intended(route('dashboard'));
+        }
 
         return to_route('profile.edit');
     }

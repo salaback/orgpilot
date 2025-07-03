@@ -12,6 +12,9 @@ Route::middleware([
 ])->group(function () {
     Route::redirect('settings', 'settings/profile');
 
+    // Profile completion route - this must be outside the profile completion check
+    Route::get('settings/profile/complete', [ProfileController::class, 'complete'])->name('profile.complete');
+
     Route::get('settings/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('settings/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('settings/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

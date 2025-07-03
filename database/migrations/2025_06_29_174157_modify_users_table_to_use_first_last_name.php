@@ -26,9 +26,6 @@ return new class extends Migration
 
         // Now make first_name and last_name required (not nullable)
         Schema::table('users', function (Blueprint $table) {
-            $table->string('first_name')->nullable(false)->change();
-            $table->string('last_name')->nullable(false)->change();
-
             // Add a unique constraint on the combination of first_name, last_name, and email
             // This replaces the function of the name field in uniquely identifying users
             $table->unique(['first_name', 'last_name', 'email'], 'users_name_email_unique');

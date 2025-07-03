@@ -15,6 +15,7 @@ Route::get('/', function () {
 Route::middleware([
     'auth',
     ValidateSessionWithWorkOS::class,
+    'ensure.profile.complete',  // Apply profile completion check to all authenticated routes
 ])->group(function () {
     Route::get('dashboard', function () {
         return Inertia::render('dashboard');
@@ -117,8 +118,8 @@ Route::middleware([
                         return [
                             'id' => $tag->id,
                             'name' => $tag->name,
-                        ];
-                    })->toArray(),
+                    ];
+                })->toArray(),
                 ];
             });
 
