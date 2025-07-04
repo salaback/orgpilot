@@ -8,34 +8,35 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     * Creates pivot tables for employee relationships with tasks and initiatives.
      */
     public function up(): void
     {
         // Drop the existing assignables table if it exists
         Schema::dropIfExists('assignables');
 
-        // Create a pivot table for OrgNode and Task relationship
-        Schema::create('org_node_task', function (Blueprint $table) {
+        // Create a pivot table for Employee and Task relationship
+        Schema::create('employee_task', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('org_node_id');
+            $table->unsignedBigInteger('employee_id');
             $table->unsignedBigInteger('task_id');
             $table->timestamps();
 
-            $table->foreign('org_node_id')->references('id')->on('org_nodes')->onDelete('cascade');
+            $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
             $table->foreign('task_id')->references('id')->on('tasks')->onDelete('cascade');
-            $table->unique(['org_node_id', 'task_id']);
+            $table->unique(['employee_id', 'task_id']);
         });
 
-        // Create a pivot table for OrgNode and Initiative relationship
-        Schema::create('initiative_org_node', function (Blueprint $table) {
+        // Create a pivot table for Employee and Initiative relationship
+        Schema::create('employee_initiative', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('org_node_id');
+            $table->unsignedBigInteger('employee_id');
             $table->unsignedBigInteger('initiative_id');
             $table->timestamps();
 
-            $table->foreign('org_node_id')->references('id')->on('org_nodes')->onDelete('cascade');
+            $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
             $table->foreign('initiative_id')->references('id')->on('initiatives')->onDelete('cascade');
-            $table->unique(['org_node_id', 'initiative_id']);
+            $table->unique(['employee_id', 'initiative_id']);
         });
     }
 
@@ -44,7 +45,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('initiative_org_node');
-        Schema::dropIfExists('org_node_task');
+        Schema::dropIfExists('employee_initiative');
+        Schema::dropIfExists('employee_task');
     }
 };

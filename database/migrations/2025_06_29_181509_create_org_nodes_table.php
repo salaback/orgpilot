@@ -8,18 +8,19 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     * Creates the employees table.
      */
     public function up(): void
     {
-        Schema::create('org_nodes', function (Blueprint $table) {
+        Schema::create('employees', function (Blueprint $table) {
             $table->id();
             $table->foreignId('org_structure_id')->constrained()->onDelete('cascade');
-            $table->string('name'); // Person's name or placeholder (e.g., "Open Role")
+            $table->string('name'); // Employee's name or placeholder (e.g., "Open Position")
             $table->string('title')->nullable(); // e.g., "Engineering Manager"
             $table->string('email')->nullable();
             $table->enum('status', ['active', 'open', 'former'])->default('active');
             $table->enum('node_type', ['person', 'placeholder'])->default('person');
-            $table->foreignId('manager_id')->nullable()->references('id')->on('org_nodes')->onDelete('set null');
+            $table->foreignId('manager_id')->nullable()->references('id')->on('employees')->onDelete('set null');
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
             $table->json('tags')->nullable(); // For skills, domains, etc.
@@ -32,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('org_nodes');
+        Schema::dropIfExists('employees');
     }
 };

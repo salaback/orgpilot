@@ -2,10 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\Employee;
 use App\Models\OneOnOneMeeting;
-use App\Models\OrgNode;
+use App\Policies\EmployeePolicy;
 use App\Policies\OneOnOneMeetingPolicy;
-use App\Policies\OrgNodePolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -18,7 +18,7 @@ class AuthServiceProvider extends ServiceProvider
      */
     protected $policies = [
         OneOnOneMeeting::class => OneOnOneMeetingPolicy::class,
-        OrgNode::class => OrgNodePolicy::class,
+        Employee::class => EmployeePolicy::class,
     ];
 
     /**

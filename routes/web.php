@@ -24,12 +24,12 @@ Route::middleware([
     // Organisation routes
     Route::get('organisation', [OrganizationController::class, 'index'])->name('organisation');
     Route::get('organisation/person/{nodeId}', [OrganizationController::class, 'viewNode'])->name('organisation.person');
-    Route::get('organisation/profile/{id}', [\App\Http\Controllers\OrgNodeProfileController::class, 'show'])->name('organisation.profile');
+    Route::get('organisation/profile/{id}', [\App\Http\Controllers\EmployeeProfileController::class, 'show'])->name('organisation.profile');
     Route::post('organisation/direct-report', [OrganizationController::class, 'storeDirectReport'])->name('organisation.direct-report.store');
     Route::get('organisation/person/{nodeId}/direct-reports', [OrganizationController::class, 'getNodeDirectReports'])->name('organisation.person.direct-reports');
 
     // 1:1 Meeting routes
-    Route::prefix('organisation/profile/{orgNode}/one-on-one')->name('one-on-one.')->group(function () {
+    Route::prefix('organisation/profile/{employee}/one-on-one')->name('one-on-one.')->group(function () {
         Route::get('/', [\App\Http\Controllers\OneOnOneMeetingController::class, 'index'])->name('index');
         Route::get('/create', [\App\Http\Controllers\OneOnOneMeetingController::class, 'create'])->name('create');
         Route::post('/', [\App\Http\Controllers\OneOnOneMeetingController::class, 'store'])->name('store');
@@ -66,11 +66,11 @@ Route::middleware([
                 'updated_at' => $initiative->updated_at,
             ];
         });
-        $orgNodes = \App\Models\OrgNode::where('node_type', 'person')->where('status', 'active')->get(['id', 'first_name', 'last_name', 'email', 'title']);
+        $employees = \App\Models\Employee::where('node_type', 'person')->where('status', 'active')->get(['id', 'first_name', 'last_name', 'email', 'title']);
         $defaultOrg = \App\Models\OrgStructure::where('user_id', auth()->id())->orderBy('id')->first();
         return Inertia::render('initiatives', [
             'initiatives' => $initiatives,
-            'assignees' => $orgNodes,
+            'assignees' => $employees,
             'default_org_structure_id' => $defaultOrg ? $defaultOrg->id : null,
         ]);
     })->name('initiatives');
@@ -99,7 +99,7 @@ Route::middleware([
             'updated_at' => $initiative->updated_at,
         ];
 
-        $orgNodes = \App\Models\OrgNode::where('node_type', 'person')->where('status', 'active')->get(['id', 'first_name', 'last_name', 'email', 'title']);
+        $employees = \App\Models\Employee::where('node_type', 'person')->where('status', 'active')->get(['id', 'first_name', 'last_name', 'email', 'title']);
 
         // Load notes for this initiative with their tags
         $notes = \App\Models\Note::where('notable_type', 'App\\Models\\Initiative')
@@ -125,7 +125,7 @@ Route::middleware([
 
         return Inertia::render('initiative', [
             'initiative' => $initiativeData,
-            'assignees' => $orgNodes,
+            'assignees' => $employees,
             'notes' => $notes,
         ]);
     })->name('initiative.show');
@@ -161,7 +161,7 @@ Route::middleware([
                 if (is_numeric($mention)) {
                     $mentionId = (int) $mention;
                     // Check if this ID exists in org_nodes table
-                    if (\App\Models\OrgNode::where('id', $mentionId)->exists()) {
+                    if (\App\Models\Employee::where('id', $mentionId)->exists()) {
                         $mentionIds[] = $mentionId;
                     }
                 }

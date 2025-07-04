@@ -41,11 +41,19 @@ class OrgStructure extends Model
     }
 
     /**
-     * Get the nodes for this org structure.
+     * Get the employees for this org structure.
      */
     public function nodes(): HasMany
     {
-        return $this->hasMany(OrgNode::class);
+        return $this->hasMany(Employee::class);
+    }
+
+    /**
+     * Alias for nodes() to provide more semantic naming
+     */
+    public function employees(): HasMany
+    {
+        return $this->hasMany(Employee::class);
     }
 
     /**

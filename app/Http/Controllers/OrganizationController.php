@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\OrgNode;
+use App\Models\Employee;
 use App\Models\OrgStructure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -50,13 +50,13 @@ class OrganizationController extends Controller
             'last_name' => 'required|string|max:255',
             'title' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
-            'manager_id' => 'required|exists:org_nodes,id',
-            'status' => 'nullable|in:' . implode(',', [OrgNode::STATUS_ACTIVE, OrgNode::STATUS_OPEN]),
-            'node_type' => 'nullable|in:' . implode(',', [OrgNode::TYPE_PERSON, OrgNode::TYPE_PLACEHOLDER]),
+            'manager_id' => 'required|exists:employees,id',
+            'status' => 'nullable|in:' . implode(',', [Employee::STATUS_ACTIVE, Employee::STATUS_OPEN]),
+            'node_type' => 'nullable|in:' . implode(',', [Employee::TYPE_PERSON, Employee::TYPE_PLACEHOLDER]),
         ]);
 
         // Get the manager node
-        $managerNode = OrgNode::findOrFail($validated['manager_id']);
+        $managerNode = Employee::findOrFail($validated['manager_id']);
 
         // Check if the user has access to this org structure
         $user = Auth::user();
@@ -67,18 +67,18 @@ class OrganizationController extends Controller
         }
 
         // Create the new direct report
-        $node = new OrgNode([
+        $employee = new Employee([
             'org_structure_id' => $orgStructure->id,
             'first_name' => $validated['first_name'],
             'last_name' => $validated['last_name'],
             'title' => $validated['title'],
             'email' => $validated['email'] ?? null,
-            'status' => $validated['status'] ?? OrgNode::STATUS_ACTIVE,
-            'node_type' => $validated['node_type'] ?? OrgNode::TYPE_PERSON,
+            'status' => $validated['status'] ?? Employee::STATUS_ACTIVE,
+            'node_type' => $validated['node_type'] ?? Employee::TYPE_PERSON,
             'manager_id' => $managerNode->id,
         ]);
 
-        $node->save();
+        $employee->save();
 
         return back()->with('success', 'Direct report added successfully.');
     }
@@ -114,21 +114,21 @@ class OrganizationController extends Controller
      *
      * @param  \App\Models\OrgStructure  $orgStructure
      * @param  \App\Models\User  $user
-     * @return \App\Models\OrgNode
+     * @return \App\Models\Employee
      */
     private function getOrCreateRootNode($orgStructure, $user)
     {
         $rootNode = $orgStructure->rootNodes()->first();
 
         if (!$rootNode) {
-            $rootNode = new OrgNode([
+            $rootNode = new Employee([
                 'org_structure_id' => $orgStructure->id,
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
                 'title' => 'Manager', // Default title
                 'email' => $user->email,
-                'status' => OrgNode::STATUS_ACTIVE,
-                'node_type' => OrgNode::TYPE_PERSON,
+                'status' => Employee::STATUS_ACTIVE,
+                'node_type' => Employee::TYPE_PERSON,
             ]);
 
             $rootNode->save();
@@ -146,29 +146,25 @@ class OrganizationController extends Controller
     public function getNodeDirectReports($nodeId)
     {
         $user = Auth::user();
-        $node = OrgNode::with('manager')->findOrFail($nodeId);
+        $node = Employee::with('manager')->findOrFail($nodeId);
         $orgStructure = $node->orgStructure;
 
-        // Check if the user has access to this organization structure
+        // Check if the user has access to this org structure
         if ($orgStructure->user_id !== $user->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // Get direct reports for the specified node with their direct reports count
-        // and include manager information
         $directReports = $node->directReports()
             ->withCount('directReports')
-            ->with('manager:id,first_name,last_name,title')
             ->get();
 
         return response()->json([
-            'directReports' => $directReports,
-            'currentNode' => $node,
+            'directReports' => $directReports
         ]);
     }
 
     /**
-     * View a specific node and its direct reports.
+     * Display the view for a specific node.
      *
      * @param int $nodeId
      * @return \Inertia\Response
@@ -176,46 +172,15 @@ class OrganizationController extends Controller
     public function viewNode($nodeId)
     {
         $user = Auth::user();
+        $node = Employee::with('manager')->findOrFail($nodeId);
+        $orgStructure = $node->orgStructure;
 
-        // Get the user's primary org structure
-        $orgStructure = $this->getOrCreatePrimaryOrgStructure($user);
-
-        // Get the root node
-        $rootNode = $this->getOrCreateRootNode($orgStructure, $user);
-
-        // If the nodeId is the root node, redirect to the main organization page
-        if ($nodeId == $rootNode->id) {
-            return redirect()->route('organization');
+        // Check if the user has access to this org structure
+        if ($orgStructure->user_id !== $user->id) {
+            abort(403);
         }
 
-        // Find the requested node
-        $focusedNode = OrgNode::with('manager')
-            ->where('org_structure_id', $orgStructure->id)
-            ->findOrFail($nodeId);
-
-        // Check if the user has access to this node's organization structure
-        if ($focusedNode->orgStructure->user_id !== $user->id) {
-            return redirect()->route('organization')
-                ->with('error', 'You do not have permission to view this organization node.');
-        }
-
-        // Get direct reports for the focused node
-        $directReports = $focusedNode->directReports()
-            ->withCount('directReports')
-            ->get();
-
-        // Get the root node's direct reports for context
-        $rootDirectReports = $rootNode->directReports()
-            ->withCount('directReports')
-            ->get();
-
-        return Inertia::render('organisation/index', [
-            'orgStructure' => $orgStructure,
-            'rootNode' => $rootNode,
-            'directReports' => $rootDirectReports,
-            'focusedNode' => $focusedNode,
-            'currentReports' => $directReports,
-            'initialFocus' => true,
-        ]);
+        // Redirect to the profile page instead of rendering a non-existent view
+        return redirect()->route('organisation.profile', $nodeId);
     }
 }

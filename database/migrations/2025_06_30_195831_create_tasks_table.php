@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             $table->foreignId('initiative_id')->nullable()->constrained()->onDelete('cascade');
-            $table->foreignId('assigned_to')->nullable()->constrained('org_nodes')->onDelete('set null');
+            $table->foreignId('assigned_to')->nullable()->constrained('employees')->onDelete('set null');
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
             $table->date('due_date')->nullable();
             $table->integer('percentage_complete')->default(0);

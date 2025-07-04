@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\OneOnOneMeeting;
 use App\Models\OneOnOneActionItem;
-use App\Models\OrgNode;
+use App\Models\Employee;
 use App\Models\Initiative;
 use App\Models\Goal;
 use App\Models\User;
@@ -19,15 +19,15 @@ class OneOnOneMeetingController extends Controller
     /**
      * Display the 1:1 meeting hub for a specific direct report.
      */
-    public function index(Request $request, OrgNode $orgNode)
+    public function index(Request $request, Employee $employee)
     {
-        $this->authorize('view', $orgNode);
+        $this->authorize('view', $employee);
 
         $currentUser = auth()->user();
 
         // Get upcoming meeting if any
         $upcomingMeeting = OneOnOneMeeting::where('manager_id', $currentUser->id)
-            ->where('direct_report_node_id', $orgNode->id)
+            ->where('direct_report_employee_id', $employee->id)
             ->upcoming()
             ->first();
 
@@ -37,265 +37,240 @@ class OneOnOneMeetingController extends Controller
 
         // Get past meetings
         $pastMeetings = OneOnOneMeeting::where('manager_id', $currentUser->id)
-            ->where('direct_report_node_id', $orgNode->id)
+            ->where('direct_report_employee_id', $employee->id)
             ->where('status', '!=', OneOnOneMeeting::STATUS_SCHEDULED)
-            ->with(['actionItems.owner'])
             ->orderBy('scheduled_at', 'desc')
-            ->paginate(5);
+            ->get();
 
-        return Inertia::render('oneoneonemeetings/meetinghub', [
-            'orgNode' => $orgNode,
+        return Inertia::render('OneOnOneMeetings/Index', [
+            'directReport' => $employee,
             'upcomingMeeting' => $upcomingMeeting,
-            'pastMeetings' => $pastMeetings
+            'pastMeetings' => $pastMeetings,
         ]);
     }
 
     /**
-     * Show the form for creating a new meeting.
+     * Show the form for creating a new 1:1 meeting.
      */
-    public function create(Request $request, OrgNode $orgNode)
+    public function create(Request $request, Employee $employee)
     {
-        $this->authorize('view', $orgNode);
+        $this->authorize('view', $employee);
 
         $currentUser = auth()->user();
 
-        // Get incomplete action items from previous meetings
-        $incompleteActionItems = OneOnOneActionItem::whereHas('meeting', function ($query) use ($currentUser, $orgNode) {
-            $query->where('manager_id', $currentUser->id)
-                  ->where('direct_report_node_id', $orgNode->id); // Changed from direct_report_id to direct_report_node_id
-        })->incomplete()->with('owner')->get();
+        // Get goals for the direct report
+        $goals = $employee->goals()->active()->get();
 
-        // Get goals and initiatives for this direct report
-        $goals = Goal::where('org_node_id', $orgNode->id)
-            ->get();
+        // Get initiatives assigned to the direct report
+        $initiatives = $employee->initiatives()->active()->get();
 
-        $initiatives = Initiative::whereHas('assignees', function ($query) use ($orgNode) {
-            $query->where('org_nodes.id', $orgNode->id);
-        })->get();
-
-        return Inertia::render('oneoneonemeetings/meetingform', [
-            'orgNode' => $orgNode,
-            'incompleteActionItems' => $incompleteActionItems,
+        return Inertia::render('OneOnOneMeetings/Create', [
+            'directReport' => $employee,
             'goals' => $goals,
             'initiatives' => $initiatives,
         ]);
     }
 
     /**
-     * Store a newly created meeting.
+     * Store a newly created 1:1 meeting.
      */
-    public function store(Request $request, OrgNode $orgNode)
+    public function store(Request $request, Employee $employee)
     {
-        $this->authorize('view', $orgNode);
+        $this->authorize('view', $employee);
 
         $validated = $request->validate([
             'scheduled_at' => 'required|date',
+            'location' => 'nullable|string|max:255',
             'agenda' => 'nullable|string',
             'private_notes' => 'nullable|string',
             'shared_notes' => 'nullable|string',
-            'location' => 'nullable|string',
-            'action_items' => 'nullable|array',
-            'goal_ids' => 'nullable|array',
-            'initiative_ids' => 'nullable|array',
+            'goals' => 'nullable|array',
+            'goals.*' => 'exists:goals,id',
+            'initiatives' => 'nullable|array',
+            'initiatives.*' => 'exists:initiatives,id',
         ]);
-
-        $currentUser = auth()->user();
 
         // Create the meeting
-        $meeting = OneOnOneMeeting::create([
-            'manager_id' => $currentUser->id,
-            'direct_report_node_id' => $orgNode->id, // Changed from direct_report_id to direct_report_node_id
-            'scheduled_at' => $validated['scheduled_at'],
-            'status' => OneOnOneMeeting::STATUS_SCHEDULED,
-            'agenda' => $validated['agenda'] ?? null,
-            'private_notes' => $validated['private_notes'] ?? null,
-            'shared_notes' => $validated['shared_notes'] ?? null,
-            'location' => $validated['location'] ?? null,
-        ]);
+        $meeting = new OneOnOneMeeting();
+        $meeting->manager_id = auth()->id();
+        $meeting->direct_report_employee_id = $employee->id;
+        $meeting->scheduled_at = $validated['scheduled_at'];
+        $meeting->location = $validated['location'] ?? null;
+        $meeting->agenda = $validated['agenda'] ?? null;
+        $meeting->private_notes = $validated['private_notes'] ?? null;
+        $meeting->shared_notes = $validated['shared_notes'] ?? null;
+        $meeting->status = OneOnOneMeeting::STATUS_SCHEDULED;
+        $meeting->save();
 
-        // Add action items
-        if (isset($validated['action_items']) && count($validated['action_items']) > 0) {
-            foreach ($validated['action_items'] as $actionItem) {
-                $meeting->actionItems()->create([
-                    'description' => $actionItem['description'],
-                    'owner_id' => $actionItem['owner_id'],
-                    'due_date' => $actionItem['due_date'] ?? null,
-                    'completed' => false,
-                ]);
-            }
+        // Attach goals if any
+        if (!empty($validated['goals'])) {
+            $meeting->goals()->attach($validated['goals']);
         }
 
-        // Add related goals
-        if (isset($validated['goal_ids']) && count($validated['goal_ids']) > 0) {
-            $meeting->goals()->attach($validated['goal_ids']);
+        // Attach initiatives if any
+        if (!empty($validated['initiatives'])) {
+            $meeting->initiatives()->attach($validated['initiatives']);
         }
 
-        // Add related initiatives
-        if (isset($validated['initiative_ids']) && count($validated['initiative_ids']) > 0) {
-            $meeting->initiatives()->attach($validated['initiative_ids']);
-        }
-
-        return redirect()->route('one-on-one.index', $orgNode->id)
-            ->with('success', '1:1 Meeting scheduled successfully.');
+        return redirect()->route('one-on-ones.show', [
+            'employee' => $employee->id,
+            'meeting' => $meeting->id
+        ])->with('success', 'Meeting scheduled successfully.');
     }
 
     /**
-     * Display the specified meeting.
+     * Display the specified 1:1 meeting.
      */
-    public function show(Request $request, OrgNode $orgNode, OneOnOneMeeting $meeting)
+    public function show(Request $request, Employee $employee, OneOnOneMeeting $meeting)
     {
-        $this->authorize('view', $orgNode);
         $this->authorize('view', $meeting);
 
         $meeting->load(['actionItems.owner', 'goals', 'initiatives']);
 
-        return Inertia::render('oneoneonemeetings/meetingdetail', [
-            'orgNode' => $orgNode,
+        return Inertia::render('OneOnOneMeetings/Show', [
+            'directReport' => $employee,
             'meeting' => $meeting,
         ]);
     }
 
     /**
-     * Show the form for editing a meeting.
+     * Show the form for editing the specified 1:1 meeting.
      */
-    public function edit(Request $request, OrgNode $orgNode, OneOnOneMeeting $meeting)
+    public function edit(Request $request, Employee $employee, OneOnOneMeeting $meeting)
     {
-        $this->authorize('view', $orgNode);
         $this->authorize('update', $meeting);
 
         $meeting->load(['actionItems.owner', 'goals', 'initiatives']);
 
-        // Get goals and initiatives for this direct report
-        $goals = Goal::where('org_node_id', $orgNode->id)
-            ->get();
+        // Get goals for the direct report
+        $goals = $employee->goals()->active()->get();
 
-        $initiatives = Initiative::whereHas('assignees', function ($query) use ($orgNode) {
-            $query->where('org_nodes.id', $orgNode->id);
-        })->get();
+        // Get initiatives assigned to the direct report
+        $initiatives = $employee->assignedInitiatives()->active()->get();
 
-        return Inertia::render('oneoneonemeetings/meetingform', [
-            'orgNode' => $orgNode,
+        return Inertia::render('OneOnOneMeetings/Edit', [
+            'directReport' => $employee,
             'meeting' => $meeting,
             'goals' => $goals,
             'initiatives' => $initiatives,
-            'isEditing' => true,
         ]);
     }
 
     /**
-     * Update the specified meeting.
+     * Update the specified 1:1 meeting.
      */
-    public function update(Request $request, OrgNode $orgNode, OneOnOneMeeting $meeting)
+    public function update(Request $request, Employee $employee, OneOnOneMeeting $meeting)
     {
-        $this->authorize('view', $orgNode);
         $this->authorize('update', $meeting);
 
         $validated = $request->validate([
             'scheduled_at' => 'required|date',
+            'location' => 'nullable|string|max:255',
             'agenda' => 'nullable|string',
             'private_notes' => 'nullable|string',
             'shared_notes' => 'nullable|string',
             'summary' => 'nullable|string',
-            'location' => 'nullable|string',
-            'status' => 'nullable|string|in:scheduled,completed,cancelled',
+            'goals' => 'nullable|array',
+            'goals.*' => 'exists:goals,id',
+            'initiatives' => 'nullable|array',
+            'initiatives.*' => 'exists:initiatives,id',
             'action_items' => 'nullable|array',
-            'goal_ids' => 'nullable|array',
-            'initiative_ids' => 'nullable|array',
+            'action_items.*.id' => 'nullable|exists:one_on_one_action_items,id',
+            'action_items.*.description' => 'required|string|max:255',
+            'action_items.*.due_date' => 'nullable|date',
+            'action_items.*.owner_type' => 'required|in:manager,direct_report',
+            'action_items.*.status' => 'required|in:open,complete',
         ]);
 
-        // Update the meeting
-        $meeting->update([
-            'scheduled_at' => $validated['scheduled_at'],
-            'agenda' => $validated['agenda'] ?? null,
-            'private_notes' => $validated['private_notes'] ?? null,
-            'shared_notes' => $validated['shared_notes'] ?? null,
-            'summary' => $validated['summary'] ?? null,
-            'location' => $validated['location'] ?? null,
-            'status' => $validated['status'] ?? $meeting->status,
-            'completed_at' => $validated['status'] === OneOnOneMeeting::STATUS_COMPLETED ? now() : $meeting->completed_at,
-        ]);
+        // Update meeting details
+        $meeting->scheduled_at = $validated['scheduled_at'];
+        $meeting->location = $validated['location'] ?? null;
+        $meeting->agenda = $validated['agenda'] ?? null;
+        $meeting->private_notes = $validated['private_notes'] ?? null;
+        $meeting->shared_notes = $validated['shared_notes'] ?? null;
+        $meeting->summary = $validated['summary'] ?? null;
+        $meeting->save();
 
-        // Update action items (delete existing and create new ones)
+        // Sync goals
+        $meeting->goals()->sync($validated['goals'] ?? []);
+
+        // Sync initiatives
+        $meeting->initiatives()->sync($validated['initiatives'] ?? []);
+
+        // Handle action items
         if (isset($validated['action_items'])) {
-            // Delete existing action items
-            $meeting->actionItems()->delete();
+            $existingItemIds = [];
 
-            // Add new action items
-            foreach ($validated['action_items'] as $actionItem) {
-                $meeting->actionItems()->create([
-                    'description' => $actionItem['description'],
-                    'owner_id' => $actionItem['owner_id'],
-                    'due_date' => $actionItem['due_date'] ?? null,
-                    'completed' => $actionItem['completed'] ?? false,
-                ]);
+            foreach ($validated['action_items'] as $actionItemData) {
+                if (isset($actionItemData['id'])) {
+                    // Update existing action item
+                    $actionItem = OneOnOneActionItem::findOrFail($actionItemData['id']);
+                    $actionItem->update([
+                        'description' => $actionItemData['description'],
+                        'due_date' => $actionItemData['due_date'] ?? null,
+                        'owner_type' => $actionItemData['owner_type'],
+                        'status' => $actionItemData['status'],
+                    ]);
+                    $existingItemIds[] = $actionItem->id;
+                } else {
+                    // Create new action item
+                    $actionItem = new OneOnOneActionItem([
+                        'description' => $actionItemData['description'],
+                        'due_date' => $actionItemData['due_date'] ?? null,
+                        'owner_type' => $actionItemData['owner_type'],
+                        'status' => $actionItemData['status'],
+                    ]);
+                    $meeting->actionItems()->save($actionItem);
+                    $existingItemIds[] = $actionItem->id;
+                }
             }
+
+            // Delete any action items not in the request
+            $meeting->actionItems()->whereNotIn('id', $existingItemIds)->delete();
         }
 
-        // Update related goals
-        if (isset($validated['goal_ids'])) {
-            $meeting->goals()->sync($validated['goal_ids']);
-        }
-
-        // Update related initiatives
-        if (isset($validated['initiative_ids'])) {
-            $meeting->initiatives()->sync($validated['initiative_ids']);
-        }
-
-        return redirect()->route('one-on-one.index', $orgNode->id)
-            ->with('success', '1:1 Meeting updated successfully.');
+        return redirect()->route('one-on-ones.show', [
+            'employee' => $employee->id,
+            'meeting' => $meeting->id
+        ])->with('success', 'Meeting updated successfully.');
     }
 
     /**
-     * Complete a meeting.
+     * Mark a meeting as complete.
      */
-    public function complete(Request $request, OrgNode $orgNode, OneOnOneMeeting $meeting)
+    public function complete(Request $request, Employee $employee, OneOnOneMeeting $meeting)
     {
-        $this->authorize('view', $orgNode);
         $this->authorize('update', $meeting);
 
         $validated = $request->validate([
             'summary' => 'nullable|string',
-            'shared_notes' => 'nullable|string',
-            'action_items' => 'nullable|array',
         ]);
 
-        // Update the meeting
-        $meeting->update([
-            'status' => OneOnOneMeeting::STATUS_COMPLETED,
-            'completed_at' => now(),
-            'summary' => $validated['summary'] ?? null,
-            'shared_notes' => $validated['shared_notes'] ?? $meeting->shared_notes,
-        ]);
+        $meeting->summary = $validated['summary'] ?? $meeting->summary;
+        $meeting->status = OneOnOneMeeting::STATUS_COMPLETED;
+        $meeting->completed_at = now();
+        $meeting->save();
 
-        // Update action items status if provided
-        if (isset($validated['action_items'])) {
-            foreach ($validated['action_items'] as $actionItemData) {
-                $actionItem = OneOnOneActionItem::find($actionItemData['id']);
-                if ($actionItem) {
-                    $actionItem->update([
-                        'completed' => $actionItemData['completed'] ?? false,
-                    ]);
-                }
-            }
-        }
-
-        return redirect()->route('one-on-one.index', $orgNode->id)
-            ->with('success', '1:1 Meeting completed successfully.');
+        return redirect()->route('one-on-ones.index', ['employee' => $employee->id])
+            ->with('success', 'Meeting marked as complete.');
     }
 
     /**
-     * Cancel a meeting.
+     * Cancel a scheduled meeting.
      */
-    public function cancel(Request $request, OrgNode $orgNode, OneOnOneMeeting $meeting)
+    public function cancel(Request $request, Employee $employee, OneOnOneMeeting $meeting)
     {
-        $this->authorize('view', $orgNode);
         $this->authorize('update', $meeting);
 
-        $meeting->update([
-            'status' => OneOnOneMeeting::STATUS_CANCELLED,
+        $validated = $request->validate([
+            'cancellation_reason' => 'nullable|string|max:255',
         ]);
 
-        return redirect()->route('one-on-one.index', $orgNode->id)
-            ->with('success', '1:1 Meeting cancelled successfully.');
+        $meeting->status = OneOnOneMeeting::STATUS_CANCELLED;
+        $meeting->cancellation_reason = $validated['cancellation_reason'] ?? null;
+        $meeting->save();
+
+        return redirect()->route('one-on-ones.index', ['employee' => $employee->id])
+            ->with('success', 'Meeting cancelled.');
     }
 }

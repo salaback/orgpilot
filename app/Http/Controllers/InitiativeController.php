@@ -24,7 +24,7 @@ class InitiativeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'org_structure_id' => 'required|exists:org_structures,id',
@@ -36,7 +36,7 @@ class InitiativeController extends Controller
             'end_date' => 'nullable|date',
             'dueDate' => 'nullable|date',
             'assignees' => 'nullable|array',
-            'assignees.*' => 'exists:org_nodes,id',
+            'assignees.*' => 'exists:employees,id',
             'tags' => 'nullable|array',
         ]);
 
@@ -64,7 +64,13 @@ class InitiativeController extends Controller
             $initiative->tags()->sync($validated['tags']);
         }
 
-        return response()->json($initiative->load(['assignees', 'tags']), 201);
+        // For API requests, return JSON
+        if ($request->expectsJson() && !$request->header('X-Inertia')) {
+            return response()->json($initiative->load(['assignees', 'tags']), 201);
+        }
+
+        // For Inertia requests, redirect back with success message
+        return redirect()->back()->with('success', 'Initiative created successfully.');
     }
 
     /**
@@ -89,7 +95,7 @@ class InitiativeController extends Controller
             'end_date' => 'nullable|date',
             'dueDate' => 'nullable|date',
             'assignees' => 'nullable|array',
-            'assignees.*' => 'exists:org_nodes,id',
+            'assignees.*' => 'exists:employees,id',
             'tags' => 'nullable|array',
         ]);
 
@@ -111,7 +117,13 @@ class InitiativeController extends Controller
             $initiative->tags()->sync($validated['tags']);
         }
 
-        return response()->json($initiative->load(['assignees', 'tags']));
+        // For API requests, return JSON
+        if ($request->expectsJson() && !$request->header('X-Inertia')) {
+            return response()->json($initiative->load(['assignees', 'tags']));
+        }
+
+        // For Inertia requests, redirect back with success message
+        return redirect()->back()->with('success', 'Initiative updated successfully.');
     }
 
     /**
@@ -125,17 +137,17 @@ class InitiativeController extends Controller
     }
 
     /**
-     * Display initiatives for a specific org node profile
+     * Display initiatives for a specific employee profile
      */
     public function profileInitiatives($id, Request $request)
     {
-        // Get the org node
-        $orgNode = \App\Models\OrgNode::findOrFail($id);
+        // Get the employee
+        $employee = \App\Models\Employee::findOrFail($id);
 
-        // Get initiatives for this org node
+        // Get initiatives for this employee
         $query = Initiative::with(['assignees', 'tags'])
             ->whereHas('assignees', function($query) use ($id) {
-                $query->where('org_nodes.id', $id);
+                $query->where('employees.id', $id);
             });
 
         // Filter by status if specified
@@ -155,12 +167,12 @@ class InitiativeController extends Controller
         $initiatives = $query->orderBy('end_date', 'asc')->paginate(15);
 
         return \Inertia\Inertia::render('Initiatives/ProfileInitiatives', [
-            'orgNode' => [
-                'id' => $orgNode->id,
-                'full_name' => $orgNode->full_name,
-                'title' => $orgNode->title,
-                'email' => $orgNode->email,
-                'status' => $orgNode->status
+            'employee' => [
+                'id' => $employee->id,
+                'full_name' => $employee->full_name,
+                'title' => $employee->title,
+                'email' => $employee->email,
+                'status' => $employee->status
             ],
             'initiatives' => $initiatives,
             'filters' => $request->only(['status', 'search']),

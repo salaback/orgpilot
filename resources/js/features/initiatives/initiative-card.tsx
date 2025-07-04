@@ -56,24 +56,7 @@ const InitiativeCard: React.FC<InitiativeCardProps> = ({ initiative, users, comp
           }
         }}
         title={`Click to search for ${fullName}`}
-        style={{
-          marginRight: 4,
-          background: '#dee2e6',
-          borderRadius: '50%',
-          padding: '2px 8px',
-          fontSize: 12,
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          ':hover': {
-            background: '#adb5bd',
-          }
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = '#adb5bd';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = '#dee2e6';
-        }}
+        className="mr-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-full px-2 py-0.5 text-xs cursor-pointer transition-colors hover:bg-gray-300 dark:hover:bg-gray-500"
       >
         {initials}
       </span>
@@ -85,16 +68,25 @@ const InitiativeCard: React.FC<InitiativeCardProps> = ({ initiative, users, comp
   if (initiative.allocations && initiative.allocations.length > 0) {
     const total = initiative.allocations.reduce((sum, a) => sum + a.percent, 0);
     allocationBar = (
-      <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', marginTop: 4, marginBottom: 4, background: '#e9ecef' }}>
+      <div className="flex h-2 rounded overflow-hidden mt-1 mb-1 bg-gray-200 dark:bg-gray-700">
         {initiative.allocations.map(a => {
           const user = users.find(u => u.id === a.userId);
           const userName = user ? `${user.first_name} ${user.last_name}`.trim() : 'Unknown';
-          const color = '#51cf66'; // Use a static color for now
           return (
-            <div key={a.userId} title={`${userName}: ${a.percent}%`} style={{ width: `${a.percent}%`, background: color }} />
+            <div
+              key={a.userId}
+              title={`${userName}: ${a.percent}%`}
+              className="bg-green-400 dark:bg-green-500"
+              style={{ width: `${a.percent}%` }}
+            />
           );
         })}
-        {total < 100 && <div style={{ width: `${100 - total}%`, background: '#e9ecef' }} />}
+        {total < 100 && (
+          <div
+            className="bg-gray-200 dark:bg-gray-700"
+            style={{ width: `${100 - total}%` }}
+          />
+        )}
       </div>
     );
   }
@@ -112,25 +104,30 @@ const InitiativeCard: React.FC<InitiativeCardProps> = ({ initiative, users, comp
   return (
     <div
       onClick={onClick}
-      style={{
-        background: '#fff',
-        borderRadius: 8,
-        boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-        padding: compact ? 4 : 12,
-        marginBottom: 8,
-        cursor: onClick ? 'pointer' : undefined,
-        border: '1px solid #e9ecef',
-        fontSize: compact ? 14 : 16,
-      }}
+      className={`
+        bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700
+        mb-2 transition-all hover:shadow-md dark:hover:shadow-lg
+        ${compact ? 'p-1' : 'p-3'}
+        ${onClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-750' : ''}
+        ${compact ? 'text-sm' : 'text-base'}
+      `}
     >
-      <div style={{ fontWeight: 500 }}>{initiative.title}</div>
-      {!compact && <div style={{ color: '#666', fontSize: 13, margin: '4px 0 2px 0' }}>{initiative.description}</div>}
-      <div style={{ display: 'flex', alignItems: 'center', marginTop: 4, flexWrap: 'wrap', gap: 4 }}>
-        {assigneeAvatars.length > 0 ? assigneeAvatars : <span style={{ color: '#aaa', fontSize: 12 }}>Backlog</span>}
+      <div className="font-medium text-gray-900 dark:text-gray-100">{initiative.title}</div>
+      {!compact && (
+        <div className="text-gray-600 dark:text-gray-400 text-sm mt-1 mb-0.5">
+          {initiative.description}
+        </div>
+      )}
+      <div className="flex items-center mt-1 flex-wrap gap-1">
+        {assigneeAvatars.length > 0 ? (
+          assigneeAvatars
+        ) : (
+          <span className="text-gray-400 dark:text-gray-500 text-xs">Backlog</span>
+        )}
 
         {/* Display tags with proper styling */}
         {Array.isArray(initiative.tags) && initiative.tags.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginLeft: 8 }}>
+          <div className="flex flex-wrap gap-1 ml-2">
             {initiative.tags.map((tag, index) => (
               <span
                 key={typeof tag === 'object' ? tag.id : index}
@@ -142,28 +139,7 @@ const InitiativeCard: React.FC<InitiativeCardProps> = ({ initiative, users, comp
                   }
                 }}
                 title={`Click to search for ${typeof tag === 'object' ? tag.name : tag}`}
-                style={{
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: '#fff',
-                  fontSize: 10,
-                  fontWeight: 500,
-                  padding: '2px 6px',
-                  borderRadius: 12,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'scale(1.05)';
-                  e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)';
-                  e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.12)';
-                }}
+                className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-medium px-1.5 py-0.5 rounded-full uppercase tracking-wide shadow-sm border border-white/20 cursor-pointer transition-transform hover:scale-105 hover:shadow-md"
               >
                 {typeof tag === 'object' ? tag.name : tag}
               </span>
@@ -171,7 +147,11 @@ const InitiativeCard: React.FC<InitiativeCardProps> = ({ initiative, users, comp
           </div>
         )}
 
-        {initiative.dueDate && <span style={{ marginLeft: 8, color: '#fa5252', fontSize: 12 }}>Due: {formatDueDate(initiative.dueDate)}</span>}
+        {initiative.dueDate && (
+          <span className="ml-2 text-red-500 dark:text-red-400 text-xs">
+            Due: {formatDueDate(initiative.dueDate)}
+          </span>
+        )}
       </div>
       {allocationBar}
     </div>

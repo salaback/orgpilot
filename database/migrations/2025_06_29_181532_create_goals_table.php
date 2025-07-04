@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('goals', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('node_id')->constrained('org_nodes')->onDelete('cascade');
+            $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
             $table->string('title');
             $table->enum('goal_type', ['performance', 'development', 'project'])->default('performance');
             $table->string('metric')->nullable(); // e.g., completion %, score

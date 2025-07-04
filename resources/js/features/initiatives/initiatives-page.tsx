@@ -66,60 +66,52 @@ const InitiativesPage: React.FC<InitiativesPageProps> = ({ initiatives, assignee
   }).map(i => defaultAssignees(i));
 
   return (
-    <div style={{ padding: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h1>Initiatives</h1>
-        <div style={{ display: 'flex', gap: 8 }}>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Initiatives</h1>
+        <div className="flex gap-2">
           <button
             onClick={() => setView('board')}
             disabled={view === 'board'}
             title="Board View"
-            style={{
-              background: view === 'board' ? '#228be6' : '#fff',
-              color: view === 'board' ? '#fff' : '#222',
-              border: '1.5px solid #228be6',
-              borderRadius: 6,
-              padding: 6,
-              cursor: view === 'board' ? 'default' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              opacity: view === 'board' ? 1 : 0.85,
-            }}
+            className={`
+              border-2 border-blue-500 rounded-md p-1.5 flex items-center transition-all
+              ${view === 'board'
+                ? 'bg-blue-500 text-white'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700'
+              }
+            `}
           >
             {/* Board (Kanban) Icon */}
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="2" y="4" width="6" height="14" rx="2" stroke={view === 'board' ? '#fff' : '#228be6'} strokeWidth="2" fill="none" />
-              <rect x="9" y="4" width="6" height="8" rx="2" stroke={view === 'board' ? '#fff' : '#228be6'} strokeWidth="2" fill="none" />
-              <rect x="16" y="4" width="4" height="11" rx="2" stroke={view === 'board' ? '#fff' : '#228be6'} strokeWidth="2" fill="none" />
+              <rect x="2" y="4" width="6" height="14" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />
+              <rect x="9" y="4" width="6" height="8" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />
+              <rect x="16" y="4" width="4" height="11" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />
             </svg>
           </button>
           <button
             onClick={() => setView('list')}
             disabled={view === 'list'}
             title="List View"
-            style={{
-              background: view === 'list' ? '#228be6' : '#fff',
-              color: view === 'list' ? '#fff' : '#222',
-              border: '1.5px solid #228be6',
-              borderRadius: 6,
-              padding: 6,
-              cursor: view === 'list' ? 'default' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              opacity: view === 'list' ? 1 : 0.85,
-            }}
+            className={`
+              border-2 border-blue-500 rounded-md p-1.5 flex items-center transition-all
+              ${view === 'list'
+                ? 'bg-blue-500 text-white'
+                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700'
+              }
+            `}
           >
             {/* List (Table) Icon */}
             <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="3" y="5" width="16" height="3" rx="1.5" stroke={view === 'list' ? '#fff' : '#228be6'} strokeWidth="2" fill="none" />
-              <rect x="3" y="10" width="16" height="3" rx="1.5" stroke={view === 'list' ? '#fff' : '#228be6'} strokeWidth="2" fill="none" />
-              <rect x="3" y="15" width="16" height="3" rx="1.5" stroke={view === 'list' ? '#fff' : '#228be6'} strokeWidth="2" fill="none" />
+              <rect x="3" y="5" width="16" height="3" rx="1.5" stroke="currentColor" strokeWidth="2" fill="none" />
+              <rect x="3" y="10" width="16" height="3" rx="1.5" stroke="currentColor" strokeWidth="2" fill="none" />
+              <rect x="3" y="15" width="16" height="3" rx="1.5" stroke="currentColor" strokeWidth="2" fill="none" />
             </svg>
           </button>
         </div>
       </div>
       <FilterBar search={search} onSearchChange={setSearch} />
-      <div style={{ marginTop: 24 }}>
+      <div className="mt-6">
         {view === 'board' ? (
           <InitiativeBoard
             initiatives={filteredInitiatives}

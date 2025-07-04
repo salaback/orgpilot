@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
@@ -34,7 +35,7 @@ class Initiative extends Model
         'order',
         'start_date',
         'end_date',
-        'owner_node_id',
+        'owner_employee_id',
         'linked_goals',
     ];
 
@@ -50,6 +51,14 @@ class Initiative extends Model
     ];
 
     /**
+     * Scope a query to only include active initiatives (not complete or cancelled).
+     */
+    public function scopeActive($query)
+    {
+        return $query->whereNotIn('status', [self::STATUS_COMPLETE, self::STATUS_CANCELLED]);
+    }
+
+    /**
      * Get the organization structure this initiative belongs to.
      */
     public function orgStructure(): BelongsTo
@@ -58,11 +67,11 @@ class Initiative extends Model
     }
 
     /**
-     * Get the owner node of this initiative.
+     * Get the owner of this initiative.
      */
-    public function owner(): BelongsTo
+    public function assignees(): BelongsToMany
     {
-        return $this->belongsTo(OrgNode::class, 'owner_node_id');
+        return $this->belongsToMany(Employee::class);
     }
 
     /**
@@ -142,14 +151,6 @@ class Initiative extends Model
     public function tags(): MorphToMany
     {
         return $this->morphToMany(Tag::class, 'taggable');
-    }
-
-    /**
-     * Get the assignees for this initiative
-     */
-    public function assignees()
-    {
-        return $this->belongsToMany(OrgNode::class, 'initiative_assignees', 'initiative_id', 'org_node_id');
     }
 
     /**

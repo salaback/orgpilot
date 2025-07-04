@@ -25,7 +25,7 @@ class OneOnOneMeeting extends Model
     protected $fillable = [
         'manager_id',
         'direct_report_type',
-        'direct_report_id',
+        'direct_report_employee_id',
         'scheduled_at',
         'completed_at',
         'status',
@@ -56,7 +56,7 @@ class OneOnOneMeeting extends Model
 
     /**
      * Get the direct report for this meeting.
-     * This can be any model type (OrgNode, User, etc.)
+     * This can be any model type (Employee, User, etc.)
      */
     public function directReport(): MorphTo
     {

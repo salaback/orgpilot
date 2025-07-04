@@ -80,12 +80,12 @@ export function OrgNodeCard({
       </CardContent>
 
       {/* Hover actions overlay */}
-      <div className={`absolute inset-0 bg-black/5 dark:bg-white/5 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg ${isHovering ? 'z-10' : '-z-10'}`}>
-        <div className="flex flex-col gap-2 w-[70%]">
+      <div className={`absolute inset-0 bg-black/5 dark:bg-white/5 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-lg pointer-events-none group-hover:pointer-events-auto z-10`}>
+        <div className="flex flex-col gap-2 w-[70%] pointer-events-auto">
           <Button
             variant="outline"
             size="sm"
-            className="bg-white dark:bg-gray-800 flex items-center justify-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="bg-white dark:bg-gray-800 flex items-center justify-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-sm cursor-pointer"
             onClick={handleViewProfile}
           >
             <UserIcon className="h-4 w-4" />
@@ -96,7 +96,7 @@ export function OrgNodeCard({
             <Button
               variant="outline"
               size="sm"
-              className="bg-white dark:bg-gray-800 flex items-center justify-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="bg-white dark:bg-gray-800 flex items-center justify-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-sm cursor-pointer"
               onClick={(e) => {
                 e.stopPropagation(); // Prevent card click from triggering
                 onAddDirectReport(node.id);
@@ -112,8 +112,11 @@ export function OrgNodeCard({
             <Button
               variant="outline"
               size="sm"
-              className="bg-white dark:bg-gray-800 flex items-center justify-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-              onClick={handleCardClick}
+              className="bg-white dark:bg-gray-800 flex items-center justify-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-sm cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent card click from triggering
+                handleCardClick();
+              }}
             >
               <ChevronRightIcon className="h-4 w-4" />
               <span>View Team</span>

@@ -38,11 +38,11 @@ class Task extends Model
     }
 
     /**
-     * Get the org node assigned to this task
+     * Get the employee assigned to this task
      */
     public function assignedTo(): BelongsTo
     {
-        return $this->belongsTo(OrgNode::class, 'assigned_to');
+        return $this->belongsTo(Employee::class, 'assigned_to');
     }
 
     /**
@@ -78,11 +78,11 @@ class Task extends Model
     }
 
     /**
-     * Scope a query to only include tasks assigned to a specific org node
+     * Scope a query to only include tasks assigned to a specific employee
      */
-    public function scopeAssignedTo($query, $orgNodeId)
+    public function scopeAssignedTo($query, $employeeId)
     {
-        return $query->where('assigned_to', $orgNodeId);
+        return $query->where('assigned_to', $employeeId);
     }
 
     /**

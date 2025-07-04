@@ -113,20 +113,21 @@ const DroppableColumn: React.FC<DroppableColumnProps> = ({ id, title, children, 
     id: id,
   });
 
-  const columnStyle = {
-    minWidth: 280,
-    background: isOverDroppable ? '#e3f2fd' : backgroundColor,
-    borderRadius: 8,
-    padding: 12,
-    border: isOverDroppable ? '2px dashed #2196f3' : '1px solid transparent',
-    boxShadow: isOverDroppable ? '0 4px 8px rgba(33, 150, 243, 0.3)' : 'none',
-    transition: 'all 0.2s ease',
-  };
-
   return (
-    <div ref={setNodeRef} style={columnStyle}>
-      <h3 style={{ marginBottom: 8 }}>{title}</h3>
-      <div style={{ minHeight: 100 }}>
+    <div
+      ref={setNodeRef}
+      className={`
+        min-w-[280px] rounded-lg p-3 border transition-all duration-200
+        ${isOverDroppable
+          ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-600 border-2 border-dashed shadow-lg'
+          : 'bg-gray-50 dark:bg-gray-800 border-transparent'
+        }
+      `}
+    >
+      <h3 className="mb-2 font-semibold text-gray-900 dark:text-gray-100 text-sm uppercase tracking-wide">
+        {title}
+      </h3>
+      <div className="min-h-[100px]">
         {children}
       </div>
     </div>

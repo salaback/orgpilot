@@ -19,7 +19,7 @@ return new class extends Migration
             $table->enum('status', ['planned', 'in-progress', 'complete', 'on-hold', 'cancelled'])->default('planned');
             $table->date('start_date')->nullable();
             $table->date('end_date')->nullable();
-            $table->foreignId('owner_node_id')->nullable()->references('id')->on('org_nodes')->onDelete('set null');
+            $table->foreignId('owner_employee_id')->nullable()->references('id')->on('employees')->onDelete('set null');
             $table->json('linked_goals')->nullable(); // Store goal IDs in JSON format
             $table->timestamps();
         });

@@ -105,9 +105,6 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
     // If we're focusing on the root node, reset the hierarchy
     if (node.id === rootNode.id) {
       setNodeHierarchy([]);
-
-      // Navigate to the main organisation view
-      router.visit('/organisation', { preserveState: true, replace: true });
     } else {
       // When focusing on a direct report, we need to check if we're:
       // 1. Going deeper from root (need to start a new path)
@@ -134,9 +131,6 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
       }
 
       setNodeHierarchy(newHierarchy);
-
-      // Update the URL to reflect the current node
-      router.visit(`/organisation/person/${node.id}`, { preserveState: true, replace: true });
     }
 
     // Load direct reports for the focused node

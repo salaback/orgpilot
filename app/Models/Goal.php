@@ -32,7 +32,7 @@ class Goal extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'node_id',
+        'employee_id',
         'title',
         'goal_type',
         'metric',
@@ -52,11 +52,19 @@ class Goal extends Model
     ];
 
     /**
-     * Get the node this goal belongs to.
+     * Scope a query to only include active goals (not completed or cancelled).
      */
-    public function node(): BelongsTo
+    public function scopeActive($query)
     {
-        return $this->belongsTo(OrgNode::class);
+        return $query->whereNotIn('status', [self::STATUS_COMPLETED, self::STATUS_CANCELLED]);
+    }
+
+    /**
+     * Get the employee this goal belongs to.
+     */
+    public function employee(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class);
     }
 
     /**

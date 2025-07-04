@@ -12,10 +12,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('one_on_one_meetings', function (Blueprint $table) {
-            // Add direct_report_node_id column
-            $table->foreignId('direct_report_node_id')->nullable()->after('manager_id');
+            // Add direct_report_employee_id column
+            $table->foreignId('direct_report_employee_id')->nullable()->after('manager_id');
 
-            // If there's any existing data, you could transfer it from direct_report_id to direct_report_node_id here
+            // If there's any existing data, you could transfer it from direct_report_id to direct_report_employee_id here
             // But that would require custom SQL which isn't included in this migration
 
             // Optionally, you might want to drop the old column if it exists and is no longer needed
@@ -30,7 +30,7 @@ return new class extends Migration
     {
         Schema::table('one_on_one_meetings', function (Blueprint $table) {
             // Drop the new column
-            $table->dropColumn('direct_report_node_id');
+            $table->dropColumn('direct_report_employee_id');
 
             // If you dropped direct_report_id in the up method, add it back here
             // $table->foreignId('direct_report_id')->nullable()->after('manager_id');
