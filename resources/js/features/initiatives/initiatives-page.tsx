@@ -1,8 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import InitiativeBoard from './initiative-board';
 import InitiativeList from './initiative-list';
 import FilterBar from './filter-bar';
 import { defaultAssignees } from './types';
+import { getCookie, setCookie } from '@/lib/cookies';
+import { FilterIcon, PlusIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import ActionButton from '@/components/ui/action-button';
+import { router } from '@inertiajs/react';
+import InitiativeModal from './initiative-modal';
 
 interface Initiative {
   id: number;
@@ -31,8 +37,78 @@ interface InitiativesPageProps {
 }
 
 const InitiativesPage: React.FC<InitiativesPageProps> = ({ initiatives, assignees, defaultOrgStructureId }) => {
-  const [view, setView] = useState<'board' | 'list'>('board');
+  // Initialize view mode from cookie or default to 'columns' (board view)
+  const [viewMode, setViewMode] = useState<'columns' | 'list'>(() => {
+    // Try to get from cookie first
+    if (typeof document !== 'undefined') {
+      const cookieValue = getCookie('initiativeViewMode');
+      if (cookieValue === 'list' || cookieValue === 'columns') {
+        return cookieValue as 'list' | 'columns';
+      }
+    }
+
+    // Fall back to localStorage for backward compatibility
+    if (typeof window !== 'undefined') {
+      const savedMode = localStorage.getItem('initiativeViewMode');
+      return (savedMode === 'list' || savedMode === 'columns') ? savedMode as 'columns' | 'list' : 'columns';
+    }
+    return 'columns';
+  });
+
   const [search, setSearch] = useState('');
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  // Add state for the initiative modal
+  const [modalOpen, setModalOpen] = useState(false);
+
+  // Listen for view mode changes from sidebar toggle
+  useEffect(() => {
+    const handleViewModeChange = (event: CustomEvent) => {
+      setViewMode(event.detail.viewMode);
+    };
+
+    // Add event listener
+    window.addEventListener('initiativeViewModeChange', handleViewModeChange as EventListener);
+
+    // Clean up event listener
+    return () => {
+      window.removeEventListener('initiativeViewModeChange', handleViewModeChange as EventListener);
+    };
+  }, []);
+
+  // Update the sidebar view mode when local state changes
+  const handleViewModeChange = (mode: 'columns' | 'list') => {
+    setViewMode(mode);
+    // Store in cookies
+    setCookie('initiativeViewMode', mode);
+    // Store in localStorage for backward compatibility
+    localStorage.setItem('initiativeViewMode', mode);
+  };
+
+  // Handle creating a new initiative
+  const handleNewInitiative = () => {
+    setModalOpen(true);
+  };
+
+  // Handle saving the new initiative
+  const handleCreate = (newInitiative: any) => {
+    if (!defaultOrgStructureId) {
+      alert('No org structure found for this user.');
+      return;
+    }
+
+    router.post('/api/initiatives', {
+      title: newInitiative.title,
+      description: newInitiative.description,
+      status: newInitiative.status,
+      tags: newInitiative.tags,
+      dueDate: newInitiative.dueDate || null,
+      assignees: newInitiative.assignees,
+      org_structure_id: defaultOrgStructureId,
+    }, {
+      onSuccess: () => setModalOpen(false),
+    });
+  };
 
   // Filter initiatives by search term (case-insensitive, matches title, description, or assignee names)
   const filteredInitiatives = initiatives.filter(i => {
@@ -67,62 +143,54 @@ const InitiativesPage: React.FC<InitiativesPageProps> = ({ initiatives, assignee
 
   return (
     <div className="p-6">
+      {/* Simple header without toggle buttons, since toggle is now in the app sidebar */}
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Initiatives</h1>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setView('board')}
-            disabled={view === 'board'}
-            title="Board View"
-            className={`
-              border-2 border-blue-500 rounded-md p-1.5 flex items-center transition-all
-              ${view === 'board'
-                ? 'bg-blue-500 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700'
-              }
-            `}
+        <h1 className="text-2xl font-semibold">Initiatives</h1>
+        <div className="flex items-center gap-2">
+          <ActionButton
+            label="New Initiative"
+            icon={PlusIcon}
+            onClick={handleNewInitiative}
+          />
+
+          <Button
+            variant={filterOpen ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => setFilterOpen(!filterOpen)}
+            className="flex items-center gap-1"
           >
-            {/* Board (Kanban) Icon */}
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="2" y="4" width="6" height="14" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />
-              <rect x="9" y="4" width="6" height="8" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />
-              <rect x="16" y="4" width="4" height="11" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />
-            </svg>
-          </button>
-          <button
-            onClick={() => setView('list')}
-            disabled={view === 'list'}
-            title="List View"
-            className={`
-              border-2 border-blue-500 rounded-md p-1.5 flex items-center transition-all
-              ${view === 'list'
-                ? 'bg-blue-500 text-white'
-                : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700'
-              }
-            `}
-          >
-            {/* List (Table) Icon */}
-            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="3" y="5" width="16" height="3" rx="1.5" stroke="currentColor" strokeWidth="2" fill="none" />
-              <rect x="3" y="10" width="16" height="3" rx="1.5" stroke="currentColor" strokeWidth="2" fill="none" />
-              <rect x="3" y="15" width="16" height="3" rx="1.5" stroke="currentColor" strokeWidth="2" fill="none" />
-            </svg>
-          </button>
+            <FilterIcon className="h-4 w-4" />
+            <span>Filter</span>
+          </Button>
         </div>
       </div>
-      <FilterBar search={search} onSearchChange={setSearch} />
-      <div className="mt-6">
-        {view === 'board' ? (
-          <InitiativeBoard
-            initiatives={filteredInitiatives}
-            assignees={assignees}
-            defaultOrgStructureId={defaultOrgStructureId}
-            onSearchChange={setSearch}
-          />
-        ) : (
-          <InitiativeList initiatives={filteredInitiatives} assignees={assignees} />
-        )}
-      </div>
+
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        isOpen={filterOpen}
+      />
+
+      {viewMode === 'columns' && (
+        <InitiativeBoard
+          initiatives={filteredInitiatives}
+          assignees={assignees}
+          defaultOrgStructureId={defaultOrgStructureId}
+          onSearchChange={setSearch}
+        />
+      )}
+
+      {viewMode === 'list' && (
+        <InitiativeList initiatives={filteredInitiatives} assignees={assignees} />
+      )}
+
+      {/* Initiative creation modal */}
+      <InitiativeModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        users={assignees}
+        onSave={handleCreate}
+      />
     </div>
   );
 };

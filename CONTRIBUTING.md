@@ -6,39 +6,15 @@ This document provides essential information for working with the OrgPilot proje
 
 OrgPilot is a Laravel-based web application using Inertia.js with React for the frontend. It appears to be an organizational management tool with features for tracking initiatives, meetings, and employee information.
 
-## Development Environment
+## Documentation Structure
 
-### Local Development with Laravel Sail
+To make it easier to find specific information, the documentation is split across several files:
 
-This project uses [Laravel Sail](https://laravel.com/docs/sail), a light-weight command-line interface for interacting with Laravel's Docker development environment.
-
-**Important:** When running commands locally, prefix them with `./vendor/bin/sail` instead of using PHP or Artisan directly:
-
-```bash
-# Instead of:
-php artisan migrate
-
-# Use:
-./vendor/bin/sail artisan migrate
-```
-
-For common commands:
-- Start the development environment: `./vendor/bin/sail up`
-- Start in detached mode: `./vendor/bin/sail up -d`
-- Stop the environment: `./vendor/bin/sail down`
-- Run tests: `./vendor/bin/sail test`
-
-### Frontend Development
-
-Frontend assets are managed with Vite. Use these commands via Sail:
-
-```bash
-# Run development server
-./vendor/bin/sail npm run dev
-
-# Build for production
-./vendor/bin/sail npm run build
-```
+- **[SETUP.md](./docs/SETUP.md)** - Setting up the development environment
+- **[COMPONENTS.md](./COMPONENTS.md)** - UI component library reference
+- **[FRONTEND_PATTERNS.md](./docs/FRONTEND_PATTERNS.md)** - Common frontend patterns and practices
+- **[BACKEND_ARCHITECTURE.md](./docs/BACKEND_ARCHITECTURE.md)** - Backend architecture and patterns
+- This file (CONTRIBUTING.md) - General guidelines and project structure
 
 ## Tech Stack
 
@@ -67,8 +43,13 @@ Frontend assets are managed with Vite. Use these commands via Sail:
 - `/resources/js/layouts` - Layout components including AppLayout
 - `/database/migrations` - Database migration files
 - `/routes` - API and web routes
+- `/docs` - Additional documentation files
 
 ## Frontend Architecture
+
+### Component Library
+
+OrgPilot uses a standardized component library to maintain consistency across the application. For detailed documentation on all available components, please refer to the [COMPONENTS.md](./COMPONENTS.md) file. When working on frontend features, you should use these existing components rather than creating new ones or implementing custom styles.
 
 ### Page Structure
 All page components should be wrapped in the `AppLayout` component:
@@ -113,21 +94,6 @@ Models are located in `app/Models/` and include entities like:
 - Task
 - OrgStructure
 
-## Testing
-
-The project uses PHPUnit for PHP tests. Run tests with:
-
-```bash
-./vendor/bin/sail test
-```
-
-## Code Style and Quality
-
-- PHP code should follow PSR standards and can be formatted with Laravel Pint
-- JavaScript/TypeScript code should follow the project's ESLint and Prettier configuration
-- Run `./vendor/bin/sail npm run format` to format frontend code
-- Run `./vendor/bin/sail npm run lint` to lint frontend code
-
 ## Workflow Guidelines
 
 1. When creating new features, follow the existing patterns for controllers, models, and React components
@@ -152,102 +118,7 @@ const YourPage: React.FC<YourPageProps> = ({ items }) => {
 };
 ```
 
-### View Headers and Toggle Components
-When creating pages with toggle functionality between different view modes, use our reusable header components:
-
-#### ViewHeader Component
-Use the generic ViewHeader component for consistent headers across the application with view toggle functionality:
-
-```tsx
-import { ViewHeader } from '@/components/view-header';
-
-// Inside your component:
-return (
-  <ViewHeader
-    title="Your Page Title"
-    description="Optional description or React node"
-    cookieKey="unique-cookie-identifier" // Used to persist view preference
-    defaultViewMode="list" // Can be 'list', 'split', or boolean
-    onViewModeChange={handleViewModeChange}
-    actions={<YourCustomActionButtons />}
-    showToggleLabels={true} // Whether to show text labels on toggle buttons
-  />
-);
-```
-
-#### OrgViewHeader Component
-Use for organization view pages with navigation capabilities:
-
-```tsx
-import { OrgViewHeader } from '@/components/org-view-header';
-
-// Inside your component:
-return (
-  <OrgViewHeader
-    orgStructure={orgStructure}
-    focusedNode={focusedNode}
-    rootNode={rootNode}
-    nodeHierarchy={nodeHierarchy}
-    onNavigateUp={handleNavigateUp}
-    onNavigateToRoot={handleNavigateToRoot}
-    isListView={isListView}
-    setIsListView={setIsListView}
-  />
-);
-```
-
-#### TaskViewHeader Component
-Use for task-related pages with task management actions:
-
-```tsx
-import { TaskViewHeader } from '@/components/task-view-header';
-
-// Inside your component:
-return (
-  <TaskViewHeader
-    title="Tasks"
-    description="Optional description"
-    viewMode={viewMode} // 'list' or 'split'
-    onViewModeChange={handleViewModeChange}
-    onAddTask={handleAddTask}
-    filterActive={filterActive}
-    onToggleFilter={handleToggleFilter}
-  />
-);
-```
-
-#### OrgViewToggle Component
-For simple grid/list toggle in organization views, especially in the app sidebar:
-
-```tsx
-import OrgViewToggle from '@/components/org-view-toggle';
-
-// Inside your component:
-return (
-  <OrgViewToggle
-    viewMode={orgViewMode} // 'grid' or 'list'
-    onViewModeChange={handleOrgViewModeChange}
-  />
-);
-```
-
-These components automatically persist user view preferences in cookies for a better user experience.
-
-### Form Submission
-Use Inertia's form helpers for form submission:
-
-```tsx
-import { useForm } from '@inertiajs/react';
-
-// In your component:
-const form = useForm({
-  // form fields
-});
-
-const submit = () => {
-  form.post(route('your.route'));
-};
-```
+For detailed documentation on frontend patterns, including view headers, toggle components, action buttons, and form submission, see [FRONTEND_PATTERNS.md](./docs/FRONTEND_PATTERNS.md).
 
 ## Additional Notes
 

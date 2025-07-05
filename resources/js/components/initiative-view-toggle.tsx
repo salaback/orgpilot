@@ -1,15 +1,15 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { SplitIcon, LayoutListIcon } from 'lucide-react';
+import { ListChecks, Columns } from 'lucide-react';
 
-type ViewMode = 'list' | 'split';
+type ViewMode = 'list' | 'columns';
 
-interface TaskViewToggleProps {
+interface InitiativeViewToggleProps {
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;
 }
 
-const TaskViewToggle: React.FC<TaskViewToggleProps> = ({ viewMode, onViewModeChange }) => {
+const InitiativeViewToggle: React.FC<InitiativeViewToggleProps> = ({ viewMode, onViewModeChange }) => {
   return (
     <div className="flex items-center border rounded-md overflow-hidden">
       <Button
@@ -18,20 +18,20 @@ const TaskViewToggle: React.FC<TaskViewToggleProps> = ({ viewMode, onViewModeCha
         onClick={() => onViewModeChange('list')}
         className="rounded-none border-0"
       >
-        <LayoutListIcon className="h-4 w-4 mr-1" />
+        <ListChecks className="h-4 w-4 mr-1" />
         <span className="hidden sm:inline">List View</span>
       </Button>
       <Button
-        variant={viewMode === 'split' ? "secondary" : "ghost"}
+        variant={viewMode === 'columns' ? "secondary" : "ghost"}
         size="sm"
-        onClick={() => onViewModeChange('split')}
+        onClick={() => onViewModeChange('columns')}
         className="rounded-none border-0"
       >
-        <SplitIcon className="h-4 w-4 mr-1" />
-        <span className="hidden sm:inline">Split View</span>
+        <Columns className="h-4 w-4 mr-1" />
+        <span className="hidden sm:inline">Column View</span>
       </Button>
     </div>
   );
 };
 
-export default TaskViewToggle;
+export default InitiativeViewToggle;

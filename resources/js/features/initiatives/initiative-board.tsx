@@ -393,14 +393,6 @@ const InitiativeBoard: React.FC<InitiativeBoardProps> = ({ initiatives, assignee
       onDragEnd={handleDragEnd}
     >
       <div style={{ width: '100%' }}>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
-          <button
-            onClick={handleNewClick}
-            style={{ background: '#228be6', color: '#fff', border: 'none', borderRadius: 4, padding: '8px 20px', fontWeight: 500, fontSize: 16 }}
-          >
-            + New Initiative
-          </button>
-        </div>
         <div style={{ display: 'flex', gap: 16, overflowX: 'auto' }}>
           {statusOrder.map((status) => (
             <SortableContext key={status} items={initiatives.filter(i => i.status === status).map(i => i.id)} strategy={verticalListSortingStrategy}>
