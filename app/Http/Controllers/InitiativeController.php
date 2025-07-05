@@ -2,9 +2,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Initiative;
+use App\Models\Employee;
+use App\Models\OrgStructure;
+use App\Models\Note;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\Rule;
+use Inertia\Inertia;
 
 class InitiativeController extends Controller
 {
@@ -176,6 +180,113 @@ class InitiativeController extends Controller
             ],
             'initiatives' => $initiatives,
             'filters' => $request->only(['status', 'search']),
+        ]);
+    }
+
+    /**
+     * Display initiatives page for web interface
+     */
+    public function webIndex()
+    {
+        $initiatives = Initiative::with(['assignees', 'tags'])
+            ->orderBy('status')
+            ->orderBy('order')
+            ->get()->map(function ($initiative) {
+                return [
+                    'id' => $initiative->id,
+                    'title' => $initiative->title,
+                    'description' => $initiative->description,
+                    'status' => $initiative->status,
+                    'order' => $initiative->order,
+                    'due_date' => $initiative->end_date,
+                    'dueDate' => $initiative->end_date,
+                    'assignees' => $initiative->assignees->pluck('id')->toArray(),
+                    'tags' => $initiative->tags->map(function ($tag) {
+                        return [
+                            'id' => $tag->id,
+                            'name' => $tag->name,
+                        ];
+                    })->toArray(),
+                    'teamLabel' => $initiative->teamLabel ?? '',
+                    'allocations' => $initiative->allocations ?? [],
+                    'created_at' => $initiative->created_at,
+                    'updated_at' => $initiative->updated_at,
+                ];
+            });
+
+        $employees = Employee::where('node_type', 'person')
+            ->where('status', 'active')
+            ->get(['id', 'first_name', 'last_name', 'email', 'title']);
+
+        $defaultOrg = OrgStructure::where('user_id', auth()->id())
+            ->orderBy('id')
+            ->first();
+
+        return Inertia::render('initiatives', [
+            'initiatives' => $initiatives,
+            'assignees' => $employees,
+            'default_org_structure_id' => $defaultOrg ? $defaultOrg->id : null,
+        ]);
+    }
+
+    /**
+     * Display single initiative page for web interface
+     */
+    public function webShow(Initiative $initiative)
+    {
+        $initiative->load(['assignees', 'tags']);
+
+        $initiativeData = [
+            'id' => $initiative->id,
+            'title' => $initiative->title,
+            'description' => $initiative->description,
+            'status' => $initiative->status,
+            'order' => $initiative->order,
+            'due_date' => $initiative->end_date,
+            'dueDate' => $initiative->end_date,
+            'assignees' => $initiative->assignees->pluck('id')->toArray(),
+            'tags' => $initiative->tags->map(function ($tag) {
+                return [
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                ];
+            })->toArray(),
+            'teamLabel' => $initiative->teamLabel ?? '',
+            'allocations' => $initiative->allocations ?? [],
+            'created_at' => $initiative->created_at,
+            'updated_at' => $initiative->updated_at,
+        ];
+
+        $employees = Employee::where('node_type', 'person')
+            ->where('status', 'active')
+            ->get(['id', 'first_name', 'last_name', 'email', 'title']);
+
+        // Load notes for this initiative with their tags
+        $notes = Note::where('notable_type', 'App\\Models\\Initiative')
+            ->where('notable_id', $initiative->id)
+            ->with('tags')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($note) {
+                return [
+                    'id' => $note->id,
+                    'title' => $note->title,
+                    'content' => $note->content,
+                    'created_at' => $note->created_at,
+                    'updated_at' => $note->updated_at,
+                    'tags' => $note->tags->map(function ($tag) {
+                        return [
+                            'id' => $tag->id,
+                            'name' => $tag->name,
+                        ];
+                    })->toArray(),
+                ];
+            });
+
+        return Inertia::render('initiative', [
+            'initiative' => $initiativeData,
+            'assignees' => $employees,
+            'notes' => $notes,
         ]);
     }
 }
