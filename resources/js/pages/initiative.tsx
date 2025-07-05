@@ -39,12 +39,18 @@ interface InitiativePageProps extends PageProps {
   initiative: Initiative;
   assignees: OrgNode[];
   notes?: Note[];
+  activeTab?: string; // Add activeTab prop
 }
 
-const Initiative: React.FC<InitiativePageProps> = ({ initiative, assignees, notes }) => {
+const Initiative: React.FC<InitiativePageProps> = ({ initiative, assignees, notes, activeTab = 'overview' }) => {
   return (
     <AppLayout>
-      <InitiativeDetailsPage initiative={initiative} assignees={assignees} notes={notes} />
+      <InitiativeDetailsPage
+        initiative={initiative}
+        assignees={assignees}
+        notes={notes}
+        activeTab={activeTab}
+      />
     </AppLayout>
   );
 };

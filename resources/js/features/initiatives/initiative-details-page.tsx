@@ -3,7 +3,7 @@ import { Initiative } from './types';
 import InitiativeModal from './initiative-modal';
 import { Inertia } from '@inertiajs/inertia';
 import NotesSection from '../../components/notes-section';
-import TaskManagement from '../../components/task-management';
+import TaskManagement from '../../components/task-management-enhanced';
 
 interface OrgNode {
   id: number;
@@ -25,6 +25,7 @@ interface InitiativeDetailsPageProps {
   initiative: Initiative;
   assignees: OrgNode[];
   notes?: Note[];
+  activeTab?: string; // Add activeTab prop
 }
 
 const statusLabels: Record<string, string> = {
@@ -43,9 +44,14 @@ const statusColors: Record<string, string> = {
   cancelled: '#ff6b6b',
 };
 
-const InitiativeDetailsPage: React.FC<InitiativeDetailsPageProps> = ({ initiative, assignees, notes = [] }) => {
+const InitiativeDetailsPage: React.FC<InitiativeDetailsPageProps> = ({
+  initiative,
+  assignees,
+  notes = [],
+  activeTab: initialTab = 'overview'  // Receive activeTab prop with default value
+}) => {
   const [modalOpen, setModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(initialTab); // Initialize with the provided tab
   const [tasks, setTasks] = useState<any[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(false);
 

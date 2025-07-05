@@ -58,9 +58,10 @@ const TaskForm: React.FC<Omit<TaskFormProps, 'open' | 'onClose'>> = ({
     setIsSubmitting(true);
     setErrors({});
 
+    // Ensure initiativeId is prioritized over form state when available
     const taskData = {
       ...formData,
-      initiative_id: formData.initiative_id || null,
+      initiative_id: initiativeId || formData.initiative_id || null,
       assigned_to: formData.assigned_to || null,
       due_date: formData.due_date || null,
       redirect_back: !!initiativeId, // Add redirect_back parameter when creating from an initiative

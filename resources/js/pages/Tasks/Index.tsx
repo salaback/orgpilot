@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
+import TaskSplitView from '@/components/task-split-view';
 import TaskManagement from '@/components/task-management-enhanced';
 
 interface Task {
@@ -80,24 +81,52 @@ export default function TasksPage({
   filters,
   sorting
 }: TasksPageProps) {
+  // Get the current view mode from localStorage to match header toggle
+  const [viewMode, setViewMode] = useState<'list' | 'split'>(() => {
+    if (typeof window !== 'undefined') {
+      const savedMode = localStorage.getItem('taskViewMode');
+      return (savedMode === 'list' || savedMode === 'split') ? savedMode as 'list' | 'split' : 'list';
+    }
+    return 'list';
+  });
+
+  // Keep view mode in sync with localStorage changes (from header toggle)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const currentMode = localStorage.getItem('taskViewMode') as 'list' | 'split';
+      if (currentMode && currentMode !== viewMode) {
+        setViewMode(currentMode);
+      }
+    };
+
+    // Check for changes periodically (localStorage doesn't have events within same window)
+    const interval = setInterval(handleStorageChange, 300);
+
+    return () => clearInterval(interval);
+  }, [viewMode]);
+
+  const taskProps = {
+    tasks: tasks.data,
+    initiatives,
+    orgNodes: employees,
+    onTaskCreated: (task: any) => {
+      console.log('Task created:', task);
+    },
+    onTaskUpdated: (task: any) => {
+      console.log('Task updated:', task);
+    }
+  };
+
   return (
     <AppLayout>
       <Head title="Task Management" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <TaskManagement
-          tasks={tasks.data}
-          initiatives={initiatives}
-          orgNodes={employees}
-          onTaskCreated={(task) => {
-            // Task created successfully - could trigger a refresh or update local state
-            console.log('Task created:', task);
-          }}
-          onTaskUpdated={(task) => {
-            // Task updated successfully - could trigger a refresh or update local state
-            console.log('Task updated:', task);
-          }}
-        />
+      <div className="w-full h-full">
+        {viewMode === 'list' ? (
+          <TaskManagement {...taskProps} />
+        ) : (
+          <TaskSplitView {...taskProps} />
+        )}
       </div>
     </AppLayout>
   );

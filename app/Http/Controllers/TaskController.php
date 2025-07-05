@@ -134,11 +134,39 @@ class TaskController extends Controller
         $validated['created_by'] = auth()->id();
         $validated['percentage_complete'] = $validated['percentage_complete'] ?? 0;
 
+        // Ensure initiative_id is properly cast to integer or set to null
+        if (isset($validated['initiative_id']) && $validated['initiative_id'] !== '' && $validated['initiative_id'] !== null) {
+            $validated['initiative_id'] = (int) $validated['initiative_id'];
+        } else {
+            $validated['initiative_id'] = null;
+        }
+
         $task = Task::create($validated);
         $task->load(['assignedTo', 'initiative', 'createdBy', 'tags']);
 
-        return response()->json([
-            'message' => 'Task created successfully',
+        // Check if this is an Inertia request
+        if (request()->wantsJson()) {
+            return response()->json([
+                'message' => 'Task created successfully',
+                'task' => $this->transformTask($task)
+            ]);
+        }
+
+        // For Inertia requests, if the task was created with an initiative_id,
+        // redirect to the initiative's tasks tab
+        if ($task->initiative_id) {
+            return redirect()->route('initiative.show', [
+                'initiative' => $task->initiative_id,
+                'tab' => 'tasks'
+            ])->with([
+                'success' => 'Task created successfully',
+                'task' => $this->transformTask($task)
+            ]);
+        }
+
+        // Otherwise, redirect back with flash message
+        return redirect()->back()->with([
+            'success' => 'Task created successfully',
             'task' => $this->transformTask($task)
         ]);
     }
@@ -317,5 +345,21 @@ class TaskController extends Controller
                 ];
             }),
         ];
+    }
+
+    /**
+     * Get tasks for a specific initiative
+     */
+    public function forInitiative(Request $request, $initiative)
+    {
+        $tasks = Task::with(['assignedTo', 'initiative', 'createdBy', 'tags'])
+            ->where('initiative_id', $initiative)
+            ->orderBy('due_date', 'asc')
+            ->get()
+            ->map(function ($task) {
+                return $this->transformTask($task);
+            });
+
+        return response()->json($tasks);
     }
 }

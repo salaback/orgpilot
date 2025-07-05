@@ -121,7 +121,30 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
 
   const isOverdue = (dueDate: string) => {
     if (!dueDate) return false;
-    return new Date(dueDate) < new Date();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize to start of day
+    const dueDateObj = new Date(dueDate);
+    dueDateObj.setHours(0, 0, 0, 0); // Normalize to start of day
+    return dueDateObj < today;
+  };
+
+  const isDueToday = (dueDate: string) => {
+    if (!dueDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize to start of day
+    const dueDateObj = new Date(dueDate);
+    dueDateObj.setHours(0, 0, 0, 0); // Normalize to start of day
+    return dueDateObj.getTime() === today.getTime();
+  };
+
+  const isDueTomorrow = (dueDate: string) => {
+    if (!dueDate) return false;
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0); // Normalize to start of day
+    const dueDateObj = new Date(dueDate);
+    dueDateObj.setHours(0, 0, 0, 0); // Normalize to start of day
+    return dueDateObj.getTime() === tomorrow.getTime();
   };
 
   const handleSave = () => {
@@ -185,18 +208,15 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
       <div className="flex justify-between items-start mb-6 flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-gray-100 flex items-center gap-3">
-            {isEditing ? (
-              <input
-                type="text"
-                value={editData.title}
-                onChange={(e) => setEditData({ ...editData, title: e.target.value })}
-                className="text-3xl font-bold border-2 border-blue-600 dark:border-blue-400 rounded-md px-3 py-2 w-full max-w-xl bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
-              />
-            ) : (
-              task.title
-            )}
+            {task.title}
             {isOverdue(task.due_date || '') && (
               <Badge className="ml-3 bg-red-600 dark:bg-red-500 text-white text-xs px-2 py-1 rounded">OVERDUE</Badge>
+            )}
+            {isDueToday(task.due_date || '') && (
+              <Badge className="ml-3 bg-yellow-600 dark:bg-yellow-500 text-white text-xs px-2 py-1 rounded">DUE TODAY</Badge>
+            )}
+            {isDueTomorrow(task.due_date || '') && (
+              <Badge className="ml-3 bg-blue-600 dark:bg-blue-500 text-white text-xs px-2 py-1 rounded">DUE TOMORROW</Badge>
             )}
           </h1>
           <div className="flex gap-3 items-center flex-wrap">

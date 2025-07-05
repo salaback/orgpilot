@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { Folder, LayoutGrid, Users, Calendar } from 'lucide-react';
+import { Folder, LayoutGrid, Users, Calendar, CheckSquare, Target } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -16,7 +16,12 @@ const mainNavItems: NavItem[] = [
     {
         title: 'Initiatives',
         href: '/initiatives',
-        icon: Folder,
+        icon: Target,
+    },
+    {
+        title: 'Tasks',
+        href: '/tasks',
+        icon: CheckSquare,
     },
     {
         title: 'Meetings',

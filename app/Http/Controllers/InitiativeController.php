@@ -232,7 +232,7 @@ class InitiativeController extends Controller
     /**
      * Display single initiative page for web interface
      */
-    public function webShow(Initiative $initiative)
+    public function webShow(Request $request, Initiative $initiative)
     {
         $initiative->load(['assignees', 'tags']);
 
@@ -283,10 +283,14 @@ class InitiativeController extends Controller
                 ];
             });
 
+        // Get the active tab from the request, default to 'overview' if not specified
+        $activeTab = $request->query('tab', 'overview');
+
         return Inertia::render('initiative', [
             'initiative' => $initiativeData,
             'assignees' => $employees,
             'notes' => $notes,
+            'activeTab' => $activeTab, // Pass the active tab to the frontend
         ]);
     }
 }
