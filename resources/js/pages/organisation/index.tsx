@@ -3,9 +3,9 @@ import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { OrgNode } from '@/types';
 import { OrgNodeCard } from '@/pages/organisation/org-node-card';
+import { OrgListView } from '@/pages/organisation/org-list-view';
 import { AddDirectReportSheet } from '@/pages/organisation/add-direct-report-sheet';
-import { ChevronUp, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { OrgViewHeader } from '@/components/org-view-header';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import axios from 'axios';
 
@@ -32,6 +32,7 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
   const [currentReports, setCurrentReports] = useState<OrgNode[]>(initialCurrentReports || directReports);
   const [highlightedManagerId, setHighlightedManagerId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false); // Loading indicator
+  const [isListView, setIsListView] = useState(false); // State to toggle between list and chart views
 
   // Find a specific node by ID
   const findNodeById = (id: number): OrgNode | null => {
@@ -44,6 +45,28 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
     // Then check in the original direct reports
     return directReports.find(node => node.id === id) || null;
   };
+
+  // Initialize the view mode from localStorage
+  React.useEffect(() => {
+    const savedMode = localStorage.getItem('orgViewMode');
+    if (savedMode === 'list') {
+      setIsListView(true);
+    } else {
+      setIsListView(false);
+    }
+
+    // Listen for view mode changes from the AppSidebarHeader
+    const handleViewModeChange = (event: CustomEvent) => {
+      const { isListView } = event.detail;
+      setIsListView(isListView);
+    };
+
+    window.addEventListener('orgViewModeChange', handleViewModeChange as EventListener);
+
+    return () => {
+      window.removeEventListener('orgViewModeChange', handleViewModeChange as EventListener);
+    };
+  }, []);
 
   // Refresh the view after adding a direct report
   const refreshView = async () => {
@@ -162,7 +185,8 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
     setNodeHierarchy(newHierarchy);
 
     // Update the URL to reflect the current node
-    router.replace(`/organisation/${newHierarchy[newHierarchy.length - 1]?.id || rootNode.id}`);
+    const navigateId = newHierarchy[newHierarchy.length - 1]?.id || rootNode.id;
+    router.visit(`/organisation/${navigateId}`, { preserveState: true });
   };
 
   // Navigate to the root level organisation
@@ -185,62 +209,25 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
     <AppLayout>
       <Head title="My Organisation" />
 
-      <div className="py-12">
+      {/* Sticky organization header - placed outside the main content */}
+      <OrgViewHeader
+        orgStructure={orgStructure}
+        focusedNode={focusedNode}
+        rootNode={rootNode}
+        nodeHierarchy={nodeHierarchy}
+        onNavigateUp={handleNavigateUp}
+        onNavigateToRoot={handleNavigateToRoot}
+        isListView={isListView}
+        setIsListView={setIsListView}
+      />
+
+      <div className="py-6">
         <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
           {/* Current view indicator */}
           <div className={`relative bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 ${focusedNode ? 'border-l-4 border-primary' : ''}`}>
             {focusedNode && (
               <div className="absolute top-0 left-0 w-1 bg-primary h-full"></div>
             )}
-
-            {/* Organization hierarchy header */}
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h1 className="text-2xl font-semibold">{orgStructure.name.replace('Organization', 'Organisation')}</h1>
-                {focusedNode && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Currently viewing: <span className="font-medium">{focusedNode.full_name}'s Organisation</span>
-                    {/* Show manager indicator if not viewing the root node */}
-                    {focusedNode.manager_id && focusedNode.id !== rootNode.id && (
-                      <span className="text-sm text-muted-foreground ml-1">
-                        • Reports to: <span className="font-medium cursor-pointer hover:text-primary" onClick={handleNavigateUp}>
-                          {focusedNode.manager_id === rootNode.id
-                            ? rootNode.full_name
-                            : (focusedNode.manager?.full_name || "Manager")}
-                        </span>
-                      </span>
-                    )}
-                  </p>
-                )}
-              </div>
-
-              {/* Organization Navigation */}
-              {(focusedNode || nodeHierarchy.length > 0) && (
-                <div className="flex items-center gap-2">
-                  {/* Show "Up One Level" button if viewing a manager who isn't the root */}
-                  {focusedNode && focusedNode.id !== rootNode.id && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleNavigateUp}
-                      className="flex items-center gap-1"
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                      <span>Up One Level</span>
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleNavigateToRoot}
-                    className="flex items-center gap-1"
-                  >
-                    <Users className="h-4 w-4" />
-                    <span>Full Organization</span>
-                  </Button>
-                </div>
-              )}
-            </div>
 
             {/* Breadcrumb navigation - Hide since we don't allow drilling down */}
             {false && (focusedNode || nodeHierarchy.length > 0) && (
@@ -282,37 +269,39 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
             )}
 
             <div className="flex flex-col items-center">
-              {/* Display either the focused node or the root node */}
-              <div className={`mb-8 relative ${highlightedManagerId === (focusedNode?.id || rootNode.id) ? 'animate-pulse' : ''}`}>
-                {/* Visual indicator for current manager's context */}
-                {focusedNode && (
-                  <div className="absolute -left-4 -right-4 -top-4 bottom-4 bg-primary/5 rounded-lg -z-10"></div>
-                )}
+              {/* Display either the focused node or the root node - but only in grid view */}
+              {!isListView && (
+                <div className={`mb-8 relative ${highlightedManagerId === (focusedNode?.id || rootNode.id) ? 'animate-pulse' : ''}`}>
+                  {/* Visual indicator for current manager's context */}
+                  {focusedNode && (
+                    <div className="absolute -left-4 -right-4 -top-4 bottom-4 bg-primary/5 rounded-lg -z-10"></div>
+                  )}
 
-                <OrgNodeCard
-                  node={focusedNode || rootNode}
-                  onAddDirectReport={handleAddDirectReport}
-                  onViewProfile={handleViewProfile} // Pass the view profile handler
-                />
+                  <OrgNodeCard
+                    node={focusedNode || rootNode}
+                    onAddDirectReport={handleAddDirectReport}
+                    onViewProfile={handleViewProfile} // Pass the view profile handler
+                  />
 
-                {/* Back up button if we're not at the root - Hide since we don't allow drilling down */}
-                {false && focusedNode && (
-                  <div className="flex justify-center mt-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex items-center gap-2"
-                      onClick={handleNavigateUp}
-                    >
-                      <ChevronUp className="h-4 w-4" />
-                      <span>View Manager</span>
-                    </Button>
-                  </div>
-                )}
-              </div>
+                  {/* Back up button if we're not at the root - Hide since we don't allow drilling down */}
+                  {false && focusedNode && (
+                    <div className="flex justify-center mt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                        onClick={handleNavigateUp}
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                        <span>View Manager</span>
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
 
-              {/* Team context visual indicator */}
-              {focusedNode && currentReports.length > 0 && (
+              {/* Team context visual indicator - only in grid view */}
+              {!isListView && focusedNode && currentReports.length > 0 && (
                 <div className="w-0.5 h-8 bg-primary/50"></div>
               )}
 
@@ -328,22 +317,31 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
                     <h2 className="text-lg font-medium mb-4 text-center">
                       {focusedNode ? `${focusedNode.full_name}'s Team` : 'Direct Reports'}
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                      {currentReports.map(report => (
-                        <div
-                          key={report.id}
-                          className={`flex flex-col items-center ${highlightedManagerId === report.id ? 'animate-pulse' : ''}`}
-                        >
-                          <OrgNodeCard
-                            node={report}
-                            onAddDirectReport={handleAddDirectReport}
-                            onViewProfile={handleViewProfile} // Pass the view profile handler
-                            // Remove the ability to focus on direct reports
-                            onFocus={handleFocusNode}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                    {isListView ? (
+                      <OrgListView
+                        rootNode={focusedNode || rootNode}
+                        initialReports={currentReports}
+                        onAddDirectReport={handleAddDirectReport}
+                        onViewProfile={handleViewProfile}
+                      />
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {currentReports.map(report => (
+                          <div
+                            key={report.id}
+                            className={`flex flex-col items-center ${highlightedManagerId === report.id ? 'animate-pulse' : ''}`}
+                          >
+                            <OrgNodeCard
+                              node={report}
+                              onAddDirectReport={handleAddDirectReport}
+                              onViewProfile={handleViewProfile} // Pass the view profile handler
+                              // Remove the ability to focus on direct reports
+                              onFocus={handleFocusNode}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )
               )}

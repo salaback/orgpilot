@@ -152,6 +152,87 @@ const YourPage: React.FC<YourPageProps> = ({ items }) => {
 };
 ```
 
+### View Headers and Toggle Components
+When creating pages with toggle functionality between different view modes, use our reusable header components:
+
+#### ViewHeader Component
+Use the generic ViewHeader component for consistent headers across the application with view toggle functionality:
+
+```tsx
+import { ViewHeader } from '@/components/view-header';
+
+// Inside your component:
+return (
+  <ViewHeader
+    title="Your Page Title"
+    description="Optional description or React node"
+    cookieKey="unique-cookie-identifier" // Used to persist view preference
+    defaultViewMode="list" // Can be 'list', 'split', or boolean
+    onViewModeChange={handleViewModeChange}
+    actions={<YourCustomActionButtons />}
+    showToggleLabels={true} // Whether to show text labels on toggle buttons
+  />
+);
+```
+
+#### OrgViewHeader Component
+Use for organization view pages with navigation capabilities:
+
+```tsx
+import { OrgViewHeader } from '@/components/org-view-header';
+
+// Inside your component:
+return (
+  <OrgViewHeader
+    orgStructure={orgStructure}
+    focusedNode={focusedNode}
+    rootNode={rootNode}
+    nodeHierarchy={nodeHierarchy}
+    onNavigateUp={handleNavigateUp}
+    onNavigateToRoot={handleNavigateToRoot}
+    isListView={isListView}
+    setIsListView={setIsListView}
+  />
+);
+```
+
+#### TaskViewHeader Component
+Use for task-related pages with task management actions:
+
+```tsx
+import { TaskViewHeader } from '@/components/task-view-header';
+
+// Inside your component:
+return (
+  <TaskViewHeader
+    title="Tasks"
+    description="Optional description"
+    viewMode={viewMode} // 'list' or 'split'
+    onViewModeChange={handleViewModeChange}
+    onAddTask={handleAddTask}
+    filterActive={filterActive}
+    onToggleFilter={handleToggleFilter}
+  />
+);
+```
+
+#### OrgViewToggle Component
+For simple grid/list toggle in organization views, especially in the app sidebar:
+
+```tsx
+import OrgViewToggle from '@/components/org-view-toggle';
+
+// Inside your component:
+return (
+  <OrgViewToggle
+    viewMode={orgViewMode} // 'grid' or 'list'
+    onViewModeChange={handleOrgViewModeChange}
+  />
+);
+```
+
+These components automatically persist user view preferences in cookies for a better user experience.
+
 ### Form Submission
 Use Inertia's form helpers for form submission:
 

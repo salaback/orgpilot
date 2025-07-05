@@ -31,7 +31,7 @@ const TaskHeader: React.FC<TaskHeaderProps> = ({ viewMode, onViewModeChange }) =
         <ToggleGroupItem
           value="list"
           aria-label="Toggle list view"
-          title="List View"
+          title="List"
           className="data-[state=on]:bg-gray-100 px-2 py-1"
         >
           <LayoutListIcon className="h-4 w-4" />
@@ -39,7 +39,7 @@ const TaskHeader: React.FC<TaskHeaderProps> = ({ viewMode, onViewModeChange }) =
         <ToggleGroupItem
           value="split"
           aria-label="Toggle split view"
-          title="Split View"
+          title="Split"
           className="data-[state=on]:bg-gray-100 px-2 py-1"
         >
           <SplitIcon className="h-4 w-4" />
