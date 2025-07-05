@@ -15,14 +15,20 @@ class InitiativeController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): JsonResponse
+    public function index(Request $request)
     {
         $initiatives = Initiative::with(['assignees', 'tags'])
             ->orderBy('status')
             ->orderBy('order')
             ->get();
 
-        return response()->json($initiatives);
+        if ($request->wantsJson()) {
+            return response()->json($initiatives);
+        }
+
+        return Inertia::render('Initiatives/Index', [
+            'initiatives' => $initiatives,
+        ]);
     }
 
     /**
@@ -80,15 +86,26 @@ class InitiativeController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Initiative $initiative): JsonResponse
+    public function show(Request $request, Initiative $initiative)
     {
-        return response()->json($initiative->load(['assignees', 'tags']));
+        $initiative->load(['assignees', 'tags']);
+
+        if ($request->wantsJson()) {
+            return response()->json($initiative);
+        }
+
+        return Inertia::render('Initiatives/Show', [
+            'initiative' => $initiative,
+            'employees' => Employee::where('status', 'active')
+                ->select(['id', 'first_name', 'last_name', 'email', 'title'])
+                ->get(),
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Initiative $initiative): JsonResponse
+    public function update(Request $request, Initiative $initiative)
     {
         $validated = $request->validate([
             'title' => 'sometimes|required|string|max:255',
@@ -122,7 +139,7 @@ class InitiativeController extends Controller
         }
 
         // For API requests, return JSON
-        if ($request->expectsJson() && !$request->header('X-Inertia')) {
+        if ($request->wantsJson()) {
             return response()->json($initiative->load(['assignees', 'tags']));
         }
 
@@ -133,11 +150,15 @@ class InitiativeController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Initiative $initiative): JsonResponse
+    public function destroy(Request $request, Initiative $initiative)
     {
         $initiative->delete();
 
-        return response()->json(['message' => 'Initiative deleted successfully']);
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Initiative deleted successfully']);
+        }
+
+        return redirect()->route('initiatives.index')->with('success', 'Initiative deleted successfully');
     }
 
     /**

@@ -18,12 +18,14 @@ import {
   Search,
   FileText,
   Target,
-  Eye
+  Eye,
+  Trash2
 } from 'lucide-react';
 import TaskDetail from './task-detail';
 import TaskAssignment from './task-assignment';
 import AssigneeDropdown from './ui/AssigneeDropdown';
 import Dropdown from './ui/Dropdown';
+import { ConfirmationModal } from './ui/confirmation-modal';
 import axios from 'axios';
 
 interface Task {
@@ -120,6 +122,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
     overdue: false,
     initiative: ''
   });
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
   useEffect(() => {
     setTaskList(tasks);
@@ -399,6 +402,28 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedTasks.length === 0) return;
+
+    try {
+      // Delete each selected task
+      await Promise.all(selectedTasks.map(taskId =>
+        axios.delete(`/tasks/${taskId}`)
+      ));
+
+      // Remove the deleted tasks from the list
+      setTaskList(prev => prev.filter(task => !selectedTasks.includes(task.id)));
+
+      // Clear the selection
+      setSelectedTasks([]);
+
+      // Close the confirmation modal
+      setIsConfirmingDelete(false);
+    } catch (error) {
+      console.error('Error deleting tasks', error);
+    }
+  };
+
   return (
     <div className="w-full min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="w-full max-w-none px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -488,6 +513,20 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
               </div>
             </div>
           </div>
+        )}
+
+        {/* Confirmation Modal for Deletion */}
+        {isConfirmingDelete && (
+          <ConfirmationModal
+            isOpen={isConfirmingDelete}
+            onClose={() => setIsConfirmingDelete(false)}
+            onConfirm={handleBulkDelete}
+            title="Confirm Deletion"
+            message={`Are you sure you want to delete ${selectedTasks.length} task(s)? This action cannot be undone.`}
+            confirmText="Delete"
+            cancelText="Cancel"
+            danger={true}
+          />
         )}
 
         {/* Header with Statistics */}
@@ -682,6 +721,14 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                   onClick={() => handleBulkStatusUpdate('in_progress')}
                 >
                   Mark In Progress
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => setIsConfirmingDelete(true)}
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Delete
                 </Button>
                 <Button
                   size="sm"

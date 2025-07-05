@@ -174,11 +174,11 @@ class TaskController extends Controller
     /**
      * Display the specified task
      */
-    public function show(Task $task)
+    public function show(Task $task): Response
     {
         $task->load(['assignedTo', 'initiative', 'createdBy', 'tags', 'notes']);
 
-        return response()->json([
+        return Inertia::render('Tasks/Show', [
             'task' => $this->transformTask($task)
         ]);
     }
@@ -202,10 +202,14 @@ class TaskController extends Controller
         $task->update($validated);
         $task->load(['assignedTo', 'initiative', 'createdBy', 'tags']);
 
-        return response()->json([
-            'message' => 'Task updated successfully',
-            'task' => $this->transformTask($task)
-        ]);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Task updated successfully',
+                'task' => $this->transformTask($task)
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Task updated successfully');
     }
 
     /**
@@ -226,10 +230,14 @@ class TaskController extends Controller
             $task->update(['status' => 'in_progress']);
         }
 
-        return response()->json([
-            'message' => 'Task progress updated successfully',
-            'task' => $this->transformTask($task)
-        ]);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Task progress updated successfully',
+                'task' => $this->transformTask($task)
+            ]);
+        }
+
+        return redirect()->back()->with('success', 'Task progress updated successfully');
     }
 
     /**
@@ -246,13 +254,18 @@ class TaskController extends Controller
         ]);
 
         $updates = collect($validated)->except('task_ids')->toArray();
+        $updatedCount = count($validated['task_ids']);
 
         Task::whereIn('id', $validated['task_ids'])->update($updates);
 
-        return response()->json([
-            'message' => 'Tasks updated successfully',
-            'updated_count' => count($validated['task_ids'])
-        ]);
+        if ($request->wantsJson()) {
+            return response()->json([
+                'message' => 'Tasks updated successfully',
+                'updated_count' => $updatedCount
+            ]);
+        }
+
+        return redirect()->back()->with('success', "{$updatedCount} tasks updated successfully");
     }
 
     /**
@@ -262,9 +275,13 @@ class TaskController extends Controller
     {
         $task->delete();
 
-        return response()->json([
-            'message' => 'Task deleted successfully'
-        ]);
+        if (request()->wantsJson()) {
+            return response()->json([
+                'message' => 'Task deleted successfully'
+            ]);
+        }
+
+        return redirect()->route('tasks.index')->with('success', 'Task deleted successfully');
     }
 
     /**
@@ -285,7 +302,7 @@ class TaskController extends Controller
 
         $tasks = $query->get();
 
-        return response()->json([
+        $stats = [
             'total' => $tasks->count(),
             'completed' => $tasks->where('status', 'completed')->count(),
             'in_progress' => $tasks->where('status', 'in_progress')->count(),
@@ -302,6 +319,15 @@ class TaskController extends Controller
                 'medium' => $tasks->where('priority', 'medium')->count(),
                 'low' => $tasks->where('priority', 'low')->count(),
             ]
+        ];
+
+        if ($request->wantsJson()) {
+            return response()->json($stats);
+        }
+
+        return Inertia::render('Tasks/Statistics', [
+            'stats' => $stats,
+            'filters' => $request->only(['initiative_id', 'assigned_to']),
         ]);
     }
 
