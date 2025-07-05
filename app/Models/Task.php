@@ -22,12 +22,21 @@ class Task extends Model
         'percentage_complete',
         'priority',
         'status',
+        'meeting_id',
     ];
 
     protected $casts = [
         'due_date' => 'date',
         'percentage_complete' => 'integer',
     ];
+
+    /**
+     * Get the meeting this task belongs to
+     */
+    public function meeting(): BelongsTo
+    {
+        return $this->belongsTo(Meeting::class);
+    }
 
     /**
      * Get the initiative that owns the task

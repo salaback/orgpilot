@@ -40,6 +40,11 @@ Route::middleware([
         Route::post('/{meeting}/cancel', [\App\Http\Controllers\OneOnOneMeetingController::class, 'cancel'])->name('cancel');
     });
 
+    // Meeting routes
+    Route::resource('meeting-series', \App\Http\Controllers\MeetingSeriesController::class);
+    Route::resource('meetings', \App\Http\Controllers\MeetingController::class);
+    Route::post('meetings/{meeting}/tasks', [\App\Http\Controllers\MeetingController::class, 'createTask'])->name('meetings.tasks.store');
+
     Route::get('initiatives', function () {
         $initiatives = \App\Models\Initiative::with(['assignees', 'tags'])
             ->orderBy('status')
