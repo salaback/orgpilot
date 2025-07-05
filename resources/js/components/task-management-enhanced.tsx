@@ -3,20 +3,13 @@ import { Inertia } from '@inertiajs/inertia';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Input } from './ui/input';
-import { Label } from './ui/label';
 import { Badge } from './ui/badge';
-import { Select } from './ui/select';
-import { Table } from './ui/table';
 import { Checkbox } from './ui/checkbox';
-import { DropdownMenu } from './ui/dropdown-menu';
-import { Separator } from './ui/separator';
 import TaskFormSheet from './task-form';
 import { Progress } from './ui/progress';
 import {
-  PieChart,
   Calendar,
   User,
-  Filter,
   Plus,
   CheckCircle,
   Clock,
@@ -25,7 +18,8 @@ import {
   ArrowUpDown,
   Search,
   FileText,
-  Target
+  Target,
+  Eye
 } from 'lucide-react';
 import TaskDetail from './task-detail';
 
@@ -98,7 +92,6 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskList, setTaskList] = useState<Task[]>(tasks);
   const [selectedTasks, setSelectedTasks] = useState<number[]>([]);
-  const [viewMode, setViewMode] = useState<'list' | 'cards'>('list');
   const [sortBy, setSortBy] = useState<'title' | 'due_date' | 'priority' | 'status' | 'percentage_complete'>('due_date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [filters, setFilters] = useState({
@@ -120,26 +113,6 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
     }
   }, [showCreateForm]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return '#28a745';
-      case 'in_progress': return '#007bff';
-      case 'on_hold': return '#ffc107';
-      case 'cancelled': return '#dc3545';
-      default: return '#6c757d';
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'urgent': return '#dc3545';
-      case 'high': return '#fd7e14';
-      case 'medium': return '#ffc107';
-      case 'low': return '#28a745';
-      default: return '#ffc107';
-    }
-  };
-
   const formatDate = (dateString: string) => {
     try {
       return new Date(dateString).toLocaleDateString();
@@ -150,7 +123,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
 
   const isOverdue = (dueDate: string) => {
     if (!dueDate) return false;
-    return new Date(dueDate) < new Date() && true;
+    return new Date(dueDate) < new Date();
   };
 
   const handleTaskCreated = (task: Task) => {
@@ -159,22 +132,6 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
     if (onTaskCreated) {
       onTaskCreated(task);
     }
-  };
-
-  const handleUpdateProgress = (task: Task, percentage: number) => {
-    Inertia.patch(`/tasks/${task.id}/progress`, {
-      percentage_complete: percentage
-    }, {
-      preserveScroll: true,
-      onSuccess: () => {
-        // Update local state
-        setTaskList(prev => prev.map(t =>
-          t.id === task.id
-            ? { ...t, percentage_complete: percentage }
-            : t
-        ));
-      }
-    });
   };
 
   // Enhanced filtering and sorting
@@ -195,18 +152,22 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
       return true;
     })
     .sort((a, b) => {
-      let aValue: any = a[sortBy];
-      let bValue: any = b[sortBy];
+      let aValue: string | number = '';
+      let bValue: string | number = '';
 
       if (sortBy === 'due_date') {
-        aValue = aValue ? new Date(aValue).getTime() : 0;
-        bValue = bValue ? new Date(bValue).getTime() : 0;
-      }
-
-      if (sortBy === 'priority') {
+        aValue = a.due_date ? new Date(a.due_date).getTime() : 0;
+        bValue = b.due_date ? new Date(b.due_date).getTime() : 0;
+      } else if (sortBy === 'priority') {
         const priorityOrder = { 'urgent': 4, 'high': 3, 'medium': 2, 'low': 1 };
-        aValue = priorityOrder[aValue as keyof typeof priorityOrder] || 0;
-        bValue = priorityOrder[bValue as keyof typeof priorityOrder] || 0;
+        aValue = priorityOrder[a.priority] || 0;
+        bValue = priorityOrder[b.priority] || 0;
+      } else if (sortBy === 'percentage_complete') {
+        aValue = a.percentage_complete;
+        bValue = b.percentage_complete;
+      } else {
+        aValue = a[sortBy] || '';
+        bValue = b[sortBy] || '';
       }
 
       if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
@@ -237,12 +198,12 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
 
     Inertia.patch('/tasks/bulk-update', {
       task_ids: selectedTasks,
-      updates: { status }
+      status: status
     }, {
       preserveScroll: true,
       onSuccess: () => {
         setTaskList(prev => prev.map(t =>
-          selectedTasks.includes(t.id) ? { ...t, status: status as any } : t
+          selectedTasks.includes(t.id) ? { ...t, status: status as Task['status'] } : t
         ));
         setSelectedTasks([]);
       }
@@ -282,15 +243,22 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
     <div className="space-y-6">
       {/* Task Details Modal */}
       {selectedTask && (
-        <TaskDetail
-          task={selectedTask}
-          onClose={() => setSelectedTask(null)}
-          onTaskUpdated={(updatedTask) => {
-            setTaskList(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
-            setSelectedTask(updatedTask);
-            if (onTaskUpdated) onTaskUpdated(updatedTask);
-          }}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full m-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Task Details</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedTask(null)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ×
+              </Button>
+            </div>
+            <TaskDetail task={selectedTask} />
+          </div>
+        </div>
       )}
 
       {/* Header with Statistics */}
@@ -599,10 +567,9 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                 filteredAndSortedTasks.map((task) => (
                   <tr
                     key={task.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
-                    onClick={() => setSelectedTask(task)}
+                    className="hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
-                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-4 py-3">
                       <Checkbox
                         checked={selectedTasks.includes(task.id)}
                         onCheckedChange={(checked) => handleTaskSelect(task.id, checked as boolean)}
@@ -678,29 +645,16 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                      <DropdownMenu>
-                        <DropdownMenu.Trigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenu.Trigger>
-                        <DropdownMenu.Content>
-                          <DropdownMenu.Item onClick={() => setSelectedTask(task)}>
-                            View Details
-                          </DropdownMenu.Item>
-                          <DropdownMenu.Separator />
-                          <DropdownMenu.Item onClick={() => handleBulkStatusUpdate('completed')}>
-                            Mark Complete
-                          </DropdownMenu.Item>
-                          <DropdownMenu.Item onClick={() => handleBulkStatusUpdate('in_progress')}>
-                            Mark In Progress
-                          </DropdownMenu.Item>
-                          <DropdownMenu.Item onClick={() => handleBulkStatusUpdate('on_hold')}>
-                            Put On Hold
-                          </DropdownMenu.Item>
-                        </DropdownMenu.Content>
-                      </DropdownMenu>
+                    <td className="px-4 py-3">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedTask(task)}
+                        className="flex items-center gap-1"
+                      >
+                        <Eye className="w-3 h-3" />
+                        View
+                      </Button>
                     </td>
                   </tr>
                 ))
@@ -714,7 +668,6 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
       <TaskFormSheet
         open={isCreating}
         onClose={() => setIsCreating(false)}
-        title="Create New Task"
         size="lg"
         initiatives={initiatives}
         orgNodes={orgNodes}

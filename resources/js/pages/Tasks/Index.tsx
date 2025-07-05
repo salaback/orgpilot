@@ -1,53 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { Head, Link } from '@inertiajs/react';
-import { router } from '@inertiajs/core';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  Search,
-  Filter,
-  X
-} from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import React from 'react';
+import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
+import TaskManagement from '@/components/task-management-enhanced';
 
 interface Task {
   id: number;
   title: string;
-  description: string;
-  status: string;
-  priority: string;
-  due_date: string;
+  description?: string;
+  initiative_id?: number;
+  assigned_to?: number;
+  created_by: number;
+  due_date?: string;
   percentage_complete: number;
-  assignedTo?: {
-    id: number;
-    first_name: string;
-    last_name: string;
-  };
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  status: 'not_started' | 'in_progress' | 'completed' | 'on_hold' | 'cancelled';
+  created_at: string;
+  updated_at: string;
   initiative?: {
     id: number;
     title: string;
   };
-  tags: Array<{ id: number; name: string }>;
+  assigned_to_node?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+  created_by_user?: {
+    id: number;
+    first_name: string;
+    last_name: string;
+  };
+  tags?: Array<{
+    id: number;
+    name: string;
+  }>;
+}
+
+interface OrgNode {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
 }
 
 interface Initiative {
@@ -55,360 +49,56 @@ interface Initiative {
   title: string;
 }
 
-interface OrgNode {
-  id: number;
-  first_name: string;
-  last_name: string;
-}
-
-interface IndexProps {
+interface TasksPageProps {
   tasks: {
     data: Task[];
-    links: { url: string | null; label: string; active: boolean }[];
     current_page: number;
     last_page: number;
-    from: number;
-    to: number;
+    per_page: number;
     total: number;
   };
+  initiatives: Initiative[];
+  employees: OrgNode[];
   filters: {
-    initiative_id?: string;
-    assigned_to?: string;
     status?: string;
     priority?: string;
+    assigned_to?: string;
+    initiative_id?: string;
+    overdue?: boolean;
     search?: string;
   };
-  initiatives: Initiative[];
-  orgNodes: OrgNode[];
+  sorting: {
+    sort_by?: string;
+    sort_order?: string;
+  };
 }
 
-const Index: React.FC<IndexProps> = ({ tasks, filters, initiatives, orgNodes }) => {
-  const [searchTerm, setSearchTerm] = useState(filters.search || '');
-  const [showFilters, setShowFilters] = useState(false);
-  const [filterValues, setFilterValues] = useState({
-    initiative_id: filters.initiative_id || '',
-    assigned_to: filters.assigned_to || '',
-    status: filters.status || '',
-    priority: filters.priority || '',
-  });
-
-  // Status color mapping
-  const statusColors: Record<string, string> = {
-    not_started: 'bg-gray-200 text-gray-800',
-    in_progress: 'bg-blue-200 text-blue-800',
-    completed: 'bg-green-200 text-green-800',
-    on_hold: 'bg-yellow-200 text-yellow-800',
-    cancelled: 'bg-red-200 text-red-800',
-  };
-
-  // Priority color mapping
-  const priorityColors: Record<string, string> = {
-    low: 'bg-gray-100 text-gray-800',
-    medium: 'bg-blue-100 text-blue-800',
-    high: 'bg-orange-100 text-orange-800',
-    urgent: 'bg-red-100 text-red-800',
-  };
-
-  // Handle search
-  const handleSearch = () => {
-    router.get(
-      route('tasks.index'),
-      { search: searchTerm, ...filterValues },
-      { preserveState: true, replace: true }
-    );
-  };
-
-  // Handle filter change
-  const handleFilterChange = (key: string, value: string) => {
-    const newFilters = { ...filterValues, [key]: value };
-    setFilterValues(newFilters);
-
-    router.get(
-      route('tasks.index'),
-      { ...newFilters, search: searchTerm },
-      { preserveState: true, replace: true }
-    );
-  };
-
-  // Clear all filters
-  const clearFilters = () => {
-    setSearchTerm('');
-    setFilterValues({
-      initiative_id: '',
-      assigned_to: '',
-      status: '',
-      priority: '',
-    });
-
-    router.get(
-      route('tasks.index'),
-      {},
-      { preserveState: true, replace: true }
-    );
-  };
-
-  // Format date
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'No due date';
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  // Check if any filter is active
-  const hasActiveFilters = () => {
-    return (
-      searchTerm !== '' ||
-      filterValues.initiative_id !== '' ||
-      filterValues.assigned_to !== '' ||
-      filterValues.status !== '' ||
-      filterValues.priority !== ''
-    );
-  };
-
-  // Get person full name
-  const getPersonName = (person: { first_name: string; last_name: string } | undefined) => {
-    if (!person) return 'Unassigned';
-    return `${person.first_name} ${person.last_name}`;
-  };
-
+export default function TasksPage({
+  tasks,
+  initiatives,
+  employees,
+  filters,
+  sorting
+}: TasksPageProps) {
   return (
     <AppLayout>
-      <Head title="Tasks" />
+      <Head title="Task Management" />
 
-      <div className="w-full py-6 px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Tasks</h1>
-          <Button asChild>
-            <Link href={route('tasks.create')}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Task
-            </Link>
-          </Button>
-        </div>
-
-        <Card className="mb-6">
-          <div className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-grow">
-                <Input
-                  type="text"
-                  placeholder="Search tasks..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  className="pl-10"
-                />
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowFilters(!showFilters)}
-                >
-                  <Filter className="mr-2 h-4 w-4" />
-                  Filters
-                </Button>
-                {hasActiveFilters() && (
-                  <Button
-                    variant="ghost"
-                    onClick={clearFilters}
-                  >
-                    <X className="mr-2 h-4 w-4" />
-                    Clear
-                  </Button>
-                )}
-              </div>
-            </div>
-
-            {showFilters && (
-              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-                    Initiative
-                  </label>
-                  <Select
-                    value={filterValues.initiative_id}
-                    onValueChange={(value) => handleFilterChange('initiative_id', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All initiatives" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">All initiatives</SelectItem>
-                      {initiatives.map((initiative) => (
-                        <SelectItem key={initiative.id} value={initiative.id.toString()}>
-                          {initiative.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-                    Assigned To
-                  </label>
-                  <Select
-                    value={filterValues.assigned_to}
-                    onValueChange={(value) => handleFilterChange('assigned_to', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All people" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">All people</SelectItem>
-                      {orgNodes.map((person) => (
-                        <SelectItem key={person.id} value={person.id.toString()}>
-                          {person.first_name} {person.last_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-                    Status
-                  </label>
-                  <Select
-                    value={filterValues.status}
-                    onValueChange={(value) => handleFilterChange('status', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All statuses" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">All statuses</SelectItem>
-                      <SelectItem value="not_started">Not Started</SelectItem>
-                      <SelectItem value="in_progress">In Progress</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="on_hold">On Hold</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-                    Priority
-                  </label>
-                  <Select
-                    value={filterValues.priority}
-                    onValueChange={(value) => handleFilterChange('priority', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="All priorities" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">All priorities</SelectItem>
-                      <SelectItem value="low">Low</SelectItem>
-                      <SelectItem value="medium">Medium</SelectItem>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="urgent">Urgent</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
-          </div>
-        </Card>
-
-        <Card>
-          <div className="rounded-md">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead className="hidden md:table-cell">Due Date</TableHead>
-                  <TableHead className="hidden md:table-cell">Assigned To</TableHead>
-                  <TableHead className="hidden lg:table-cell">Status</TableHead>
-                  <TableHead className="hidden lg:table-cell">Priority</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {tasks.data.length > 0 ? (
-                  tasks.data.map((task) => (
-                    <TableRow key={task.id}>
-                      <TableCell>
-                        <Link
-                          href={route('tasks.show', task.id)}
-                          className="text-blue-600 hover:underline font-medium"
-                        >
-                          {task.title}
-                        </Link>
-                        {task.tags && task.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {task.tags.slice(0, 3).map((tag) => (
-                              <Badge key={tag.id} variant="secondary" className="text-xs">
-                                {tag.name}
-                              </Badge>
-                            ))}
-                            {task.tags.length > 3 && (
-                              <Badge variant="secondary" className="text-xs">
-                                +{task.tags.length - 3}
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {formatDate(task.due_date)}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        {getPersonName(task.assignedTo)}
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <Badge
-                          className={statusColors[task.status] || 'bg-gray-200 text-gray-800'}
-                        >
-                          {task.status.replace('_', ' ')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <Badge
-                          className={priorityColors[task.priority] || 'bg-gray-100 text-gray-800'}
-                        >
-                          {task.priority}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8">
-                      No tasks found. {hasActiveFilters() && "Try adjusting your filters."}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
-
-          {tasks.last_page > 1 && (
-            <div className="flex justify-between items-center p-4 border-t">
-              <div className="text-sm text-gray-500">
-                Showing {tasks.from} to {tasks.to} of {tasks.total} results
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => router.get(tasks.links[0].url || '', {}, { preserveState: true })}
-                  disabled={tasks.current_page === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => router.get(tasks.links[tasks.links.length - 1].url || '', {}, { preserveState: true })}
-                  disabled={tasks.current_page === tasks.last_page}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          )}
-        </Card>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <TaskManagement
+          tasks={tasks.data}
+          initiatives={initiatives}
+          orgNodes={employees}
+          onTaskCreated={(task) => {
+            // Task created successfully - could trigger a refresh or update local state
+            console.log('Task created:', task);
+          }}
+          onTaskUpdated={(task) => {
+            // Task updated successfully - could trigger a refresh or update local state
+            console.log('Task updated:', task);
+          }}
+        />
       </div>
     </AppLayout>
   );
-};
-
-export default Index;
+}

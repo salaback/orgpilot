@@ -214,6 +214,18 @@ Route::middleware([
     Route::get('tasks-due-soon', [TaskController::class, 'dueSoon'])->name('tasks.due-soon');
     Route::get('api/initiatives/{initiative}/tasks', [TaskController::class, 'forInitiative'])->name('api.initiatives.tasks');
 
+    // Task Management routes
+    Route::prefix('tasks')->name('tasks.')->group(function () {
+        Route::get('/', [TaskController::class, 'index'])->name('index');
+        Route::post('/', [TaskController::class, 'store'])->name('store');
+        Route::get('/statistics', [TaskController::class, 'statistics'])->name('statistics');
+        Route::patch('/bulk-update', [TaskController::class, 'bulkUpdate'])->name('bulk-update');
+        Route::get('/{task}', [TaskController::class, 'show'])->name('show');
+        Route::patch('/{task}', [TaskController::class, 'update'])->name('update');
+        Route::delete('/{task}', [TaskController::class, 'destroy'])->name('destroy');
+        Route::patch('/{task}/progress', [TaskController::class, 'updateProgress'])->name('update-progress');
+    });
+
     // Test route to verify Inertia page resolution
     Route::get('test-page', function() {
         return Inertia::render('test-page');

@@ -4,68 +4,114 @@ namespace App\Http\Controllers;
 
 use App\Models\Task;
 use App\Models\Initiative;
-use App\Models\OrgNode;
-use App\Models\Tag;
+use App\Models\Employee;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class TaskController extends Controller
 {
     /**
      * Display a listing of tasks
      */
-    public function index(Request $request)
+    public function index(Request $request): Response
     {
-        $query = Task::with(['initiative', 'assignedTo', 'createdBy', 'tags']);
+        $query = Task::with(['assignedTo', 'initiative', 'createdBy']);
 
-        // Filter by initiative if specified
-        if ($request->has('initiative_id')) {
-            $query->where('initiative_id', $request->initiative_id);
-        }
-
-        // Filter by assigned user if specified
-        if ($request->has('assigned_to')) {
-            $query->where('assigned_to', $request->assigned_to);
-        }
-
-        // Filter by status if specified
-        if ($request->has('status')) {
+        // Apply filters
+        if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        // Filter by priority if specified
-        if ($request->has('priority')) {
+        if ($request->filled('priority')) {
             $query->where('priority', $request->priority);
         }
 
-        // Search functionality
-        if ($request->has('search')) {
+        if ($request->filled('assigned_to')) {
+            $query->where('assigned_to', $request->assigned_to);
+        }
+
+        if ($request->filled('initiative_id')) {
+            $query->where('initiative_id', $request->initiative_id);
+        }
+
+        if ($request->filled('overdue') && $request->overdue) {
+            $query->where('due_date', '<', now())
+                  ->whereNotIn('status', ['completed', 'cancelled']);
+        }
+
+        if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function ($q) use ($search) {
+            $query->where(function($q) use ($search) {
                 $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                  ->orWhere('description', 'like', "%{$search}%")
+                  ->orWhereHas('assignedTo', function($q) use ($search) {
+                      $q->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%");
+                  });
             });
         }
 
-        $tasks = $query->orderBy('due_date', 'asc')->paginate(15);
+        // Apply sorting
+        $sortBy = $request->get('sort_by', 'due_date');
+        $sortOrder = $request->get('sort_order', 'asc');
+
+        if ($sortBy === 'assignee') {
+            $query->leftJoin('employees', 'tasks.assigned_to', '=', 'employees.id')
+                  ->orderBy('employees.first_name', $sortOrder)
+                  ->orderBy('employees.last_name', $sortOrder)
+                  ->select('tasks.*');
+        } else {
+            $query->orderBy($sortBy, $sortOrder);
+        }
+
+        $tasks = $query->paginate(50);
+
+        // Transform tasks for frontend
+        $tasks->getCollection()->transform(function ($task) {
+            return [
+                'id' => $task->id,
+                'title' => $task->title,
+                'description' => $task->description,
+                'initiative_id' => $task->initiative_id,
+                'assigned_to' => $task->assigned_to,
+                'created_by' => $task->created_by,
+                'due_date' => $task->due_date?->format('Y-m-d'),
+                'percentage_complete' => $task->percentage_complete,
+                'priority' => $task->priority,
+                'status' => $task->status,
+                'created_at' => $task->created_at->format('Y-m-d H:i:s'),
+                'updated_at' => $task->updated_at->format('Y-m-d H:i:s'),
+                'initiative' => $task->initiative ? [
+                    'id' => $task->initiative->id,
+                    'title' => $task->initiative->title,
+                ] : null,
+                'assigned_to_node' => $task->assignedTo ? [
+                    'id' => $task->assignedTo->id,
+                    'first_name' => $task->assignedTo->first_name,
+                    'last_name' => $task->assignedTo->last_name,
+                    'email' => $task->assignedTo->email,
+                ] : null,
+                'created_by_user' => $task->createdBy ? [
+                    'id' => $task->createdBy->id,
+                    'first_name' => $task->createdBy->first_name,
+                    'last_name' => $task->createdBy->last_name,
+                ] : null,
+                'tags' => $task->tags ? $task->tags->map(function ($tag) {
+                    return [
+                        'id' => $tag->id,
+                        'name' => $tag->name,
+                    ];
+                }) : [],
+            ];
+        });
 
         return Inertia::render('Tasks/Index', [
             'tasks' => $tasks,
-            'filters' => $request->only(['initiative_id', 'assigned_to', 'status', 'priority', 'search']),
-            'initiatives' => Initiative::select('id', 'title')->get(),
-            'orgNodes' => OrgNode::where('status', 'active')->select('id', 'first_name', 'last_name')->get(),
-        ]);
-    }
-
-    /**
-     * Show the form for creating a new task
-     */
-    public function create(Request $request)
-    {
-        return Inertia::render('Tasks/Create', [
-            'initiatives' => Initiative::select('id', 'title')->get(),
-            'orgNodes' => OrgNode::where('status', 'active')->select('id', 'first_name', 'last_name', 'email')->get(),
-            'initiative_id' => $request->get('initiative_id'),
+            'initiatives' => Initiative::select(['id', 'title'])->get(),
+            'employees' => Employee::select(['id', 'first_name', 'last_name', 'email'])->get(),
+            'filters' => $request->only(['status', 'priority', 'assigned_to', 'initiative_id', 'overdue', 'search']),
+            'sorting' => $request->only(['sort_by', 'sort_order']),
         ]);
     }
 
@@ -82,36 +128,19 @@ class TaskController extends Controller
             'due_date' => 'nullable|date',
             'priority' => 'required|in:low,medium,high,urgent',
             'status' => 'required|in:not_started,in_progress,completed,on_hold,cancelled',
-            'percentage_complete' => 'required|integer|min:0|max:100',
-            'tags' => 'array',
-            'tags.*' => 'string|max:255',
+            'percentage_complete' => 'integer|min:0|max:100',
         ]);
 
-        // Get the redirect_back parameter directly from the request
-        $redirectBack = $request->boolean('redirect_back');
-
         $validated['created_by'] = auth()->id();
+        $validated['percentage_complete'] = $validated['percentage_complete'] ?? 0;
 
         $task = Task::create($validated);
+        $task->load(['assignedTo', 'initiative', 'createdBy', 'tags']);
 
-        // Handle tags
-        if (!empty($validated['tags'])) {
-            $tags = collect($validated['tags'])->map(function ($tagName) {
-                return Tag::firstOrCreate(['name' => trim($tagName)]);
-            });
-
-            $task->tags()->sync($tags->pluck('id'));
-        }
-
-        // If redirect_back is true and we have an initiative_id, redirect to the initiative page
-        if ($redirectBack && $task->initiative_id) {
-            return redirect()->route('initiative.show', $task->initiative_id)
-                ->with('success', 'Task created successfully.');
-        }
-
-        // Otherwise use the default redirect
-        return redirect()->route('tasks.show', $task)
-            ->with('success', 'Task created successfully.');
+        return response()->json([
+            'message' => 'Task created successfully',
+            'task' => $this->transformTask($task)
+        ]);
     }
 
     /**
@@ -119,25 +148,10 @@ class TaskController extends Controller
      */
     public function show(Task $task)
     {
-        $task->load(['initiative', 'assignedTo', 'createdBy', 'tags', 'notes.tags']);
+        $task->load(['assignedTo', 'initiative', 'createdBy', 'tags', 'notes']);
 
-        return Inertia::render('Tasks/Show', [
-            'task' => $task,
-            'orgNodes' => OrgNode::where('status', 'active')->select('id', 'first_name', 'last_name', 'email')->get(),
-        ]);
-    }
-
-    /**
-     * Show the form for editing the specified task
-     */
-    public function edit(Task $task)
-    {
-        $task->load(['tags']);
-
-        return Inertia::render('Tasks/Edit', [
-            'task' => $task,
-            'initiatives' => Initiative::select('id', 'title')->get(),
-            'orgNodes' => OrgNode::where('status', 'active')->select('id', 'first_name', 'last_name', 'email')->get(),
+        return response()->json([
+            'task' => $this->transformTask($task)
         ]);
     }
 
@@ -147,56 +161,27 @@ class TaskController extends Controller
     public function update(Request $request, Task $task)
     {
         $validated = $request->validate([
-            'title' => 'required|string|max:255',
+            'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
             'initiative_id' => 'nullable|exists:initiatives,id',
             'assigned_to' => 'nullable|exists:employees,id',
             'due_date' => 'nullable|date',
-            'priority' => 'required|in:low,medium,high,urgent',
-            'status' => 'required|in:not_started,in_progress,completed,on_hold,cancelled',
-            'percentage_complete' => 'required|integer|min:0|max:100',
-            'tags' => 'array',
-            'tags.*' => 'string|max:255',
+            'priority' => 'sometimes|required|in:low,medium,high,urgent',
+            'status' => 'sometimes|required|in:not_started,in_progress,completed,on_hold,cancelled',
+            'percentage_complete' => 'integer|min:0|max:100',
         ]);
 
-        // Get the redirect_back parameter directly from the request
-        $redirectBack = $request->boolean('redirect_back');
-
         $task->update($validated);
+        $task->load(['assignedTo', 'initiative', 'createdBy', 'tags']);
 
-        // Handle tags
-        if (isset($validated['tags'])) {
-            $tags = collect($validated['tags'])->map(function ($tagName) {
-                return Tag::firstOrCreate(['name' => trim($tagName)]);
-            });
-
-            $task->tags()->sync($tags->pluck('id'));
-        }
-
-        // If redirect_back is true and we have an initiative_id, redirect to the initiative page
-        if ($redirectBack && $task->initiative_id) {
-            return redirect()->route('initiative.show', $task->initiative_id)
-                ->with('success', 'Task updated successfully.');
-        }
-
-        // Otherwise use the default redirect
-        return redirect()->route('tasks.show', $task)
-            ->with('success', 'Task updated successfully.');
+        return response()->json([
+            'message' => 'Task updated successfully',
+            'task' => $this->transformTask($task)
+        ]);
     }
 
     /**
-     * Remove the specified task
-     */
-    public function destroy(Task $task)
-    {
-        $task->delete();
-
-        return redirect()->route('tasks.index')
-            ->with('success', 'Task deleted successfully.');
-    }
-
-    /**
-     * Update task completion percentage
+     * Update task progress
      */
     public function updateProgress(Request $request, Task $task)
     {
@@ -206,103 +191,131 @@ class TaskController extends Controller
 
         $task->update($validated);
 
-        // Auto-update status based on completion
+        // Auto-update status based on progress
         if ($validated['percentage_complete'] == 100) {
             $task->update(['status' => 'completed']);
-        } elseif ($validated['percentage_complete'] > 0 && $task->status == 'not_started') {
+        } elseif ($validated['percentage_complete'] > 0 && $task->status === 'not_started') {
             $task->update(['status' => 'in_progress']);
         }
 
-        return back()->with('success', 'Task progress updated successfully.');
-    }
-
-    /**
-     * Get tasks for a specific initiative (API endpoint)
-     */
-    public function forInitiative(Initiative $initiative)
-    {
-        $tasks = $initiative->tasks()
-            ->with(['assignedTo', 'tags'])
-            ->orderBy('due_date', 'asc')
-            ->get();
-
-        return response()->json($tasks);
-    }
-
-    /**
-     * Get overdue tasks
-     */
-    public function overdue()
-    {
-        $tasks = Task::overdue()
-            ->with(['initiative', 'assignedTo', 'createdBy', 'tags'])
-            ->orderBy('due_date', 'asc')
-            ->get();
-
-        return Inertia::render('Tasks/Overdue', [
-            'tasks' => $tasks,
+        return response()->json([
+            'message' => 'Task progress updated successfully',
+            'task' => $this->transformTask($task)
         ]);
     }
 
     /**
-     * Get tasks due soon
+     * Bulk update tasks
      */
-    public function dueSoon()
+    public function bulkUpdate(Request $request)
     {
-        $tasks = Task::dueSoon()
-            ->with(['initiative', 'assignedTo', 'createdBy', 'tags'])
-            ->orderBy('due_date', 'asc')
-            ->get();
+        $validated = $request->validate([
+            'task_ids' => 'required|array',
+            'task_ids.*' => 'exists:tasks,id',
+            'status' => 'sometimes|required|in:not_started,in_progress,completed,on_hold,cancelled',
+            'priority' => 'sometimes|required|in:low,medium,high,urgent',
+            'assigned_to' => 'sometimes|nullable|exists:employees,id',
+        ]);
 
-        return Inertia::render('Tasks/DueSoon', [
-            'tasks' => $tasks,
+        $updates = collect($validated)->except('task_ids')->toArray();
+
+        Task::whereIn('id', $validated['task_ids'])->update($updates);
+
+        return response()->json([
+            'message' => 'Tasks updated successfully',
+            'updated_count' => count($validated['task_ids'])
         ]);
     }
 
     /**
-     * Display tasks for a specific org node profile
+     * Delete the specified task
      */
-    public function profileTasks($id, Request $request)
+    public function destroy(Task $task)
     {
-        // Get the org node
-        $orgNode = OrgNode::findOrFail($id);
+        $task->delete();
 
-        // Get tasks for this org node
-        $query = Task::with(['initiative', 'assignedTo', 'createdBy', 'tags'])
-            ->where('assigned_to', $id);
-
-        // Filter by status if specified
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
-
-        // Filter by priority if specified
-        if ($request->has('priority')) {
-            $query->where('priority', $request->priority);
-        }
-
-        // Search functionality
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
-            });
-        }
-
-        $tasks = $query->orderBy('due_date', 'asc')->paginate(15);
-
-        return Inertia::render('Tasks/ProfileTasks', [
-            'orgNode' => [
-                'id' => $orgNode->id,
-                'full_name' => $orgNode->first_name . ' ' . $orgNode->last_name,
-                'title' => $orgNode->title,
-                'email' => $orgNode->email,
-                'status' => $orgNode->status
-            ],
-            'tasks' => $tasks,
-            'filters' => $request->only(['status', 'priority', 'search']),
-            'initiatives' => Initiative::select('id', 'title')->get()
+        return response()->json([
+            'message' => 'Task deleted successfully'
         ]);
+    }
+
+    /**
+     * Get task statistics
+     */
+    public function statistics(Request $request)
+    {
+        $query = Task::query();
+
+        // Apply same filters as index for contextual stats
+        if ($request->filled('initiative_id')) {
+            $query->where('initiative_id', $request->initiative_id);
+        }
+
+        if ($request->filled('assigned_to')) {
+            $query->where('assigned_to', $request->assigned_to);
+        }
+
+        $tasks = $query->get();
+
+        return response()->json([
+            'total' => $tasks->count(),
+            'completed' => $tasks->where('status', 'completed')->count(),
+            'in_progress' => $tasks->where('status', 'in_progress')->count(),
+            'not_started' => $tasks->where('status', 'not_started')->count(),
+            'on_hold' => $tasks->where('status', 'on_hold')->count(),
+            'cancelled' => $tasks->where('status', 'cancelled')->count(),
+            'overdue' => $tasks->filter(function ($task) {
+                return $task->due_date && $task->due_date->isPast() && !in_array($task->status, ['completed', 'cancelled']);
+            })->count(),
+            'avg_progress' => $tasks->count() > 0 ? round($tasks->avg('percentage_complete'), 1) : 0,
+            'priority_breakdown' => [
+                'urgent' => $tasks->where('priority', 'urgent')->count(),
+                'high' => $tasks->where('priority', 'high')->count(),
+                'medium' => $tasks->where('priority', 'medium')->count(),
+                'low' => $tasks->where('priority', 'low')->count(),
+            ]
+        ]);
+    }
+
+    /**
+     * Transform task for API response
+     */
+    private function transformTask(Task $task): array
+    {
+        return [
+            'id' => $task->id,
+            'title' => $task->title,
+            'description' => $task->description,
+            'initiative_id' => $task->initiative_id,
+            'assigned_to' => $task->assigned_to,
+            'created_by' => $task->created_by,
+            'due_date' => $task->due_date?->format('Y-m-d'),
+            'percentage_complete' => $task->percentage_complete,
+            'priority' => $task->priority,
+            'status' => $task->status,
+            'created_at' => $task->created_at->format('Y-m-d H:i:s'),
+            'updated_at' => $task->updated_at->format('Y-m-d H:i:s'),
+            'initiative' => $task->initiative ? [
+                'id' => $task->initiative->id,
+                'title' => $task->initiative->title,
+            ] : null,
+            'assigned_to_node' => $task->assignedTo ? [
+                'id' => $task->assignedTo->id,
+                'first_name' => $task->assignedTo->first_name,
+                'last_name' => $task->assignedTo->last_name,
+                'email' => $task->assignedTo->email,
+            ] : null,
+            'created_by_user' => $task->createdBy ? [
+                'id' => $task->createdBy->id,
+                'first_name' => $task->createdBy->first_name,
+                'last_name' => $task->createdBy->last_name,
+            ] : null,
+            'tags' => $task->tags->map(function ($tag) {
+                return [
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                ];
+            }),
+        ];
     }
 }
