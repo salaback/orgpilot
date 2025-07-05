@@ -17,6 +17,7 @@ class Meeting extends Model
         'title',
         'meeting_series_id',
         'meeting_time',
+        'duration_minutes',
         'notes',
         'created_by',
     ];

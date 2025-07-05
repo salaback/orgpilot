@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { CalendarIcon, ClockIcon, MapPinIcon, PlusIcon } from 'lucide-react';
+import { type BreadcrumbItem } from '@/types';
 
 interface ActionItem {
   id: number;
@@ -43,6 +44,22 @@ interface IndexProps {
 }
 
 const Index: React.FC<IndexProps> = ({ directReport, upcomingMeeting, pastMeetings }) => {
+  // Define breadcrumbs for one-on-one meetings page
+  const breadcrumbs: BreadcrumbItem[] = [
+    {
+      title: 'Organisation',
+      href: '/organisation',
+    },
+    {
+      title: directReport.full_name,
+      href: `/organisation/profile/${directReport.id}`,
+    },
+    {
+      title: '1:1 Meetings',
+      href: `/organisation/profile/${directReport.id}/one-on-one`,
+    },
+  ];
+
   const formatDate = (dateString: string) => {
     try {
       return format(new Date(dateString), 'PPP p');
@@ -61,7 +78,7 @@ const Index: React.FC<IndexProps> = ({ directReport, upcomingMeeting, pastMeetin
   };
 
   return (
-    <AppLayout>
+    <AppLayout breadcrumbs={breadcrumbs}>
       <Head title={`1:1 Meetings with ${directReport.full_name}`} />
 
       <div className="w-full px-4 py-6 sm:px-6 lg:px-8">

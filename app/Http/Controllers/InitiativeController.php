@@ -200,14 +200,14 @@ class InitiativeController extends Controller
                 'status' => $employee->status
             ],
             'initiatives' => $initiatives,
-            'filters' => $request->only(['status', 'search']),
+            'filters' => $request->only(['status', 'search'])
         ]);
     }
 
     /**
-     * Display initiatives page for web interface
+     * Display a listing of initiatives for the web interface.
      */
-    public function webIndex()
+    public function webIndex(Request $request)
     {
         $initiatives = Initiative::with(['assignees', 'tags'])
             ->orderBy('status')

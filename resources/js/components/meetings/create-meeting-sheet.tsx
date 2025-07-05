@@ -16,33 +16,67 @@ interface CreateMeetingSheetProps {
     isOpen: boolean;
     onClose: () => void;
     meetingSeries: MeetingSeries[];
-    onSuccess?: () => void;
+    onSuccess?: (newMeeting?: any) => void;  // Updated to potentially return the new meeting
+    initialDateTime?: string;
 }
 
 interface MeetingFormData {
     title: string;
     meeting_series_id: string;
     meeting_time: string;
+    duration_minutes: string;
     notes: string;
     [key: string]: any;
 }
 
-export function CreateMeetingSheet({ isOpen, onClose, meetingSeries = [], onSuccess }: CreateMeetingSheetProps) {
+export function CreateMeetingSheet({ isOpen, onClose, meetingSeries = [], onSuccess, initialDateTime }: CreateMeetingSheetProps) {
     const { data, setData, post, processing, errors, reset } = useForm<MeetingFormData>({
         title: '',
         meeting_series_id: '',
-        meeting_time: '',
+        meeting_time: initialDateTime || '',
+        duration_minutes: '60', // Default to 60 minutes
         notes: '',
     });
+
+    // Duration options in 15-minute increments
+    const durationOptions = [
+        { value: '15', label: '15 minutes' },
+        { value: '30', label: '30 minutes' },
+        { value: '45', label: '45 minutes' },
+        { value: '60', label: '1 hour' },
+        { value: '75', label: '1 hour 15 minutes' },
+        { value: '90', label: '1 hour 30 minutes' },
+        { value: '105', label: '1 hour 45 minutes' },
+        { value: '120', label: '2 hours' },
+        { value: '150', label: '2 hours 30 minutes' },
+        { value: '180', label: '3 hours' },
+        { value: '240', label: '4 hours' },
+    ];
+
+    // Update the meeting_time if initialDateTime changes and the form hasn't been modified yet
+    useEffect(() => {
+        if (initialDateTime && isOpen) {
+            setData('meeting_time', initialDateTime);
+        }
+    }, [initialDateTime, isOpen]);
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         post(route('meetings.store'), {
-            onSuccess: () => {
+            preserveScroll: true,   // Preserve scroll position
+            preserveState: true,    // Preserve component state
+            only: [],               // Don't update any components
+            onSuccess: (page) => {
+                // Extract the newly created meeting from the response
+                const newMeeting = page.props.flash.meeting;
+
+                // Reset the form
                 reset();
                 onClose();
-                if (onSuccess) {
-                    onSuccess();
+
+                // Call the onSuccess callback with the new meeting data
+                if (onSuccess && newMeeting) {
+                    onSuccess(newMeeting);
                 }
             },
         });
@@ -108,6 +142,28 @@ export function CreateMeetingSheet({ isOpen, onClose, meetingSeries = [], onSucc
                         error={errors.meeting_time}
                         required
                     />
+
+                    <div>
+                        <Label htmlFor="duration_minutes">Meeting Duration</Label>
+                        <Select
+                            value={data.duration_minutes}
+                            onValueChange={(value) => setData('duration_minutes', value)}
+                        >
+                            <SelectTrigger className="mt-1">
+                                <SelectValue placeholder="Select meeting duration" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {durationOptions.map((option) => (
+                                    <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        {errors.duration_minutes && (
+                            <p className="mt-1 text-sm text-red-600">{errors.duration_minutes}</p>
+                        )}
+                    </div>
 
                     <div>
                         <Label htmlFor="notes">Notes (Optional)</Label>

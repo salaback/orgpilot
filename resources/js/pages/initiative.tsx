@@ -2,6 +2,7 @@ import React from 'react';
 import { PageProps } from '@inertiajs/inertia';
 import AppLayout from '@/layouts/app-layout';
 import InitiativeDetailsPage from '../features/initiatives/initiative-details-page';
+import { type BreadcrumbItem } from '@/types';
 
 interface Initiative {
   id: number;
@@ -43,8 +44,20 @@ interface InitiativePageProps extends PageProps {
 }
 
 const Initiative: React.FC<InitiativePageProps> = ({ initiative, assignees, notes, activeTab = 'overview' }) => {
+  // Define breadcrumbs with parent and current page
+  const breadcrumbs: BreadcrumbItem[] = [
+    {
+      title: 'Initiatives',
+      href: '/initiatives',
+    },
+    {
+      title: initiative.title,
+      href: `/initiatives/${initiative.id}`,
+    },
+  ];
+
   return (
-    <AppLayout>
+    <AppLayout breadcrumbs={breadcrumbs}>
       <InitiativeDetailsPage
         initiative={initiative}
         assignees={assignees}

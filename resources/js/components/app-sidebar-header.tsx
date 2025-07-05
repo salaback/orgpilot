@@ -4,6 +4,7 @@ import { type BreadcrumbItem as BreadcrumbItemType } from '@/types';
 import TaskViewToggle from '@/components/task-view-toggle';
 import OrgViewToggle from '@/components/org-view-toggle';
 import InitiativeViewToggle from '@/components/initiative-view-toggle';
+import MeetingViewToggle from '@/components/meeting-view-toggle';
 import { usePathname } from '@/hooks/use-pathname';
 import { useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
@@ -14,6 +15,7 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
     const isTasksPage = pathname === '/tasks' || pathname.startsWith('/tasks/');
     const isOrgPage = pathname === '/organisation' || pathname.startsWith('/organisation/');
     const isInitiativesPage = pathname === '/initiatives' || pathname.startsWith('/initiatives/');
+    const isMeetingsPage = pathname === '/meetings' || pathname.startsWith('/meetings/');
 
     // Task view state (list/split)
     const [taskViewMode, setTaskViewMode] = useState<'list' | 'split'>(() => {
@@ -69,6 +71,24 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
         return 'columns'; // Default to columns view
     });
 
+    // Meeting view state (calendar/list)
+    const [meetingViewMode, setMeetingViewMode] = useState<'calendar' | 'list'>(() => {
+        // Try to get from cookie first
+        if (typeof document !== 'undefined') {
+            const cookieValue = getCookie('meetingViewMode');
+            if (cookieValue === 'calendar' || cookieValue === 'list') {
+                return cookieValue as 'calendar' | 'list';
+            }
+        }
+
+        // Fall back to localStorage for backward compatibility
+        if (typeof window !== 'undefined') {
+            const savedMode = localStorage.getItem('meetingViewMode');
+            return (savedMode === 'calendar' || savedMode === 'list') ? savedMode as 'calendar' | 'list' : 'calendar';
+        }
+        return 'calendar'; // Default to calendar view
+    });
+
     // Update task view mode and save to cookie/localStorage
     const handleTaskViewModeChange = (mode: 'list' | 'split') => {
         setTaskViewMode(mode);
@@ -102,6 +122,19 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
         window.dispatchEvent(event);
     };
 
+    // Update meeting view mode and save to cookie/localStorage
+    const handleMeetingViewModeChange = (mode: 'calendar' | 'list') => {
+        setMeetingViewMode(mode);
+        setCookie('meetingViewMode', mode);
+        localStorage.setItem('meetingViewMode', mode); // For backward compatibility
+
+        // Dispatch custom event for existing components that might listen for changes
+        const event = new CustomEvent('meetingViewModeChange', {
+            detail: { viewMode: mode }
+        });
+        window.dispatchEvent(event);
+    };
+
     return (
         <header className="flex h-16 shrink-0 items-center gap-2 border-b border-sidebar-border/50 px-6 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 md:px-4">
             <div className="flex items-center gap-2 flex-grow">
@@ -128,6 +161,13 @@ export function AppSidebarHeader({ breadcrumbs = [] }: { breadcrumbs?: Breadcrum
                     <TaskViewToggle
                         viewMode={taskViewMode}
                         onViewModeChange={handleTaskViewModeChange}
+                    />
+                )}
+
+                {isMeetingsPage && (
+                    <MeetingViewToggle
+                        viewMode={meetingViewMode}
+                        onViewModeChange={handleMeetingViewModeChange}
                     />
                 )}
             </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import TaskManagement from '@/components/task-management';
+import { type BreadcrumbItem } from '@/types';
 
 interface OrgNode {
   id: number;
@@ -26,8 +27,20 @@ const TaskCreate: React.FC<TaskCreateProps> = ({
   orgNodes,
   initiative_id
 }) => {
+  // Define breadcrumbs for create task page
+  const breadcrumbs: BreadcrumbItem[] = [
+    {
+      title: 'Tasks',
+      href: '/tasks',
+    },
+    {
+      title: 'Create Task',
+      href: '/tasks/create',
+    },
+  ];
+
   return (
-    <AppLayout>
+    <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Create Task" />
 
       <div style={{ padding: '20px' }}>

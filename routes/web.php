@@ -71,6 +71,7 @@ Route::middleware([
     // Task routes
     Route::resource('tasks', TaskController::class);
     Route::get('organisation/profile/{id}/tasks', [TaskController::class, 'profileTasks'])->name('organisation.profile.tasks');
+    Route::get('organisation/profile/{id}/initiatives', [InitiativeController::class, 'profileInitiatives'])->name('organisation.profile.initiatives');
     Route::patch('tasks/{task}/progress', [TaskController::class, 'updateProgress'])->name('tasks.update-progress');
     Route::get('tasks-overdue', [TaskController::class, 'overdue'])->name('tasks.overdue');
     Route::get('tasks-due-soon', [TaskController::class, 'dueSoon'])->name('tasks.due-soon');

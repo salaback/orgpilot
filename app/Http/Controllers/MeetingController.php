@@ -54,6 +54,7 @@ class MeetingController extends Controller
             'title' => 'required|string|max:255',
             'meeting_series_id' => 'nullable|exists:meeting_series,id',
             'meeting_time' => 'required|date',
+            'duration_minutes' => 'nullable|integer|min:15',
             'notes' => 'nullable|string',
             'participants' => 'array',
             'participants.*.user_id' => 'nullable|exists:users,id',
@@ -68,6 +69,7 @@ class MeetingController extends Controller
             'title' => $validated['title'],
             'meeting_series_id' => $validated['meeting_series_id'],
             'meeting_time' => $validated['meeting_time'],
+            'duration_minutes' => $validated['duration_minutes'] ?? 60, // Default to 60 minutes if not provided
             'notes' => $validated['notes'],
             'created_by' => auth()->id(),
         ]);
@@ -95,8 +97,12 @@ class MeetingController extends Controller
             $meeting->tags()->attach($validated['tags']);
         }
 
+        // Load relationships for the meeting to return complete data
+        $meeting->load(['createdBy', 'meetingSeries', 'participants', 'externalParticipants', 'tags', 'initiatives']);
+
         return redirect()->route('meetings.show', $meeting)
-            ->with('success', 'Meeting created successfully.');
+            ->with('success', 'Meeting created successfully.')
+            ->with('meeting', $meeting); // Include the meeting in flash data
     }
 
     /**
@@ -164,6 +170,7 @@ class MeetingController extends Controller
             'title' => 'required|string|max:255',
             'meeting_series_id' => 'nullable|exists:meeting_series,id',
             'meeting_time' => 'required|date',
+            'duration_minutes' => 'nullable|integer|min:15',
             'notes' => 'nullable|string',
             'participants' => 'array',
             'participants.*.user_id' => 'nullable|exists:users,id',
@@ -178,6 +185,7 @@ class MeetingController extends Controller
             'title' => $validated['title'],
             'meeting_series_id' => $validated['meeting_series_id'],
             'meeting_time' => $validated['meeting_time'],
+            'duration_minutes' => $validated['duration_minutes'] ?? 60,
             'notes' => $validated['notes'],
         ]);
 

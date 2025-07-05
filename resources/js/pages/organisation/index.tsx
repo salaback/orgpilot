@@ -10,6 +10,7 @@ import { ChevronUp, Users } from 'lucide-react';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import axios from 'axios';
 import { getCookie, setCookie } from '@/lib/cookies';
+import { type BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
 interface IndexProps {
   orgStructure: {
@@ -35,6 +36,22 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
   const [highlightedManagerId, setHighlightedManagerId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isListView, setIsListView] = useState(false);
+
+  // Define standard breadcrumbs for the organization page
+  const breadcrumbs: BreadcrumbItemType[] = [
+    {
+      title: 'Organisation',
+      href: '/organisation',
+    }
+  ];
+
+  // Add focused node to breadcrumbs if available
+  if (focusedNode) {
+    breadcrumbs.push({
+      title: focusedNode.full_name,
+      href: `/organisation/${focusedNode.id}`,
+    });
+  }
 
   // Find a specific node by ID
   const findNodeById = (id: number): OrgNode | null => {
@@ -248,7 +265,7 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
   };
 
   return (
-    <AppLayout>
+    <AppLayout breadcrumbs={breadcrumbs}>
       <Head title={`Organisation - ${orgStructure.name}`} />
 
       {/* Simplified header without toggle buttons, since toggle is now in the app sidebar */}

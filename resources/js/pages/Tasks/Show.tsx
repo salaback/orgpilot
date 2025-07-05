@@ -15,6 +15,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import NotesSection from '@/components/notes-section';
 import AppLayout from '@/layouts/app-layout';
+import { type BreadcrumbItem } from '@/types';
 
 interface Task {
   id: number;
@@ -62,6 +63,18 @@ interface ShowProps {
 }
 
 const Show: React.FC<ShowProps> = ({ task, notes, orgNodes }) => {
+  // Define breadcrumbs with parent and current page
+  const breadcrumbs: BreadcrumbItem[] = [
+    {
+      title: 'Tasks',
+      href: '/tasks',
+    },
+    {
+      title: task.title,
+      href: `/tasks/${task.id}`,
+    },
+  ];
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'No due date';
     return new Date(dateString).toLocaleDateString();
@@ -105,7 +118,7 @@ const Show: React.FC<ShowProps> = ({ task, notes, orgNodes }) => {
   };
 
   return (
-    <AppLayout>
+    <AppLayout breadcrumbs={breadcrumbs}>
       <Head title={`Task: ${task.title}`} />
 
       <div className="w-full px-4 py-6 sm:px-6 lg:px-8">

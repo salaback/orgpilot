@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarIcon, ClockIcon, UsersIcon, PlusIcon, EditIcon, SaveIcon, XIcon } from 'lucide-react';
+import { type BreadcrumbItem } from '@/types';
 
 interface Meeting {
     id: number;
@@ -58,6 +59,18 @@ interface Props {
 export default function ShowMeeting({ meeting, participants = [] }: Props) {
     const [isEditingNotes, setIsEditingNotes] = useState(false);
     const [isAddingTask, setIsAddingTask] = useState(false);
+
+    // Define breadcrumbs with parent and current page
+    const breadcrumbs: BreadcrumbItem[] = [
+        {
+            title: 'Meetings',
+            href: '/meetings',
+        },
+        {
+            title: meeting.title,
+            href: `/meetings/${meeting.id}`,
+        },
+    ];
 
     // Form for updating notes
     const { data: notesData, setData: setNotesData, put: updateNotes, processing: notesProcessing } = useForm({
@@ -122,7 +135,7 @@ export default function ShowMeeting({ meeting, participants = [] }: Props) {
     };
 
     return (
-        <AppLayout>
+        <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Meeting: ${meeting.title}`} />
 
             <div className="py-12">

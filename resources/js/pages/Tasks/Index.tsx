@@ -3,6 +3,7 @@ import { Head } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import TaskSplitView from '@/components/task-split-view';
 import TaskManagement from '@/components/task-management-enhanced';
+import { type BreadcrumbItem } from '@/types';
 
 interface Task {
   id: number;
@@ -74,6 +75,13 @@ interface TasksPageProps {
   };
 }
 
+const breadcrumbs: BreadcrumbItem[] = [
+  {
+    title: 'Tasks',
+    href: '/tasks',
+  },
+];
+
 export default function TasksPage({
   tasks,
   initiatives,
@@ -118,7 +126,7 @@ export default function TasksPage({
   };
 
   return (
-    <AppLayout>
+    <AppLayout breadcrumbs={breadcrumbs}>
       <Head title="Task Management" />
 
       <div className="w-full h-full">

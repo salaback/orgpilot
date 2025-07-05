@@ -2,6 +2,7 @@ import React from 'react';
 import { PageProps } from '@inertiajs/inertia';
 import AppLayout from '@/layouts/app-layout';
 import InitiativesPage from '../features/initiatives/initiatives-page';
+import { type BreadcrumbItem } from '@/types';
 
 interface Initiative {
   id: number;
@@ -29,9 +30,16 @@ interface InitiativesPageProps extends PageProps {
   default_org_structure_id: number | null;
 }
 
+const breadcrumbs: BreadcrumbItem[] = [
+  {
+    title: 'Initiatives',
+    href: '/initiatives',
+  },
+];
+
 const Initiatives: React.FC<InitiativesPageProps> = ({ initiatives, assignees, default_org_structure_id }) => {
   return (
-    <AppLayout>
+    <AppLayout breadcrumbs={breadcrumbs}>
       <InitiativesPage initiatives={initiatives} assignees={assignees} defaultOrgStructureId={default_org_structure_id} />
     </AppLayout>
   );
