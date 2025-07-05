@@ -1,7 +1,7 @@
 import React from 'react';
 import { Head } from '@inertiajs/react';
-import Layout from '../layout';
-import TaskManagement from '../components/task-management';
+import AppLayout from '@/layouts/app-layout';
+import TaskManagement from '@/components/task-management';
 
 interface OrgNode {
   id: number;
@@ -27,7 +27,7 @@ const TaskCreate: React.FC<TaskCreateProps> = ({
   initiative_id
 }) => {
   return (
-    <Layout>
+    <AppLayout>
       <Head title="Create Task" />
 
       <div style={{ padding: '20px' }}>
@@ -59,7 +59,7 @@ const TaskCreate: React.FC<TaskCreateProps> = ({
           />
         </div>
       </div>
-    </Layout>
+    </AppLayout>
   );
 };
 
