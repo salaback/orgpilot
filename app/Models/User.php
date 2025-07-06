@@ -76,4 +76,31 @@ class User extends Authenticatable
     {
         return $this->getFullNameAttribute();
     }
+
+    /**
+     * Get the user's manager.
+     */
+    public function manager(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'manager_id');
+    }
+
+    /**
+     * Get the user's direct reports.
+     */
+    public function directReports()
+    {
+        return $this->hasMany(User::class, 'manager_id');
+    }
+
+    /**
+     * Get the user's recent activity.
+     * This is a simple example using notes, but in a real app
+     * you might have a dedicated activities table.
+     */
+    public function recentActivity()
+    {
+        return $this->hasMany(Note::class, 'created_by')
+                    ->latest();
+    }
 }

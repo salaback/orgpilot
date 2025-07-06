@@ -21,7 +21,6 @@ interface NotesSectionProps {
   entityType: string;
   entityId: number;
   entityUrl?: string; // Optional direct URL to the entity
-  currentEntityType?: string; // The type of entity where notes are currently being displayed
   orgNodes?: Array<{id: number, first_name: string, last_name: string, email: string}>;
   onNotesUpdate?: (notes: Note[]) => void;
 }
@@ -31,7 +30,6 @@ const NotesSection: React.FC<NotesSectionProps> = ({
   entityType = 'item',
   entityId,
   entityUrl,
-  currentEntityType = entityType, // Default to entityType if not specified
   orgNodes = []
 }) => {
   const [isAdding, setIsAdding] = useState(false);
@@ -40,8 +38,6 @@ const NotesSection: React.FC<NotesSectionProps> = ({
   const [detectedTags, setDetectedTags] = useState<string[]>([]);
   const [detectedMentions, setDetectedMentions] = useState<Array<{id: number, name: string}>>([]);
   const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
-  const [mentionSuggestions, setMentionSuggestions] = useState<Array<{id: number, first_name: string, last_name: string, email: string}>>([]);
-  const [currentMentionQuery, setCurrentMentionQuery] = useState('');
   const textareaRef = useRef<HTMLDivElement>(null);
 
   const HASHTAG_CLASS = "text-indigo-600 dark:text-indigo-300 font-semibold mr-1";
@@ -67,7 +63,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
         // Try to find matching org node
         const foundNode = orgNodes.find(node =>
           `${node.first_name}${node.last_name}`.toLowerCase().replace(/\s/g, '') === mentionName.toLowerCase() ||
-          `${node.first_name}.${node.lastName}`.toLowerCase() === mentionName.toLowerCase() ||
+          `${node.first_name}.${node.last_name}`.toLowerCase() === mentionName.toLowerCase() ||
           node.first_name.toLowerCase() === mentionName.toLowerCase() ||
           node.last_name.toLowerCase() === mentionName.toLowerCase()
         );
@@ -128,7 +124,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
         const mentionName = match[1].substring(1);
         const foundNode = orgNodes.find(node =>
           `${node.first_name}${node.last_name}`.toLowerCase().replace(/\s/g, '') === mentionName.toLowerCase() ||
-          `${node.first_name}.${node.lastName}`.toLowerCase() === mentionName.toLowerCase() ||
+          `${node.first_name}.${node.last_name}`.toLowerCase() === mentionName.toLowerCase() ||
           node.first_name.toLowerCase() === mentionName.toLowerCase() ||
           node.last_name.toLowerCase() === mentionName.toLowerCase()
         );
@@ -280,7 +276,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
               selection.addRange(newRange);
             }
           }
-        } catch (error) {
+        } catch {
           // Cursor positioning failed, place at end
           if (selection && textareaRef.current.lastChild) {
             const range = document.createRange();
@@ -304,9 +300,11 @@ const NotesSection: React.FC<NotesSectionProps> = ({
       const tags = extractHashtags(newNote.content);
 
       // Extract mention IDs (only numeric IDs, not full objects)
-      const mentionIds = detectedMentions.map(mention => mention.id).filter(id => typeof id === 'number');
+      const mentionIds = detectedMentions.map(mention => mention.id);
 
-      Inertia.post(`/initiatives/${entityId}/notes`, {
+      const routeName = entityType === 'meeting' ? 'meeting.notes.store' : `${entityType}.notes.store`;
+
+      Inertia.post(route(routeName, entityId), {
         title: newNote.title || null,
         content: newNote.content,
         tags: tags, // Send extracted tags
@@ -503,7 +501,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                 </h4>
               )}
               <div className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed mb-3">
-                {processContentForDisplay(note.content)}
+                {processContentForDisplay(typeof note.content === 'string' ? note.content : '')}
               </div>
               {note.tags && note.tags.length > 0 && (
                 <div className="mb-3">
@@ -523,8 +521,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
                 <span>
                   Created: {formatDate(note.created_at)}
                   {/* Only show source entity if the note was created on a different entity type than current */}
-                  {note.notable_type &&
-                   note.notable_type.toLowerCase().includes(entityType.toLowerCase()) === false && (
+                  {note.notable_type && !note.notable_type.toLowerCase().includes(entityType.toLowerCase()) && (
                     <span className="text-gray-400 dark:text-gray-500">
                       | From <a href={getEntityUrl()} className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 hover:underline">{entityType}</a>
                     </span>

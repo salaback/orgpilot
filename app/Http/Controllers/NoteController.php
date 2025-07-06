@@ -7,6 +7,7 @@ use App\Models\Task;
 use App\Models\Initiative;
 use App\Models\Employee;
 use App\Models\Tag;
+use App\Models\Meeting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -66,7 +67,7 @@ class NoteController extends Controller
             Log::info('Note mentions: ', $mentionIds);
         }
 
-        return redirect()->route('initiative.show', $initiative)->with('success', 'Note created successfully');
+        return response()->json($note->toArray(), 201);
     }
 
     /**
@@ -98,6 +99,39 @@ class NoteController extends Controller
             $note->tags()->attach($tagIds);
         }
 
-        return redirect()->route('tasks.show', $task)->with('success', 'Note created successfully');
+        return response()->json($note->toArray(), 201);
+    }
+
+    /**
+     * Store a note for a meeting.
+     */
+    public function storeForMeeting(Meeting $meeting, Request $request)
+    {
+        $validated = $request->validate([
+            'title' => 'nullable|string|max:255',
+            'content' => 'required|string',
+            'tags' => 'nullable|array',
+            'tags.*' => 'string|max:50',
+            'mentions' => 'nullable|array',
+        ]);
+
+        $note = Note::create([
+            'title' => $validated['title'],
+            'content' => $validated['content'],
+            'notable_type' => 'App\\Models\\Meeting',
+            'notable_id' => $meeting->id,
+        ]);
+
+        // Process and attach tags if they exist
+        if (!empty($validated['tags'])) {
+            $tagIds = [];
+            foreach ($validated['tags'] as $tagName) {
+                $tag = Tag::firstOrCreate(['name' => $tagName]);
+                $tagIds[] = $tag->id;
+            }
+            $note->tags()->sync($tagIds);
+        }
+
+        return redirect()->back()->with('success', 'Note created successfully.');
     }
 }

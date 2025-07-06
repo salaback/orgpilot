@@ -6,6 +6,8 @@ use App\Http\Controllers\NoteController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\MeetingController;
+use App\Http\Controllers\OneOnOneMeetingController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\WorkOS\Http\Middleware\ValidateSessionWithWorkOS;
@@ -26,22 +28,32 @@ Route::middleware([
     Route::post('organisation/direct-report', [OrganizationController::class, 'storeDirectReport'])->name('organisation.direct-report.store');
     Route::get('organisation/person/{nodeId}/direct-reports', [OrganizationController::class, 'getNodeDirectReports'])->name('organisation.person.direct-reports');
 
-    // 1:1 Meeting routes
+    // Legacy 1:1 Meeting routes (keeping for backward compatibility)
     Route::prefix('organisation/profile/{employee}/one-on-one')->name('one-on-one.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\OneOnOneMeetingController::class, 'index'])->name('index');
-        Route::get('/create', [\App\Http\Controllers\OneOnOneMeetingController::class, 'create'])->name('create');
-        Route::post('/', [\App\Http\Controllers\OneOnOneMeetingController::class, 'store'])->name('store');
-        Route::get('/{meeting}', [\App\Http\Controllers\OneOnOneMeetingController::class, 'show'])->name('show');
-        Route::get('/{meeting}/edit', [\App\Http\Controllers\OneOnOneMeetingController::class, 'edit'])->name('edit');
-        Route::put('/{meeting}', [\App\Http\Controllers\OneOnOneMeetingController::class, 'update'])->name('update');
-        Route::post('/{meeting}/complete', [\App\Http\Controllers\OneOnOneMeetingController::class, 'complete'])->name('complete');
-        Route::post('/{meeting}/cancel', [\App\Http\Controllers\OneOnOneMeetingController::class, 'cancel'])->name('cancel');
+        Route::get('/', [OneOnOneMeetingController::class, 'index'])->name('index');
+        Route::get('/create', [OneOnOneMeetingController::class, 'create'])->name('create');
+        Route::post('/', [OneOnOneMeetingController::class, 'store'])->name('store');
+        Route::get('/{meeting}', [OneOnOneMeetingController::class, 'show'])->name('show');
+        Route::get('/{meeting}/edit', [OneOnOneMeetingController::class, 'edit'])->name('edit');
+        Route::put('/{meeting}', [OneOnOneMeetingController::class, 'update'])->name('update');
+        Route::post('/{meeting}/complete', [OneOnOneMeetingController::class, 'complete'])->name('complete');
+        Route::post('/{meeting}/cancel', [OneOnOneMeetingController::class, 'cancel'])->name('cancel');
+    });
+
+    // New One-on-One Meeting routes for unified Meeting model
+    Route::prefix('meetings/one-on-one')->name('meetings.one-on-one.')->group(function () {
+        Route::get('/', [MeetingController::class, 'oneOnOneIndex'])->name('index');
+        Route::get('/create', [MeetingController::class, 'oneOnOneCreate'])->name('create');
+        Route::post('/', [MeetingController::class, 'oneOnOneStore'])->name('store');
+        Route::get('/{meeting}/edit', [MeetingController::class, 'oneOnOneEdit'])->name('edit');
     });
 
     // Meeting routes
     Route::resource('meeting-series', \App\Http\Controllers\MeetingSeriesController::class);
     Route::resource('meetings', \App\Http\Controllers\MeetingController::class);
-    Route::post('meetings/{meeting}/tasks', [\App\Http\Controllers\MeetingController::class, 'createTask'])->name('meetings.tasks.store');
+    Route::post('meetings/{meeting}/tasks', [MeetingController::class, 'createTask'])->name('meetings.tasks.store');
+    Route::post('meetings/{meeting}/complete', [MeetingController::class, 'complete'])->name('complete');
+    Route::post('meetings/{meeting}/cancel', [MeetingController::class, 'cancel'])->name('cancel');
 
     // Initiative routes
     Route::get('initiatives', [InitiativeController::class, 'webIndex'])->name('initiatives');
@@ -88,6 +100,9 @@ Route::middleware([
         Route::delete('/{task}', [TaskController::class, 'destroy'])->name('destroy');
         Route::patch('/{task}/progress', [TaskController::class, 'updateProgress'])->name('update-progress');
     });
+
+    // Notes for meetings
+    Route::post('meetings/{meeting}/notes', [NoteController::class, 'storeForMeeting'])->name('meeting.notes.store');
 });
 
 require __DIR__.'/settings.php';

@@ -21,7 +21,7 @@ interface ActionItem {
 
 interface Meeting {
   id: number;
-  scheduled_at: string;
+  meeting_time: string;
   completed_at: string | null;
   status: 'scheduled' | 'completed' | 'cancelled';
   agenda: string;
@@ -116,7 +116,7 @@ const Index: React.FC<IndexProps> = ({ directReport, upcomingMeeting, pastMeetin
                       {upcomingMeeting.status}
                     </Badge>
                     <span className="text-sm text-gray-500">
-                      {formatDate(upcomingMeeting.scheduled_at)}
+                      {formatDate(upcomingMeeting.meeting_time)}
                     </span>
                   </div>
 
@@ -202,7 +202,7 @@ const Index: React.FC<IndexProps> = ({ directReport, upcomingMeeting, pastMeetin
                           {meeting.status}
                         </Badge>
                         <span className="text-sm text-gray-500">
-                          {formatDate(meeting.scheduled_at)}
+                          {formatDate(meeting.meeting_time)}
                         </span>
                       </div>
 

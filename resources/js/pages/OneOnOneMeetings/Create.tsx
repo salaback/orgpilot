@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -38,14 +38,57 @@ interface CreateProps {
 
 const Create: React.FC<CreateProps> = ({ directReport, goals, initiatives }) => {
   const { data, setData, post, processing, errors } = useForm({
-    scheduled_at: '',
+    meeting_time: '',
     location: '',
     agenda: '',
-    private_notes: '',
-    shared_notes: '',
+    status: 'scheduled',
+    duration_minutes: 30, // Default duration
     goals: [] as number[],
     initiatives: [] as number[],
   });
+
+  // Helper to generate duration options in 15-minute increments (15 to 180 min)
+  const getDurationOptions = () => {
+    const options = [];
+    for (let min = 15; min <= 180; min += 15) {
+      options.push(min);
+    }
+    return options;
+  };
+
+  // Helper to round a date to the next 15-minute increment
+  function roundToNext15(dt: Date) {
+    const ms = 1000 * 60 * 15;
+    return new Date(Math.ceil(dt.getTime() / ms) * ms);
+  }
+
+  // Helper to format date to yyyy-MM-ddTHH:mm for datetime-local input
+  function formatDateTime(dt: Date) {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+  }
+
+  // Set default value to next 15-min increment if empty
+  React.useEffect(() => {
+    if (!data.meeting_time) {
+      const now = new Date();
+      const rounded = roundToNext15(now);
+      setData('meeting_time', formatDateTime(rounded));
+    }
+  }, []);
+
+  // Enforce 15-min increments on change
+  const handleDateTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    // Only allow times that are multiples of 15 minutes
+    const dt = new Date(value);
+    if (dt.getMinutes() % 15 !== 0) {
+      dt.setMinutes(Math.ceil(dt.getMinutes() / 15) * 15);
+      setData('meeting_time', formatDateTime(dt));
+    } else {
+      setData('meeting_time', value);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,18 +147,32 @@ const Create: React.FC<CreateProps> = ({ directReport, goals, initiatives }) => 
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="scheduled_at">Date & Time *</Label>
+                  <Label htmlFor="meeting_time">Date & Time *</Label>
                   <Input
-                    id="scheduled_at"
+                    id="meeting_time"
                     type="datetime-local"
-                    value={data.scheduled_at}
-                    onChange={(e) => setData('scheduled_at', e.target.value)}
-                    className={errors.scheduled_at ? 'border-red-500' : ''}
+                    value={data.meeting_time}
+                    onChange={handleDateTimeChange}
+                    step={900} // 15 min in seconds
                     required
                   />
-                  {errors.scheduled_at && (
-                    <p className="text-sm text-red-500 mt-1">{errors.scheduled_at}</p>
+                  {errors.meeting_time && (
+                    <p className="text-sm text-red-500 mt-1">{errors.meeting_time}</p>
                   )}
+                </div>
+                <div>
+                  <Label htmlFor="duration_minutes">Duration *</Label>
+                  <select
+                    id="duration_minutes"
+                    value={data.duration_minutes}
+                    onChange={e => setData('duration_minutes', Number(e.target.value))}
+                    className="w-full border rounded px-2 py-1"
+                    required
+                  >
+                    {getDurationOptions().map(min => (
+                      <option key={min} value={min}>{min} minutes</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -148,32 +205,19 @@ const Create: React.FC<CreateProps> = ({ directReport, goals, initiatives }) => 
                 </div>
 
                 <div>
-                  <Label htmlFor="private_notes">Private Notes</Label>
-                  <Textarea
-                    id="private_notes"
-                    placeholder="Notes for yourself (not shared with direct report)..."
-                    value={data.private_notes}
-                    onChange={(e) => setData('private_notes', e.target.value)}
-                    rows={3}
-                    className={errors.private_notes ? 'border-red-500' : ''}
-                  />
-                  {errors.private_notes && (
-                    <p className="text-sm text-red-500 mt-1">{errors.private_notes}</p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="shared_notes">Shared Notes</Label>
-                  <Textarea
-                    id="shared_notes"
-                    placeholder="Notes shared with your direct report..."
-                    value={data.shared_notes}
-                    onChange={(e) => setData('shared_notes', e.target.value)}
-                    rows={3}
-                    className={errors.shared_notes ? 'border-red-500' : ''}
-                  />
-                  {errors.shared_notes && (
-                    <p className="text-sm text-red-500 mt-1">{errors.shared_notes}</p>
+                  <Label htmlFor="status">Status</Label>
+                  <select
+                    id="status"
+                    value={data.status}
+                    onChange={(e) => setData('status', e.target.value)}
+                    className="w-full border rounded px-2 py-1"
+                  >
+                    <option value="scheduled">Scheduled</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                  {errors.status && (
+                    <p className="text-sm text-red-500 mt-1">{errors.status}</p>
                   )}
                 </div>
               </CardContent>

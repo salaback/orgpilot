@@ -13,18 +13,49 @@ class Meeting extends Model
 {
     use HasFactory;
 
+    // Meeting types
+    const TYPE_ONE_ON_ONE = 'one_on_one';
+    const TYPE_STEER_CO = 'steer_co';
+    const TYPE_STANDUP = 'standup';
+    const TYPE_PROJECT = 'project';
+    const TYPE_REGULAR = 'regular';
+
+    // Meeting statuses
+    const STATUS_SCHEDULED = 'scheduled';
+    const STATUS_COMPLETED = 'completed';
+    const STATUS_CANCELLED = 'cancelled';
+
     protected $fillable = [
         'title',
+        'type',
+        'agenda',
         'meeting_series_id',
         'meeting_time',
         'duration_minutes',
         'notes',
+        'summary',
+        'location',
+        'status',
         'created_by',
     ];
 
     protected $casts = [
         'meeting_time' => 'datetime',
     ];
+
+    /**
+     * Get all available meeting types
+     */
+    public static function getTypes(): array
+    {
+        return [
+            self::TYPE_ONE_ON_ONE => 'One-on-One',
+            self::TYPE_STEER_CO => 'Steering Committee',
+            self::TYPE_STANDUP => 'Standup',
+            self::TYPE_PROJECT => 'Project',
+            self::TYPE_REGULAR => 'Regular',
+        ];
+    }
 
     /**
      * Get the meeting series this meeting belongs to
@@ -35,11 +66,35 @@ class Meeting extends Model
     }
 
     /**
-     * Get the user who created this meeting
+     * Get the user who created this meeting (for one-on-one meetings, this is the manager)
      */
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get the manager for this meeting (for one-on-one meetings)
+     * This is an alias for createdBy for clarity
+     */
+    public function manager(): BelongsTo
+    {
+        return $this->createdBy();
+    }
+
+    /**
+     * For one-on-one meetings, get the direct report
+     * This is the first participant who isn't the creator
+     */
+    public function directReport()
+    {
+        if ($this->type !== self::TYPE_ONE_ON_ONE) {
+            return null;
+        }
+
+        return $this->participants()
+            ->where('users.id', '!=', $this->created_by)
+            ->first();
     }
 
     /**
@@ -51,19 +106,53 @@ class Meeting extends Model
     }
 
     /**
-     * Get all tags associated with this meeting
+     * Get all action items associated with this meeting
      */
-    public function tags(): MorphToMany
+    public function actionItems(): HasMany
     {
-        return $this->morphToMany(Tag::class, 'taggable');
+        return $this->hasMany(Task::class);
     }
 
     /**
-     * Get all initiatives linked to this meeting
+     * Get the goals related to this meeting
+     */
+    public function goals(): BelongsToMany
+    {
+        return $this->belongsToMany(Goal::class, 'meeting_goals');
+    }
+
+    /**
+     * Get the initiatives related to this meeting
      */
     public function initiatives(): BelongsToMany
     {
-        return $this->belongsToMany(Initiative::class, 'meeting_initiative');
+        return $this->belongsToMany(Initiative::class, 'meeting_initiatives');
+    }
+
+    /**
+     * Get the tags associated with this meeting
+     */
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class, 'meeting_tags');
+    }
+
+    /**
+     * Scope a query to only include one-on-one meetings
+     */
+    public function scopeOneOnOne($query)
+    {
+        return $query->where('type', self::TYPE_ONE_ON_ONE);
+    }
+
+    /**
+     * Scope a query to only include upcoming meetings
+     */
+    public function scopeUpcoming($query)
+    {
+        return $query->where('meeting_time', '>=', now())
+            ->where('status', self::STATUS_SCHEDULED)
+            ->orderBy('meeting_time', 'asc');
     }
 
     /**
@@ -100,43 +189,44 @@ class Meeting extends Model
     }
 
     /**
-     * Get tasks from the previous meeting in the series
+     * Helper method to check if this is a one-on-one meeting
      */
-    public function tasksFromPreviousMeeting()
+    public function isOneOnOne()
     {
-        $previousMeeting = $this->previousMeeting();
-        return $previousMeeting ? $previousMeeting->tasks : collect();
+        return $this->type === self::TYPE_ONE_ON_ONE;
     }
 
     /**
-     * Get tasks completed since the previous meeting
+     * Helper method to set the direct report for a one-on-one meeting
+     * This adds the user as a participant if they're not already
      */
-    public function tasksCompletedSincePreviousMeeting()
+    public function setDirectReport(User $user)
     {
-        $previousMeeting = $this->previousMeeting();
-        if (!$previousMeeting) {
-            return collect();
+        if (!$this->isOneOnOne()) {
+            return false;
         }
 
-        return $this->meetingSeries->allTasks()
-            ->where('status', 'completed')
-            ->where('updated_at', '>=', $previousMeeting->meeting_time)
-            ->where('updated_at', '<', $this->meeting_time)
-            ->get();
+        $this->participants()->syncWithoutDetaching([$user->id => [
+            'participantable_type' => User::class,
+            'role' => 'direct_report'
+        ]]);
+
+        return true;
     }
 
     /**
-     * Get open tasks from all previous meetings in the series
+     * Get all meeting participant pivot records
      */
-    public function openTasksFromSeries()
+    public function meetingParticipants(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
-        if (!$this->meeting_series_id) {
-            return collect();
-        }
+        return $this->hasMany(MeetingParticipant::class);
+    }
 
-        return $this->meetingSeries->allTasks()
-            ->where('status', '!=', 'completed')
-            ->where('meeting_id', '!=', $this->id)
-            ->get();
+    /**
+     * Get all notes associated with this meeting.
+     */
+    public function notes(): \Illuminate\Database\Eloquent\Relations\MorphMany
+    {
+        return $this->morphMany(Note::class, 'notable');
     }
 }
