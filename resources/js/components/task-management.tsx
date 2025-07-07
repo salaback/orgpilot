@@ -95,6 +95,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
   onTaskUpdated
 }) => {
   const [isCreating, setIsCreating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskList, setTaskList] = useState<Task[]>(tasks);
   const [selectedTasks, setSelectedTasks] = useState<number[]>([]);
@@ -109,6 +110,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
     overdue: false,
     initiative: ''
   });
+  const [editTask, setEditTask] = useState<Task | null>(null);
 
   useEffect(() => {
     setTaskList(tasks);
@@ -119,6 +121,10 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
       setIsCreating(true);
     }
   }, [showCreateForm]);
+
+  useEffect(() => {
+    setIsEditing(!!editTask);
+  }, [editTask]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -690,6 +696,9 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                             View Details
                           </DropdownMenu.Item>
                           <DropdownMenu.Separator />
+                          <DropdownMenu.Item onClick={() => setEditTask(task)}>
+                            Edit Task
+                          </DropdownMenu.Item>
                           <DropdownMenu.Item onClick={() => handleBulkStatusUpdate('completed')}>
                             Mark Complete
                           </DropdownMenu.Item>
@@ -710,7 +719,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
         </div>
       </Card>
 
-      {/* Task Form Sheet */}
+      {/* Task Form Sheet for Create */}
       <TaskFormSheet
         open={isCreating}
         onClose={() => setIsCreating(false)}
@@ -721,6 +730,26 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
         initiativeId={initiativeId}
         onSuccess={handleTaskCreated}
       />
+      {/* Task Form Sheet for Edit */}
+      {editTask && (
+        <TaskFormSheet
+          open={isEditing}
+          onClose={() => setEditTask(null)}
+          title="Edit Task"
+          size="lg"
+          initiatives={initiatives}
+          orgNodes={orgNodes}
+          initiativeId={editTask.initiative_id}
+          task={editTask}
+          isEditing={true}
+          onSuccess={(updatedTask) => {
+            setIsEditing(false);
+            setEditTask(null);
+            setTaskList(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+            if (onTaskUpdated) onTaskUpdated(updatedTask);
+          }}
+        />
+      )}
     </div>
   );
 };

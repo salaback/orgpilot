@@ -24,25 +24,29 @@ interface TaskFormProps {
   orgNodes?: OrgNode[];
   initiativeId?: number;
   onSuccess?: (task: any) => void;
+  task?: any;
+  isEditing?: boolean;
 }
 
 const TaskForm: React.FC<Omit<TaskFormProps, 'open' | 'onClose'>> = ({
   initiatives = [],
   orgNodes = [],
   initiativeId,
-  onSuccess
+  onSuccess,
+  task,
+  isEditing
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    initiative_id: initiativeId || '',
-    assigned_to: '',
-    due_date: '',
-    priority: 'medium' as const,
-    status: 'not_started' as const,
-    percentage_complete: 0,
-    tags: [] as string[]
+    title: task?.title || '',
+    description: task?.description || '',
+    initiative_id: task?.initiative_id || initiativeId || '',
+    assigned_to: task?.assigned_to || '',
+    due_date: task?.due_date || '',
+    priority: task?.priority || 'medium',
+    status: task?.status || 'not_started',
+    percentage_complete: task?.percentage_complete || 0,
+    tags: task?.tags ? task.tags.map((t: any) => t.name) : []
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -67,32 +71,49 @@ const TaskForm: React.FC<Omit<TaskFormProps, 'open' | 'onClose'>> = ({
       redirect_back: !!initiativeId, // Add redirect_back parameter when creating from an initiative
     };
 
-    Inertia.post('/tasks', taskData, {
-      onSuccess: (page) => {
-        setFormData({
-          title: '',
-          description: '',
-          initiative_id: initiativeId || '',
-          assigned_to: '',
-          due_date: '',
-          priority: 'medium',
-          status: 'not_started',
-          percentage_complete: 0,
-          tags: []
-        });
-
-        if (onSuccess && page.props.task) {
-          onSuccess(page.props.task);
+    if (isEditing && task?.id) {
+      Inertia.patch(`/tasks/${task.id}`, taskData, {
+        onSuccess: (page) => {
+          if (onSuccess && page.props.task) {
+            onSuccess(page.props.task);
+          }
+        },
+        onError: (errors) => {
+          setErrors(errors);
+          console.error('Failed to update task:', errors);
+        },
+        onFinish: () => {
+          setIsSubmitting(false);
         }
-      },
-      onError: (errors) => {
-        setErrors(errors);
-        console.error('Failed to create task:', errors);
-      },
-      onFinish: () => {
-        setIsSubmitting(false);
-      }
-    });
+      });
+    } else {
+      Inertia.post('/tasks', taskData, {
+        onSuccess: (page) => {
+          setFormData({
+            title: '',
+            description: '',
+            initiative_id: initiativeId || '',
+            assigned_to: '',
+            due_date: '',
+            priority: 'medium',
+            status: 'not_started',
+            percentage_complete: 0,
+            tags: []
+          });
+
+          if (onSuccess && page.props.task) {
+            onSuccess(page.props.task);
+          }
+        },
+        onError: (errors) => {
+          setErrors(errors);
+          console.error('Failed to create task:', errors);
+        },
+        onFinish: () => {
+          setIsSubmitting(false);
+        }
+      });
+    }
   };
 
   const updateFormData = (field: string, value: any) => {
@@ -262,23 +283,23 @@ const TaskForm: React.FC<Omit<TaskFormProps, 'open' | 'onClose'>> = ({
           disabled={isSubmitting || !formData.title.trim()}
           className={`text-white rounded-md px-5 py-2 text-base font-medium transition-colors ${formData.title.trim() && !isSubmitting ? 'bg-blue-600 hover:bg-blue-700 cursor-pointer' : 'bg-gray-400 cursor-not-allowed'} ${isSubmitting ? 'opacity-70' : ''}`}
         >
-          {isSubmitting ? 'Creating...' : 'Create Task'}
+          {isSubmitting ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Update Task' : 'Create Task')}
         </Button>
       </div>
     </form>
   );
 };
 
-export const TaskFormSheet: React.FC<TaskFormProps> = ({ open, onClose, ...props }) => {
+export const TaskFormSheet: React.FC<TaskFormProps> = ({ open, onClose, isEditing, task, ...props }) => {
   return (
     <SheetPanel
       open={open}
       onClose={onClose}
-      title="Create Task"
-      description="Add a new task to your workspace."
+      title={isEditing ? 'Edit Task' : 'Create Task'}
+      description={isEditing ? 'Edit the details of your task.' : 'Add a new task to your workspace.'}
       footer={null}
     >
-      <TaskForm {...props} />
+      <TaskForm {...props} isEditing={isEditing} task={task} />
     </SheetPanel>
   );
 };

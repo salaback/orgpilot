@@ -118,6 +118,7 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
   const [isCreating, setIsCreating] = useState(false);
   const [taskList, setTaskList] = useState<Task[]>(tasks);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [editTask, setEditTask] = useState<Task | null>(null);
   const [filters, setFilters] = useState({
     status: '',
     priority: '',
@@ -317,13 +318,32 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
 
       {/* Create Task Form */}
       <TaskFormSheet
-        isOpen={isCreating}
+        open={isCreating}
         onClose={() => setIsCreating(false)}
         onTaskCreated={handleTaskCreated}
         initiatives={initiatives}
         orgNodes={orgNodes}
         initiativeId={initiativeId}
       />
+
+      {/* Edit Task Form Sheet */}
+      {editTask && (
+        <TaskFormSheet
+          open={!!editTask}
+          onClose={() => setEditTask(null)}
+          task={editTask}
+          isEditing={true}
+          initiatives={initiatives}
+          orgNodes={orgNodes}
+          initiativeId={editTask.initiative_id}
+          onSuccess={(updatedTask) => {
+            setEditTask(null);
+            setTaskList(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+            if (onTaskUpdated) onTaskUpdated(updatedTask);
+            setSelectedTask(updatedTask);
+          }}
+        />
+      )}
 
       {/* Main Split View Container - use flex-1 to fill remaining height */}
       <div className="flex flex-1 overflow-hidden">
@@ -503,7 +523,7 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
                       Full View
                     </Button>
 
-                    <Button variant="outline" size="sm" onClick={() => router.visit(route('tasks.edit', selectedTask.id))}>
+                    <Button variant="outline" size="sm" onClick={() => setEditTask(selectedTask)}>
                       <FileText size={14} className="mr-1" />
                       Edit
                     </Button>

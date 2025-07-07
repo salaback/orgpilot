@@ -23,6 +23,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import NotesSection from '@/components/notes-section';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface User {
   id: number;
@@ -317,59 +318,41 @@ const MeetingDetail: React.FC<DetailProps> = ({ meeting, directReport }) => {
                 {meeting.tasks.length === 0 ? (
                   <p className="text-gray-500 text-center py-6">No action items have been created yet.</p>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="flex flex-col gap-1">
                     {meeting.tasks.map(task => (
-                      <div key={task.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex gap-2 items-start">
-                            <div className={`p-1 rounded-full ${task.status === 'completed' ? 'bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400' : 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'}`}>
-                              {task.status === 'completed' ? (
-                                <CheckIcon className="h-4 w-4" />
-                              ) : (
-                                <ClockIcon className="h-4 w-4" />
-                              )}
-                            </div>
-                            <div>
-                              <p className={`font-medium ${task.status === 'completed' ? 'line-through text-gray-500' : ''}`}>
-                                {task.description}
-                              </p>
-                              <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                                <div className="flex items-center">
-                                  <UserIcon className="h-3.5 w-3.5 mr-1" />
-                                  {task.assigned_to_user ?
-                                    `${task.assigned_to_user.first_name} ${task.assigned_to_user.last_name}` :
-                                    'Unassigned'}
-                                </div>
-                                {task.due_date && (
-                                  <div className="flex items-center">
-                                    <CalendarIcon className="h-3.5 w-3.5 mr-1" />
-                                    {format(new Date(task.due_date), 'MMM d, yyyy')}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
+                      <Tooltip key={task.id}>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer">
+                            <input type="checkbox" checked={task.status === 'completed'} readOnly />
+                            <span className={`truncate ${task.status === 'completed' ? 'line-through text-gray-400' : ''}`}>
+                              {task.description}
+                            </span>
+                            <span className="ml-auto text-xs text-gray-500">{task.assigned_to_user?.first_name}</span>
                           </div>
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="icon" asChild>
-                              <Link href={`/tasks/${task.id}/edit`}>
-                                <Edit2Icon className="h-4 w-4" />
-                              </Link>
+                        </TooltipTrigger>
+                        <TooltipContent className="w-64">
+                          <div className="mb-2">
+                            <div className="font-semibold">{task.description}</div>
+                            {task.due_date && (
+                              <div className="text-xs text-gray-500">Due: {format(new Date(task.due_date), 'MMM d, yyyy')}</div>
+                            )}
+                            <div className="text-xs text-gray-500">Assigned to: {task.assigned_to_user?.first_name} {task.assigned_to_user?.last_name}</div>
+                          </div>
+                          <div className="flex gap-2 mt-2">
+                            <Button size="sm" variant="outline" asChild>
+                              <Link href={`/tasks/${task.id}/edit`}>Edit</Link>
                             </Button>
                             {task.status !== 'completed' && (
-                              <Button variant="ghost" size="icon" asChild>
-                                <Link href={`/tasks/${task.id}/complete`}>
-                                  <CheckIcon className="h-4 w-4" />
-                                </Link>
+                              <Button size="sm" variant="outline" asChild>
+                                <Link href={`/tasks/${task.id}/complete`}>Complete</Link>
                               </Button>
                             )}
-                            <Button variant="ghost" size="icon" asChild>
-                              <Link href={`/tasks/${task.id}/delete`}>
-                                <TrashIcon className="h-4 w-4" />
-                              </Link>
+                            <Button size="sm" variant="destructive" asChild>
+                              <Link href={`/tasks/${task.id}/delete`}>Delete</Link>
                             </Button>
                           </div>
-                        </div>
-                      </div>
+                        </TooltipContent>
+                      </Tooltip>
                     ))}
                   </div>
                 )}

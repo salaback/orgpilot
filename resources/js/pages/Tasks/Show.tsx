@@ -138,11 +138,9 @@ const Show: React.FC<ShowProps> = ({ task, notes, orgNodes }) => {
               <Badge className={priorityColors[task.priority]}>{formatPriority(task.priority)}</Badge>
             </div>
           </div>
-          <Button asChild variant="outline">
-            <Link href={route('tasks.edit', task.id)}>
-              <Edit className="mr-2 h-4 w-4" />
-              Edit Task
-            </Link>
+          <Button variant="outline" onClick={() => {/* TODO: Implement onEdit handler in parent */}}>
+            <Edit className="mr-2 h-4 w-4" />
+            Edit Task
           </Button>
         </div>
 

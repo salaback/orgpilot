@@ -388,4 +388,21 @@ class TaskController extends Controller
 
         return response()->json($tasks);
     }
+
+    /**
+     * Show the form for editing the specified task
+     */
+    public function edit(Task $task)
+    {
+        $task->load(['assignedTo', 'initiative', 'createdBy', 'tags', 'notes']);
+        $initiatives = Initiative::select(['id', 'title'])->get();
+        $employees = Employee::select(['id', 'first_name', 'last_name', 'email'])->get();
+
+        return Inertia::render('Tasks/Create', [
+            'task' => $this->transformTask($task),
+            'initiatives' => $initiatives,
+            'employees' => $employees,
+            'isEditing' => true,
+        ]);
+    }
 }
