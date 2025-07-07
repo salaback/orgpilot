@@ -58,6 +58,17 @@ interface Initiative {
   status: string;
 }
 
+interface Note {
+  id: number;
+  title?: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  notable_type?: string;
+  notable_id?: number;
+  tags?: Array<{ id: number; name: string }>;
+}
+
 interface Meeting {
   id: number;
   title: string;
@@ -66,7 +77,7 @@ interface Meeting {
   duration_minutes: number;
   status: 'scheduled' | 'completed' | 'cancelled';
   agenda: string;
-  notes: string;
+  notes: Note[] | string;
   summary: string;
   location: string;
   created_by: User;
@@ -273,18 +284,20 @@ const MeetingDetail: React.FC<DetailProps> = ({ meeting, directReport }) => {
                   </div>
                 )}
 
-                {meeting.notes && (
+                {typeof meeting.notes === 'string' && meeting.notes && (
                   <div>
                     <h3 className="text-lg font-medium mb-2">Notes</h3>
                     <div className="whitespace-pre-line text-gray-700 dark:text-gray-300">
                       {meeting.notes}
                     </div>
-                    <NotesSection
-                      notes={meeting.notes}
-                      entityType="meeting"
-                      entityId={meeting.id}
-                    />
                   </div>
+                )}
+                {Array.isArray(meeting.notes) && (
+                  <NotesSection
+                    notes={meeting.notes}
+                    entityType="meeting"
+                    entityId={meeting.id}
+                  />
                 )}
               </CardContent>
             </Card>
