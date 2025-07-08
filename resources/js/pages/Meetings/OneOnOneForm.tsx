@@ -5,8 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { DatePicker } from '@/components/ui/date-picker';
-import { TimeInput } from '@/components/ui/time-input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ArrowLeftIcon, CalendarIcon, PlusIcon, TrashIcon } from 'lucide-react';
 import { format, parse, addDays } from 'date-fns';
@@ -62,6 +60,10 @@ interface OneOnOneFormProps {
     notes: string;
     summary: string;
     tasks: Task[];
+    goals?: Goal[];
+    initiatives?: Initiative[];
+    title?: string;
+    duration_minutes?: number;
   };
   incompleteTasks?: Task[];
   availableUsers: User[];
@@ -226,17 +228,28 @@ const OneOnOneForm: React.FC<OneOnOneFormProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="date">Date</Label>
-                <DatePicker
-                  date={meetingDate}
-                  onSelect={handleDateChange}
+                <input
+                  id="date"
+                  type="date"
+                  value={format(meetingDate, 'yyyy-MM-dd')}
+                  onChange={e => {
+                    const [year, month, day] = e.target.value.split('-').map(Number);
+                    const newDate = new Date(meetingDate);
+                    newDate.setFullYear(year, month - 1, day);
+                    handleDateChange(newDate);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 />
                 {errors.meeting_time && <p className="text-red-500 text-sm">{errors.meeting_time}</p>}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="time">Time</Label>
-                <TimeInput
+                <input
+                  id="time"
+                  type="time"
                   value={format(meetingDate, 'HH:mm')}
-                  onChange={handleTimeChange}
+                  onChange={e => handleTimeChange(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 />
               </div>
             </div>
@@ -362,9 +375,12 @@ const OneOnOneForm: React.FC<OneOnOneFormProps> = ({
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor={`task-${index}-due_date`}>Due Date</Label>
-                    <DatePicker
-                      date={task.due_date ? new Date(task.due_date) : undefined}
-                      onSelect={(date) => updateTask(index, 'due_date', date ? format(date, 'yyyy-MM-dd') : null)}
+                    <input
+                      id={`task-${index}-due_date`}
+                      type="date"
+                      value={task.due_date || ''}
+                      onChange={e => updateTask(index, 'due_date', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                     />
                   </div>
                   <Button
