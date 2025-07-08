@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import AssigneeDropdown from './ui/AssigneeDropdown';
 import Dropdown from './ui/Dropdown';
+import { Inertia } from '@inertiajs/inertia';
 
 interface Task {
   id: number;
@@ -101,6 +102,27 @@ interface AuthUser {
 
 interface PageProps {
   auth: { user: AuthUser };
+  [key: string]: any;
+}
+
+// Utility to normalize a single task
+function normalizeTask(task: any): Task {
+  // Normalize assigned_to_node if present
+  let assigned_to_node = task.assigned_to_node;
+  if (assigned_to_node && assigned_to_node.id == null) assigned_to_node = undefined;
+  return {
+    ...task,
+    assigned_to: (task.assigned_to === null || typeof task.assigned_to !== 'number') ? undefined : task.assigned_to,
+    assigned_to_node,
+  } as Task;
+}
+
+function assertNoNullAssignedTo(tasks: Task[]) {
+  for (const t of tasks) {
+    if (t.assigned_to === null) {
+      throw new Error('Task with id ' + t.id + ' has assigned_to: null');
+    }
+  }
 }
 
 const TaskSplitView: React.FC<TaskSplitViewProps> = ({
@@ -132,7 +154,9 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
 
   // Update task list when tasks prop changes
   useEffect(() => {
-    setTaskList(tasks);
+    const normalized = tasks.map(normalizeTask);
+    assertNoNullAssignedTo(normalized);
+    setTaskList(normalized);
   }, [tasks]);
 
   // Set initial selected task if tasks are available
@@ -185,7 +209,11 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
 
   // Handle task creation
   const handleTaskCreated = (task: Task) => {
-    setTaskList(prev => [task, ...prev]);
+    setTaskList(prev => {
+      const updated = [normalizeTask(task), ...prev.map(normalizeTask)] as Task[];
+      assertNoNullAssignedTo(updated);
+      return updated;
+    });
     setSelectedTask(task);
     setIsCreating(false);
     if (onTaskCreated) {
@@ -320,7 +348,7 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
       <TaskFormSheet
         open={isCreating}
         onClose={() => setIsCreating(false)}
-        onTaskCreated={handleTaskCreated}
+        onSuccess={handleTaskCreated}
         initiatives={initiatives}
         orgNodes={orgNodes}
         initiativeId={initiativeId}
@@ -363,48 +391,46 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
 
             <div className="flex flex-wrap gap-2">
               {/* Status Filter */}
-              <Dropdown
-                label="Status"
+              <select
                 value={filters.status}
-                onChange={(value) => setFilters({ ...filters, status: value })}
-                options={[
-                  { value: '', label: 'All Statuses' },
-                  { value: 'not_started', label: 'Not Started' },
-                  { value: 'in_progress', label: 'In Progress' },
-                  { value: 'completed', label: 'Completed' },
-                  { value: 'on_hold', label: 'On Hold' },
-                  { value: 'cancelled', label: 'Cancelled' }
-                ]}
-              />
+                onChange={e => setFilters({ ...filters, status: e.target.value as Task['status'] })}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800"
+              >
+                <option value="">All Statuses</option>
+                <option value="not_started">Not Started</option>
+                <option value="in_progress">In Progress</option>
+                <option value="completed">Completed</option>
+                <option value="on_hold">On Hold</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
 
               {/* Priority Filter */}
-              <Dropdown
-                label="Priority"
+              <select
                 value={filters.priority}
-                onChange={(value) => setFilters({ ...filters, priority: value })}
-                options={[
-                  { value: '', label: 'All Priorities' },
-                  { value: 'low', label: 'Low' },
-                  { value: 'medium', label: 'Medium' },
-                  { value: 'high', label: 'High' },
-                  { value: 'urgent', label: 'Urgent' }
-                ]}
-              />
+                onChange={e => setFilters({ ...filters, priority: e.target.value })}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800"
+              >
+                <option value="">All Priorities</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
 
               {/* Assignee Filter */}
-              <Dropdown
-                label="Assignee"
+              <select
                 value={filters.assigned_to}
-                onChange={(value) => setFilters({ ...filters, assigned_to: value })}
-                options={[
-                  { value: '', label: 'All Assignees' },
-                  { value: 'unassigned', label: 'Unassigned' },
-                  ...(orgNodes?.map(node => ({
-                    value: node.id.toString(),
-                    label: `${node.first_name} ${node.last_name}`
-                  })) || [])
-                ]}
-              />
+                onChange={e => setFilters({ ...filters, assigned_to: e.target.value })}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800"
+              >
+                <option value="">All Assignees</option>
+                <option value="unassigned">Unassigned</option>
+                {orgNodes?.map(node => (
+                  <option key={node.id} value={node.id.toString()}>
+                    {`${node.first_name} ${node.last_name}`}
+                  </option>
+                ))}
+              </select>
 
               {/* Overdue Filter */}
               <Button
@@ -486,11 +512,6 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
                     <Progress
                       value={task.percentage_complete}
                       className="h-1.5 mt-2 bg-gray-100"
-                      indicatorColor={
-                        task.status === 'completed'
-                          ? 'bg-green-500'
-                          : 'bg-blue-500'
-                      }
                     />
                   </div>
                 ))}
@@ -513,30 +534,76 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
         {/* Right Panel - Task Detail */}
         <div className="w-2/3 overflow-y-auto">
           {selectedTask ? (
-            <div className="p-6 h-full">
-              <div className="mb-6">
+            <div className="p-3 h-full"> {/* Reduced padding for compactness */}
+              <div className="mb-4"> {/* Less margin */}
                 <div className="flex justify-between items-start">
-                  <h2 className="text-2xl font-bold mb-2">{selectedTask.title}</h2>
-                  <div className="flex items-center space-x-2">
+                  <h2 className="text-xl font-bold mb-1">{selectedTask.title}</h2> {/* Smaller font */}
+                  <div className="flex items-center space-x-1"> {/* Less space */}
                     <Button variant="outline" size="sm" onClick={() => router.visit(route('tasks.show', selectedTask.id))}>
                       <Eye size={14} className="mr-1" />
                       Full View
                     </Button>
-
                     <Button variant="outline" size="sm" onClick={() => setEditTask(selectedTask)}>
                       <FileText size={14} className="mr-1" />
                       Edit
                     </Button>
                   </div>
                 </div>
-
-                <div className="flex flex-wrap gap-2 mt-2">
-                  <Badge className={STATUS_CLASS[selectedTask.status]}>
-                    {formatStatus(selectedTask.status)}
-                  </Badge>
-                  <Badge variant="outline" className={PRIORITY_CLASS[selectedTask.priority]}>
-                    {formatPriority(selectedTask.priority)}
-                  </Badge>
+                <div className="flex flex-wrap gap-1 mt-1"> {/* Less gap */}
+                  {/* Status - editable dropdown */}
+                  <Dropdown
+                    trigger={
+                      <Badge className={STATUS_CLASS[selectedTask.status] + ' cursor-pointer'}>
+                        {formatStatus(selectedTask.status)}
+                      </Badge>
+                    }
+                  >
+                    <Card className="mt-2 w-40 p-2">
+                      <div className="space-y-1">
+                        {['not_started','in_progress','completed','on_hold','cancelled'].map(s => (
+                          <button
+                            key={s}
+                            className="w-full px-2 py-1 text-left text-xs rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            onClick={() => {
+                              setTaskList(prev => prev.map(t => t.id === selectedTask.id ? { ...t, status: s as Task['status'] } : t));
+                              setSelectedTask({ ...selectedTask, status: s as Task['status'] });
+                              if (onTaskUpdated) onTaskUpdated({ ...selectedTask, status: s as Task['status'] });
+                              Inertia.patch(`/tasks/${selectedTask.id}`, { status: s }, { preserveScroll: true });
+                            }}
+                          >
+                            {formatStatus(s)}
+                          </button>
+                        ))}
+                      </div>
+                    </Card>
+                  </Dropdown>
+                  {/* Priority - editable dropdown */}
+                  <Dropdown
+                    trigger={
+                      <Badge variant="outline" className={PRIORITY_CLASS[selectedTask.priority] + ' cursor-pointer'}>
+                        {formatPriority(selectedTask.priority)}
+                      </Badge>
+                    }
+                  >
+                    <Card className="mt-2 w-40 p-2">
+                      <div className="space-y-1">
+                        {['urgent','high','medium','low'].map(p => (
+                          <button
+                            key={p}
+                            className="w-full px-2 py-1 text-left text-xs rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            onClick={() => {
+                              setTaskList(prev => prev.map(t => t.id === selectedTask.id ? { ...t, priority: p as Task['priority'] } : t));
+                              setSelectedTask({ ...selectedTask, priority: p as Task['priority'] });
+                              if (onTaskUpdated) onTaskUpdated({ ...selectedTask, priority: p as Task['priority'] });
+                              Inertia.patch(`/tasks/${selectedTask.id}`, { priority: p }, { preserveScroll: true });
+                            }}
+                          >
+                            {formatPriority(p)}
+                          </button>
+                        ))}
+                      </div>
+                    </Card>
+                  </Dropdown>
                   {isOverdue(selectedTask.due_date) && (
                     <Badge className="bg-red-200 text-red-800">OVERDUE</Badge>
                   )}
@@ -554,76 +621,155 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="space-y-2">
-                  <h3 className="font-medium text-gray-700">Due Date</h3>
-                  <div className="flex items-center">
-                    <Calendar size={16} className="mr-2 text-gray-600" />
-                    <span className={`${isOverdue(selectedTask.due_date) ? 'text-red-600 font-medium' : ''}`}>
-                      {selectedTask.due_date ? formatDate(selectedTask.due_date) : "No due date"}
-                    </span>
+              {/* Compact two-column grid for meta fields */}
+              <div className="grid grid-cols-2 gap-2 mb-4 text-sm"> {/* Less gap, smaller text */}
+                {/* Due Date - editable */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <Calendar size={14} className="text-gray-600" />
+                    <Dropdown
+                      trigger={
+                        <span className={
+                          'cursor-pointer ' +
+                          (isOverdue(selectedTask.due_date) ? 'text-red-600 font-medium' : '')
+                        }>
+                          {selectedTask.due_date ? formatDate(selectedTask.due_date) : 'No due date'}
+                        </span>
+                      }
+                    >
+                      <Card className="mt-2 w-48 p-3">
+                        <input
+                          type="date"
+                          value={selectedTask.due_date ? new Date(selectedTask.due_date).toISOString().split('T')[0] : ''}
+                          onChange={e => {
+                            setTaskList(prev => prev.map(t => t.id === selectedTask.id ? { ...t, due_date: e.target.value } : t));
+                            setSelectedTask({ ...selectedTask, due_date: e.target.value });
+                            if (onTaskUpdated) onTaskUpdated({ ...selectedTask, due_date: e.target.value });
+                            Inertia.patch(`/tasks/${selectedTask.id}`, { due_date: e.target.value }, { preserveScroll: true });
+                          }}
+                          className="w-full px-2 py-1 border rounded text-xs"
+                        />
+                        <div className="flex gap-1 mt-2">
+                          {[0, 1, 3, 7].map(days => {
+                            const date = new Date();
+                            date.setDate(date.getDate() + days);
+                            const label = days === 0 ? 'Today' : days === 1 ? 'Tomorrow' : `+${days}d`;
+                            const dateString = date.toISOString().split('T')[0];
+                            return (
+                              <button
+                                key={label}
+                                className="flex-1 px-1 py-1 text-xs rounded border hover:bg-gray-100"
+                                onClick={() => {
+                                  setTaskList(prev => prev.map(t => t.id === selectedTask.id ? { ...t, due_date: dateString } : t));
+                                  setSelectedTask({ ...selectedTask, due_date: dateString });
+                                  if (onTaskUpdated) onTaskUpdated({ ...selectedTask, due_date: dateString });
+                                  Inertia.patch(`/tasks/${selectedTask.id}`, { due_date: dateString }, { preserveScroll: true });
+                                }}
+                              >
+                                {label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {selectedTask.due_date && (
+                          <button
+                            className="mt-2 text-xs text-red-600 hover:underline"
+                            onClick={() => {
+                              setTaskList(prev => prev.map(t => t.id === selectedTask.id ? { ...t, due_date: undefined } : t));
+                              setSelectedTask({ ...selectedTask, due_date: undefined });
+                              if (onTaskUpdated) onTaskUpdated({ ...selectedTask, due_date: undefined });
+                              Inertia.patch(`/tasks/${selectedTask.id}`, { due_date: null }, { preserveScroll: true });
+                            }}
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </Card>
+                    </Dropdown>
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <h3 className="font-medium text-gray-700">Assignee</h3>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <User size={16} className="mr-2 text-gray-600" />
-                      {selectedTask.assigned_to_node ? (
-                        <span>{`${selectedTask.assigned_to_node.first_name} ${selectedTask.assigned_to_node.last_name}`}</span>
-                      ) : (
-                        <span className="text-gray-400">Unassigned</span>
-                      )}
-                    </div>
-
+                {/* Assignee - editable */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <User size={14} className="text-gray-600" />
                     <AssigneeDropdown
                       taskId={selectedTask.id}
-                      currentAssigneeId={selectedTask.assigned_to || undefined}
+                      currentAssigneeId={typeof selectedTask.assigned_to === 'number' ? selectedTask.assigned_to : undefined}
                       orgNodes={orgNodes || []}
-                      onChange={handleTaskAssignment}
+                      onChange={(taskId, assigneeId) => {
+                        const normalizedAssigneeId = typeof assigneeId === 'number' ? assigneeId : undefined;
+                        // Optimistically update local state
+                        setTaskList(prev => {
+                          const updated = prev.map(t => t.id === taskId ? normalizeTask({
+                            ...t,
+                            assigned_to: normalizedAssigneeId,
+                            assigned_to_node: normalizedAssigneeId !== undefined ? orgNodes?.find(n => n.id === normalizedAssigneeId) : undefined
+                          }) : normalizeTask(t)).filter(task => task.assigned_to === undefined || typeof task.assigned_to === 'number') as Task[];
+                          assertNoNullAssignedTo(updated);
+                          return updated;
+                        });
+                        if (selectedTask && selectedTask.id === taskId) {
+                          setSelectedTask({
+                            ...selectedTask,
+                            assigned_to: normalizedAssigneeId,
+                            assigned_to_node: normalizedAssigneeId !== undefined ? orgNodes?.find(n => n.id === normalizedAssigneeId) : undefined
+                          });
+                          if (onTaskUpdated) onTaskUpdated({
+                            ...selectedTask,
+                            assigned_to: normalizedAssigneeId,
+                            assigned_to_node: normalizedAssigneeId !== undefined ? orgNodes?.find(n => n.id === normalizedAssigneeId) : undefined
+                          });
+                        }
+                        // Persist to backend
+                        Inertia.patch(`/tasks/${taskId}`, { assigned_to: typeof assigneeId === 'number' ? assigneeId : null }, { preserveScroll: true });
+                      }}
                       currentUser={currentUser}
                     />
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <h3 className="font-medium text-gray-700">Progress</h3>
-                  <div className="flex items-center space-x-2">
-                    <Progress
+                {/* Progress - editable slider and quick buttons */}
+                <div className="space-y-1 col-span-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Progress</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
                       value={selectedTask.percentage_complete}
-                      className="h-2.5 flex-1"
-                      indicatorColor={selectedTask.status === 'completed' ? 'bg-green-500' : 'bg-blue-500'}
+                      onChange={e => {
+                        const val = parseInt(e.target.value);
+                        setTaskList(prev => prev.map(t => t.id === selectedTask.id ? { ...t, percentage_complete: val } : t));
+                        setSelectedTask({ ...selectedTask, percentage_complete: val });
+                        if (onTaskUpdated) onTaskUpdated({ ...selectedTask, percentage_complete: val });
+                        Inertia.patch(`/tasks/${selectedTask.id}/progress`, { percentage_complete: val }, { preserveScroll: true });
+                      }}
+                      className="flex-1 h-1 accent-blue-500"
                     />
-                    <span className="text-sm">{selectedTask.percentage_complete}%</span>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h3 className="font-medium text-gray-700">Initiative</h3>
-                  <div className="flex items-center">
-                    {selectedTask.initiative ? (
-                      <a
-                        href={route('initiatives.show', selectedTask.initiative.id)}
-                        className="text-blue-600 hover:underline flex items-center"
+                    <span className="text-xs w-8 text-right">{selectedTask.percentage_complete}%</span>
+                    {[0, 25, 50, 75, 100].map(percent => (
+                      <button
+                        key={percent}
+                        className={`px-1 py-0.5 text-xs rounded border ${selectedTask.percentage_complete === percent ? 'bg-blue-100' : 'hover:bg-gray-100'}`}
+                        onClick={() => {
+                          setTaskList(prev => prev.map(t => t.id === selectedTask.id ? { ...t, percentage_complete: percent } : t));
+                          setSelectedTask({ ...selectedTask, percentage_complete: percent });
+                          if (onTaskUpdated) onTaskUpdated({ ...selectedTask, percentage_complete: percent });
+                          Inertia.patch(`/tasks/${selectedTask.id}/progress`, { percentage_complete: percent }, { preserveScroll: true });
+                        }}
                       >
-                        <FileText size={16} className="mr-1" />
-                        {selectedTask.initiative.title}
-                      </a>
-                    ) : (
-                      <span className="text-gray-400">No initiative</span>
-                    )}
+                        {percent}%
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
 
-              <div className="mb-6">
-                <h3 className="font-medium text-gray-700 mb-2">Description</h3>
-                <div className="p-3 bg-gray-50 rounded-md border min-h-[100px]">
+              {/* Description */}
+              <div className="mb-4">
+                <h3 className="font-medium text-gray-700 mb-1 text-sm">Description</h3>
+                <div className="p-2 bg-gray-50 rounded border min-h-[60px] text-xs">
                   {selectedTask.description ? (
-                    <div className="prose max-w-none">
-                      {selectedTask.description}
-                    </div>
+                    <div className="prose max-w-none">{selectedTask.description}</div>
                   ) : (
                     <p className="text-gray-400 italic">No description provided</p>
                   )}
@@ -632,12 +778,8 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
 
               {/* Notes Section */}
               <div>
-                <h3 className="font-medium text-gray-700 mb-2">Notes</h3>
-                <NotesSection
-                  modelType="task"
-                  modelId={selectedTask.id}
-                  initialNotes={selectedTask.notes || []}
-                />
+                <h3 className="font-medium text-gray-700 mb-1 text-sm">Notes</h3>
+                <NotesSection entityType="task" entityId={selectedTask.id} notes={selectedTask.notes || []} />
               </div>
             </div>
           ) : (

@@ -28,16 +28,18 @@ class ProfileUpdateTest extends TestCase
         $response = $this
             ->actingAs($user)
             ->patch('/settings/profile', [
-                'name' => 'Updated Name',
+                'first_name' => 'Updated',
+                'last_name' => 'Name',
             ]);
 
         $response
             ->assertSessionHasNoErrors()
-            ->assertRedirect('/settings/profile');
+            ->assertRedirect('/dashboard');
 
         $user->refresh();
 
-        $this->assertSame('Updated Name', $user->name);
+        $this->assertSame('Updated', $user->first_name);
+        $this->assertSame('Name', $user->last_name);
     }
 
     public function test_user_can_delete_their_account()

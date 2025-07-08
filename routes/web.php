@@ -58,6 +58,7 @@ Route::middleware([
     // Initiative routes
     Route::get('initiatives', [InitiativeController::class, 'webIndex'])->name('initiatives');
     Route::get('initiatives/{initiative}', [InitiativeController::class, 'webShow'])->name('initiative.show');
+    Route::resource('initiatives', InitiativeController::class);
 
     // Tag API endpoints
     Route::get('api/tags', [TagController::class, 'index']);
@@ -81,10 +82,11 @@ Route::middleware([
     Route::apiResource('api/initiatives', InitiativeController::class);
 
     // Task routes
+    Route::patch('tasks/bulk-update', [TaskController::class, 'bulkUpdate'])->name('tasks.bulk-update');
+    Route::patch('tasks/{task}/progress', [TaskController::class, 'updateProgress'])->name('tasks.update-progress');
     Route::resource('tasks', TaskController::class);
     Route::get('organisation/profile/{id}/tasks', [TaskController::class, 'profileTasks'])->name('organisation.profile.tasks');
     Route::get('organisation/profile/{id}/initiatives', [InitiativeController::class, 'profileInitiatives'])->name('organisation.profile.initiatives');
-    Route::patch('tasks/{task}/progress', [TaskController::class, 'updateProgress'])->name('tasks.update-progress');
     Route::get('tasks-overdue', [TaskController::class, 'overdue'])->name('tasks.overdue');
     Route::get('tasks-due-soon', [TaskController::class, 'dueSoon'])->name('tasks.due-soon');
     Route::get('api/initiatives/{initiative}/tasks', [TaskController::class, 'forInitiative'])->name('api.initiatives.tasks');
@@ -94,11 +96,9 @@ Route::middleware([
         Route::get('/', [TaskController::class, 'index'])->name('index');
         Route::post('/', [TaskController::class, 'store'])->name('store');
         Route::get('/statistics', [TaskController::class, 'statistics'])->name('statistics');
-        Route::patch('/bulk-update', [TaskController::class, 'bulkUpdate'])->name('bulk-update');
         Route::get('/{task}', [TaskController::class, 'show'])->name('show');
         Route::patch('/{task}', [TaskController::class, 'update'])->name('update');
         Route::delete('/{task}', [TaskController::class, 'destroy'])->name('destroy');
-        Route::patch('/{task}/progress', [TaskController::class, 'updateProgress'])->name('update-progress');
     });
 
     // Notes for meetings
