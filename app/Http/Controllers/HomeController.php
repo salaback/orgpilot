@@ -17,9 +17,12 @@ class HomeController extends Controller
     /**
      * Display the welcome page.
      */
-    public function index(): Response
+    public function index()
     {
-        return Inertia::render('welcome');
+        if (auth()->check()) {
+            return redirect()->route('dashboard');
+        }
+        return redirect()->route('login');
     }
 
     /**
