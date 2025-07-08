@@ -1,7 +1,7 @@
 import React from 'react';
 import { PageProps } from '@inertiajs/inertia';
 import AppLayout from '@/layouts/app-layout';
-import InitiativesPage from '../features/initiatives/initiatives-page';
+import InitiativesPage from '../../features/initiatives/initiatives-page';
 import { type BreadcrumbItem } from '@/types';
 
 interface Initiative {
