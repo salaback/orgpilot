@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
-import { OrgNode } from '@/types';
-import { OrgNodeCard } from '@/pages/organisation/org-node-card';
-import { OrgListView } from '@/pages/organisation/org-list-view';
+import { Employee } from '@/types';
+import { EmployeeCard } from '@/pages/organisation/org-node-card';
+import { EmployeeListView } from '@/pages/organisation/org-list-view';
 import { AddDirectReportSheet } from '@/pages/organisation/add-direct-report-sheet';
 import { Button } from '@/components/ui/button';
 import { ChevronUp, Users } from 'lucide-react';
@@ -19,20 +19,20 @@ interface IndexProps {
     description: string;
     is_primary: boolean;
   };
-  rootNode: OrgNode;
-  directReports: OrgNode[];
+  rootEmployee: Employee;
+  directReports: Employee[];
   // New props for direct node navigation
-  focusedNode?: OrgNode | null;
-  currentReports?: OrgNode[];
+  focusedEmployee?: Employee | null;
+  currentReports?: Employee[];
   initialFocus?: boolean;
 }
 
-export default function Index({ orgStructure, rootNode, directReports, focusedNode: initialFocusedNode, currentReports: initialCurrentReports }: IndexProps) {
+export default function Index({ orgStructure, rootEmployee, directReports, focusedEmployee: initialFocusedEmployee, currentReports: initialCurrentReports }: IndexProps) {
   const [isAddingDirectReport, setIsAddingDirectReport] = useState(false);
   const [selectedManagerId, setSelectedManagerId] = useState<number | null>(null);
-  const [focusedNode, setFocusedNode] = useState<OrgNode | null>(initialFocusedNode || null);
-  const [nodeHierarchy, setNodeHierarchy] = useState<OrgNode[]>([]);
-  const [currentReports, setCurrentReports] = useState<OrgNode[]>(initialCurrentReports || directReports);
+  const [focusedEmployee, setFocusedEmployee] = useState<Employee | null>(initialFocusedEmployee || null);
+  const [employeeHierarchy, setEmployeeHierarchy] = useState<Employee[]>([]);
+  const [currentReports, setCurrentReports] = useState<Employee[]>(initialCurrentReports || directReports);
   const [highlightedManagerId, setHighlightedManagerId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isListView, setIsListView] = useState(false);
@@ -46,23 +46,23 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
   ];
 
   // Add focused node to breadcrumbs if available
-  if (focusedNode) {
+  if (focusedEmployee) {
     breadcrumbs.push({
-      title: focusedNode.full_name,
-      href: `/organisation/${focusedNode.id}`,
+      title: focusedEmployee.full_name,
+      href: `/organisation/${focusedEmployee.id}`,
     });
   }
 
   // Find a specific node by ID
-  const findNodeById = (id: number): OrgNode | null => {
-    if (rootNode.id === id) return rootNode;
+  const findEmployeeById = (id: number): Employee | null => {
+    if (rootEmployee.id === id) return rootEmployee;
 
     // First check in the current reports (what's currently displayed)
-    const currentNode = currentReports.find(node => node.id === id);
-    if (currentNode) return currentNode;
+    const currentEmployee = currentReports.find(employee => employee.id === id);
+    if (currentEmployee) return currentEmployee;
 
     // Then check in the original direct reports
-    return directReports.find(node => node.id === id) || null;
+    return directReports.find(employee => employee.id === id) || null;
   };
 
   // Initialize the view mode from localStorage
@@ -90,20 +90,20 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
 
   // Refresh the view after adding a direct report
   const refreshView = async () => {
-    if (focusedNode) {
-      await loadDirectReportsForNode(focusedNode.id);
+    if (focusedEmployee) {
+      await loadDirectReportsForEmployee(focusedEmployee.id);
     } else {
       // If we're at the root, reload root's direct reports
-      await loadDirectReportsForNode(rootNode.id);
+      await loadDirectReportsForEmployee(rootEmployee.id);
     }
   };
 
   // Load direct reports for a specific node
-  const loadDirectReportsForNode = async (nodeId: number) => {
+  const loadDirectReportsForEmployee = async (employeeId: number) => {
     setIsLoading(true);
     try {
-      console.log(`Loading direct reports for node ${nodeId}`);
-      const response = await axios.get(`/organisation/person/${nodeId}/direct-reports`);
+      console.log(`Loading direct reports for employee ${employeeId}`);
+      const response = await axios.get(`/organisation/person/${employeeId}/direct-reports`);
       const reports = response.data.directReports || [];
       console.log(`Received ${reports.length} direct reports`, reports);
       setCurrentReports(reports);
@@ -119,9 +119,9 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
   // Handle successful direct report addition
   const handleDirectReportSuccess = async (managerId: number) => {
     // Find the manager node
-    const managerNode = findNodeById(managerId);
+    const managerEmployee = findEmployeeById(managerId);
 
-    if (managerNode) {
+    if (managerEmployee) {
       // Highlight the manager briefly to provide visual feedback
       setHighlightedManagerId(managerId);
       setTimeout(() => {
@@ -130,7 +130,7 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
 
       // Always focus on the manager's organisation when adding a direct report
       // This ensures the user sees the manager's team with the new direct report
-      await handleFocusNode(managerNode);
+      await handleFocusEmployee(managerEmployee);
     }
   };
 
@@ -141,13 +141,13 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
   };
 
   // Function to handle focusing on a specific node
-  const handleFocusNode = async (node: OrgNode) => {
+  const handleFocusEmployee = async (employee: Employee) => {
     // Allow focusing on any node to see its direct reports
-    setFocusedNode(node);
+    setFocusedEmployee(employee);
 
     // If we're focusing on the root node, reset the hierarchy
-    if (node.id === rootNode.id) {
-      setNodeHierarchy([]);
+    if (employee.id === rootEmployee.id) {
+      setEmployeeHierarchy([]);
     } else {
       // When focusing on a direct report, we need to check if we're:
       // 1. Going deeper from root (need to start a new path)
@@ -155,110 +155,110 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
       // 3. Going to a completely different branch (need to create new path)
 
       // Get the manager of this node if available
-      const managerId = node.manager_id;
-      const isFromRoot = !focusedNode || focusedNode.id === rootNode.id;
+      const managerId = employee.manager_id;
+      const isFromRoot = !focusedEmployee || focusedEmployee.id === rootEmployee.id;
 
-      let newHierarchy = [...nodeHierarchy];
+      let newHierarchy = [...employeeHierarchy];
 
       // If we're coming from root, start a new path
       if (isFromRoot) {
-        newHierarchy = [node];
+        newHierarchy = [employee];
       }
       // If we're coming from the node's manager, add to the path
-      else if (managerId === focusedNode?.id) {
-        newHierarchy.push(node);
+      else if (managerId === focusedEmployee?.id) {
+        newHierarchy.push(employee);
       }
       // If we're navigating to a peer or unrelated node, start a new path
       else {
-        newHierarchy = [node];
+        newHierarchy = [employee];
       }
 
-      setNodeHierarchy(newHierarchy);
+      setEmployeeHierarchy(newHierarchy);
     }
 
     // Load direct reports for the focused node
-    await loadDirectReportsForNode(node.id);
+    await loadDirectReportsForEmployee(employee.id);
   };
 
   // Function to navigate up one level in the hierarchy
   const handleNavigateUp = async () => {
-    if (nodeHierarchy.length === 0) {
+    if (employeeHierarchy.length === 0) {
       // If we're already at the root, there's nowhere to go up to
       return;
     }
 
     // Remove the last node from our hierarchy
-    const newHierarchy = [...nodeHierarchy];
+    const newHierarchy = [...employeeHierarchy];
     newHierarchy.pop();
 
     if (newHierarchy.length === 0) {
       // If we're going back to the root
-      setFocusedNode(null);
-      await loadDirectReportsForNode(rootNode.id);
+      setFocusedEmployee(null);
+      await loadDirectReportsForEmployee(rootEmployee.id);
     } else {
       // Otherwise, focus on the new last node in our hierarchy
-      const parentNode = newHierarchy[newHierarchy.length - 1];
-      setFocusedNode(parentNode);
-      await loadDirectReportsForNode(parentNode.id);
+      const parentEmployee = newHierarchy[newHierarchy.length - 1];
+      setFocusedEmployee(parentEmployee);
+      await loadDirectReportsForEmployee(parentEmployee.id);
     }
 
-    setNodeHierarchy(newHierarchy);
+    setEmployeeHierarchy(newHierarchy);
 
     // Update the URL to reflect the current node
-    const navigateId = newHierarchy[newHierarchy.length - 1]?.id || rootNode.id;
+    const navigateId = newHierarchy[newHierarchy.length - 1]?.id || rootEmployee.id;
     router.visit(`/organisation/${navigateId}`, { preserveState: true });
   };
 
   // Navigate to the root level organisation
   const handleNavigateToRoot = async () => {
-    setFocusedNode(null);
-    setNodeHierarchy([]);
-    await loadDirectReportsForNode(rootNode.id);
+    setFocusedEmployee(null);
+    setEmployeeHierarchy([]);
+    await loadDirectReportsForEmployee(rootEmployee.id);
 
     // Update the URL to reflect the root organisation view
     router.visit('/organisation', { preserveState: true, replace: true });
   };
 
   // Handler for viewing a node's profile
-  const handleViewProfile = (node: OrgNode) => {
+  const handleViewProfile = (employee: Employee) => {
     // Navigate to the new profile page
-    router.visit(`/organisation/profile/${node.id}`);
+    router.visit(`/organisation/profile/${employee.id}`);
   };
 
   // Navigate up one level
   const navigateUp = () => {
-    if (nodeHierarchy.length === 0) {
+    if (employeeHierarchy.length === 0) {
       // If we're already at the root, there's nowhere to go up to
       return;
     }
 
     // Remove the last node from our hierarchy
-    const newHierarchy = [...nodeHierarchy];
+    const newHierarchy = [...employeeHierarchy];
     newHierarchy.pop();
 
     if (newHierarchy.length === 0) {
       // If we're going back to the root
-      setFocusedNode(null);
-      loadDirectReportsForNode(rootNode.id);
+      setFocusedEmployee(null);
+      loadDirectReportsForEmployee(rootEmployee.id);
     } else {
       // Otherwise, focus on the new last node in our hierarchy
-      const parentNode = newHierarchy[newHierarchy.length - 1];
-      setFocusedNode(parentNode);
-      loadDirectReportsForNode(parentNode.id);
+      const parentEmployee = newHierarchy[newHierarchy.length - 1];
+      setFocusedEmployee(parentEmployee);
+      loadDirectReportsForEmployee(parentEmployee.id);
     }
 
-    setNodeHierarchy(newHierarchy);
+    setEmployeeHierarchy(newHierarchy);
 
     // Update the URL to reflect the current node
-    const navigateId = newHierarchy[newHierarchy.length - 1]?.id || rootNode.id;
+    const navigateId = newHierarchy[newHierarchy.length - 1]?.id || rootEmployee.id;
     router.visit(`/organisation/${navigateId}`, { preserveState: true });
   };
 
   // Navigate to the root node
   const navigateToRoot = () => {
-    setFocusedNode(null);
-    setNodeHierarchy([]);
-    loadDirectReportsForNode(rootNode.id);
+    setFocusedEmployee(null);
+    setEmployeeHierarchy([]);
+    loadDirectReportsForEmployee(rootEmployee.id);
 
     // Update the URL to reflect the root organisation view
     router.visit('/organisation', { preserveState: true, replace: true });
@@ -273,15 +273,15 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-semibold">{orgStructure.name.replace('Organization', 'Organisation')}</h1>
-            {focusedNode && (
+            {focusedEmployee && (
               <p className="text-sm text-muted-foreground mt-1">
-                Currently viewing: <span className="font-medium">{focusedNode.full_name}'s Organisation</span>
+                Currently viewing: <span className="font-medium">{focusedEmployee.full_name}'s Organisation</span>
                 {/* Show manager indicator if not viewing the root node */}
-                {focusedNode.manager_id && focusedNode.id !== rootNode.id && (
+                {focusedEmployee.manager_id && focusedEmployee.id !== rootEmployee.id && (
                   <span className="text-sm text-muted-foreground ml-1">
                     • Reports to: <span className="font-medium cursor-pointer hover:text-primary" onClick={navigateUp}>
-                      {focusedNode.manager_id === rootNode.id
-                        ? rootNode.full_name
+                      {focusedEmployee.manager_id === rootEmployee.id
+                        ? rootEmployee.full_name
                         : "Manager"}
                     </span>
                   </span>
@@ -292,10 +292,10 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
 
           <div className="flex items-center gap-2">
             {/* Organization Navigation */}
-            {(focusedNode || nodeHierarchy.length > 0) && (
+            {(focusedEmployee || employeeHierarchy.length > 0) && (
               <>
                 {/* Show "Up One Level" button if viewing a manager who isn't the root */}
-                {focusedNode && focusedNode.id !== rootNode.id && (
+                {focusedEmployee && focusedEmployee.id !== rootEmployee.id && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -323,41 +323,41 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
 
       <div className="p-6 pt-0">
         {/* Current view indicator */}
-        <div className={`relative bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 ${focusedNode ? 'border-l-4 border-primary' : ''}`}>
-          {focusedNode && (
+        <div className={`relative bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 ${focusedEmployee ? 'border-l-4 border-primary' : ''}`}>
+          {focusedEmployee && (
             <div className="absolute top-0 left-0 w-1 bg-primary h-full"></div>
           )}
 
           {/* Breadcrumb navigation - Hide since we don't allow drilling down */}
-          {false && (focusedNode || nodeHierarchy.length > 0) && (
+          {false && (focusedEmployee || employeeHierarchy.length > 0) && (
             <div className="mb-6">
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem>
                     <BreadcrumbLink onClick={handleNavigateToRoot} className="cursor-pointer">
-                      {rootNode.full_name}
+                      {rootEmployee.full_name}
                     </BreadcrumbLink>
                   </BreadcrumbItem>
 
-                  {nodeHierarchy.map((node, index) => (
-                    <React.Fragment key={node.id}>
+                  {employeeHierarchy.map((employee, index) => (
+                    <React.Fragment key={employee.id}>
                       <BreadcrumbSeparator />
                       <BreadcrumbItem>
-                        {index < nodeHierarchy.length - 1 ? (
+                        {index < employeeHierarchy.length - 1 ? (
                           <BreadcrumbLink
                             onClick={() => {
                               // Navigate to this specific level in the hierarchy
-                              const newHierarchy = nodeHierarchy.slice(0, index + 1);
-                              setNodeHierarchy(newHierarchy);
-                              setFocusedNode(node);
+                              const newHierarchy = employeeHierarchy.slice(0, index + 1);
+                              setEmployeeHierarchy(newHierarchy);
+                              setFocusedEmployee(employee);
                               // This is simplified; in a deeper hierarchy we'd need to find the correct reports
                             }}
                             className="cursor-pointer"
                           >
-                            {node.full_name}
+                            {employee.full_name}
                           </BreadcrumbLink>
                         ) : (
-                          <span>{node.full_name}</span>
+                          <span>{employee.full_name}</span>
                         )}
                       </BreadcrumbItem>
                     </React.Fragment>
@@ -370,20 +370,20 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
           <div className="flex flex-col items-center">
             {/* Display either the focused node or the root node - but only in grid view */}
             {!isListView && (
-              <div className={`mb-8 relative ${highlightedManagerId === (focusedNode?.id || rootNode.id) ? 'animate-pulse' : ''}`}>
+              <div className={`mb-8 relative ${highlightedManagerId === (focusedEmployee?.id || rootEmployee.id) ? 'animate-pulse' : ''}`}>
                 {/* Visual indicator for current manager's context */}
-                {focusedNode && (
+                {focusedEmployee && (
                   <div className="absolute -left-4 -right-4 -top-4 bottom-4 bg-primary/5 rounded-lg -z-10"></div>
                 )}
 
-                <OrgNodeCard
-                  node={focusedNode || rootNode}
+                <EmployeeCard
+                  node={focusedEmployee || rootEmployee}
                   onAddDirectReport={handleAddDirectReport}
                   onViewProfile={handleViewProfile} // Pass the view profile handler
                 />
 
                 {/* Back up button if we're not at the root - Hide since we don't allow drilling down */}
-                {false && focusedNode && (
+                {false && focusedEmployee && (
                   <div className="flex justify-center mt-4">
                     <Button
                       variant="outline"
@@ -400,7 +400,7 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
             )}
 
             {/* Team context visual indicator - only in grid view */}
-            {!isListView && focusedNode && currentReports.length > 0 && (
+            {!isListView && focusedEmployee && currentReports.length > 0 && (
               <div className="w-0.5 h-8 bg-primary/50"></div>
             )}
 
@@ -412,13 +412,13 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
             ) : (
               /* Display current reports (either direct reports of root or focused node) */
               currentReports.length > 0 && (
-                <div className={`mt-4 w-full ${focusedNode ? 'bg-primary/5 p-6 rounded-lg' : ''}`}>
+                <div className={`mt-4 w-full ${focusedEmployee ? 'bg-primary/5 p-6 rounded-lg' : ''}`}>
                   <h2 className="text-lg font-medium mb-4 text-center">
-                    {focusedNode ? `${focusedNode.full_name}'s Team` : 'Direct Reports'}
+                    {focusedEmployee ? `${focusedEmployee.full_name}'s Team` : 'Direct Reports'}
                   </h2>
                   {isListView ? (
-                    <OrgListView
-                      rootNode={focusedNode || rootNode}
+                    <EmployeeListView
+                      rootEmployee={focusedEmployee || rootEmployee}
                       initialReports={currentReports}
                       onAddDirectReport={handleAddDirectReport}
                       onViewProfile={handleViewProfile}
@@ -430,12 +430,12 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
                           key={report.id}
                           className={`flex flex-col items-center ${highlightedManagerId === report.id ? 'animate-pulse' : ''}`}
                         >
-                          <OrgNodeCard
+                          <EmployeeCard
                             node={report}
                             onAddDirectReport={handleAddDirectReport}
                             onViewProfile={handleViewProfile} // Pass the view profile handler
                             // Remove the ability to focus on direct reports
-                            onFocus={handleFocusNode}
+                            onFocus={handleFocusEmployee}
                           />
                         </div>
                       ))}
@@ -450,16 +450,12 @@ export default function Index({ orgStructure, rootNode, directReports, focusedNo
 
       {/* Add direct report slide-out panel */}
       <AddDirectReportSheet
-        isOpen={isAddingDirectReport}
-        onClose={() => {
-          setIsAddingDirectReport(false);
-          setSelectedManagerId(null);
-        }}
-        managerId={selectedManagerId || rootNode.id}
+        open={isAddingDirectReport}
+        onClose={() => setIsAddingDirectReport(false)}
+        manager={focusedEmployee || rootEmployee}
         onSuccess={async (managerId) => {
           await handleDirectReportSuccess(managerId);
-          // Refresh the view to show the newly added direct report
-          refreshView();
+          setIsAddingDirectReport(false);
         }}
       />
     </AppLayout>

@@ -52,13 +52,14 @@ interface Meeting {
 }
 
 interface MeetingDetailProps {
-  orgNode: {
+  employee: {
     id: number;
     first_name: string;
     last_name: string;
+    full_name: string;
     title: string;
     email: string;
-    photo_url?: string;
+    status: string;
   };
   meeting: Meeting;
   currentUser: {
@@ -67,7 +68,7 @@ interface MeetingDetailProps {
   };
 }
 
-const MeetingDetail: React.FC<MeetingDetailProps> = ({ orgNode, meeting, currentUser }) => {
+const MeetingDetail: React.FC<MeetingDetailProps> = ({ employee, meeting, currentUser }) => {
   const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
@@ -81,14 +82,14 @@ const MeetingDetail: React.FC<MeetingDetailProps> = ({ orgNode, meeting, current
 
   const handleCompleteSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    completeForm.post(`/organisation/profile/${orgNode.id}/one-on-one/${meeting.id}/complete`, {
+    completeForm.post(`/organisation/profile/${employee.id}/one-on-one/${meeting.id}/complete`, {
       onSuccess: () => setIsCompleteDialogOpen(false)
     });
   };
 
   const handleCancelSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    cancelForm.post(`/organisation/profile/${orgNode.id}/one-on-one/${meeting.id}/cancel`, {
+    cancelForm.post(`/organisation/profile/${employee.id}/one-on-one/${meeting.id}/cancel`, {
       onSuccess: () => setIsCancelDialogOpen(false)
     });
   };
@@ -102,17 +103,17 @@ const MeetingDetail: React.FC<MeetingDetailProps> = ({ orgNode, meeting, current
 
   return (
     <AppLayout>
-      <Head title={`1:1 Meeting with ${orgNode.first_name}`} />
+      <Head title={`1:1 Meeting with ${employee.first_name}`} />
 
       <div className="container py-6">
         <div className="flex items-center mb-6">
-          <Link href={`/organisation/profile/${orgNode.id}/one-on-one`} className="mr-3">
+          <Link href={`/organisation/profile/${employee.id}/one-on-one`} className="mr-3">
             <Button variant="ghost" size="sm">
               <ArrowLeftIcon className="h-4 w-4 mr-1" />
               Back
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold">1:1 Meeting with {orgNode.first_name} {orgNode.last_name}</h1>
+          <h1 className="text-2xl font-bold">1:1 Meeting with {employee.first_name} {employee.last_name}</h1>
         </div>
 
         {/* Meeting Header */}
@@ -150,7 +151,7 @@ const MeetingDetail: React.FC<MeetingDetailProps> = ({ orgNode, meeting, current
 
                 {isMeetingActive && (
                   <div className="ml-4 flex gap-2">
-                    <Link href={`/organisation/profile/${orgNode.id}/one-on-one/${meeting.id}/edit`}>
+                    <Link href={`/organisation/profile/${employee.id}/one-on-one/${meeting.id}/edit`}>
                       <Button variant="outline" size="sm">Edit</Button>
                     </Link>
                     {isCompletable && (

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { OrgNode } from '@/types';
+import { Employee } from '@/types';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useInitials } from '@/hooks/use-initials';
@@ -7,21 +7,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PlusCircleIcon, UserIcon, ChevronRightIcon } from 'lucide-react';
 
-interface OrgNodeCardProps {
-  node: OrgNode;
+interface EmployeeCardProps {
+  node: Employee;
   onAddDirectReport?: (managerId: number) => void;
   showAddButton?: boolean;
-  onFocus?: (node: OrgNode) => void;
-  onViewProfile?: (node: OrgNode) => void;
+  onFocus?: (node: Employee) => void;
+  onViewProfile?: (node: Employee) => void;
 }
 
-export function OrgNodeCard({
+export function EmployeeCard({
   node,
   onAddDirectReport,
   showAddButton = true,
   onFocus,
   onViewProfile
-}: OrgNodeCardProps) {
+}: EmployeeCardProps) {
   const getInitials = useInitials();
   const [isHovering, setIsHovering] = useState(false);
 

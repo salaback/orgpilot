@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChevronUp, Users } from 'lucide-react';
-import { OrgNode } from '@/types';
+import { Employee } from '@/types';
 import { ViewHeader, ViewMode } from '@/components/view-header';
 
 interface OrgViewHeaderProps {
@@ -11,9 +11,9 @@ interface OrgViewHeaderProps {
     description: string;
     is_primary: boolean;
   };
-  focusedNode: OrgNode | null;
-  rootNode: OrgNode;
-  nodeHierarchy?: OrgNode[];
+  focusedEmployee: Employee | null;
+  rootEmployee: Employee;
+  employeeHierarchy?: Employee[];
   onNavigateUp: () => void;
   onNavigateToRoot: () => void;
   isListView: boolean;
@@ -22,9 +22,9 @@ interface OrgViewHeaderProps {
 
 export function OrgViewHeader({
   orgStructure,
-  focusedNode,
-  rootNode,
-  nodeHierarchy = [],
+  focusedEmployee,
+  rootEmployee,
+  employeeHierarchy = [],
   onNavigateUp,
   onNavigateToRoot,
   isListView,
@@ -40,15 +40,15 @@ export function OrgViewHeader({
   };
 
   // Create description content as a React element
-  const descriptionContent = focusedNode && (
+  const descriptionContent = focusedEmployee && (
     <React.Fragment>
-      Currently viewing: <span className="font-medium">{focusedNode.full_name}'s Organisation</span>
+      Currently viewing: <span className="font-medium">{focusedEmployee.full_name}'s Organisation</span>
       {/* Show manager indicator if not viewing the root node */}
-      {focusedNode.manager_id && focusedNode.id !== rootNode.id && (
+      {focusedEmployee.manager_id && focusedEmployee.id !== rootEmployee.id && (
         <span className="text-sm text-muted-foreground ml-1">
           • Reports to: <span className="font-medium cursor-pointer hover:text-primary" onClick={onNavigateUp}>
-            {focusedNode.manager_id === rootNode.id
-              ? rootNode.full_name
+            {focusedEmployee.manager_id === rootEmployee.id
+              ? rootEmployee.full_name
               : "Manager"}
           </span>
         </span>
@@ -60,10 +60,10 @@ export function OrgViewHeader({
   const actionButtons = (
     <>
       {/* Organization Navigation */}
-      {(focusedNode || nodeHierarchy.length > 0) && (
+      {(focusedEmployee || employeeHierarchy.length > 0) && (
         <>
           {/* Show "Up One Level" button if viewing a manager who isn't the root */}
-          {focusedNode && focusedNode.id !== rootNode.id && (
+          {focusedEmployee && focusedEmployee.id !== rootEmployee.id && (
             <Button
               variant="outline"
               size="sm"

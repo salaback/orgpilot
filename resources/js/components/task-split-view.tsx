@@ -72,7 +72,7 @@ interface Task {
   }>;
 }
 
-interface OrgNode {
+interface Employee {
   id: number;
   first_name: string;
   last_name: string;
@@ -87,7 +87,7 @@ interface Initiative {
 interface TaskSplitViewProps {
   tasks: Task[];
   initiatives?: Initiative[];
-  orgNodes?: OrgNode[];
+  employees?: Employee[];
   initiativeId?: number;
   onTaskCreated?: (task: Task) => void;
   onTaskUpdated?: (task: Task) => void;
@@ -128,7 +128,7 @@ function assertNoNullAssignedTo(tasks: Task[]) {
 const TaskSplitView: React.FC<TaskSplitViewProps> = ({
   tasks = [],
   initiatives = [],
-  orgNodes = [],
+  employees = [],
   initiativeId,
   onTaskCreated,
   onTaskUpdated
@@ -228,8 +228,8 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
       task.id === taskId
         ? {
             ...task,
-            assigned_to: assigneeId,
-            assigned_to_node: assigneeId ? orgNodes?.find(node => node.id === assigneeId) : undefined
+            assigned_to: typeof assigneeId === 'number' ? assigneeId : undefined,
+            assigned_to_node: typeof assigneeId === 'number' ? employees?.find(node => node.id === assigneeId) : undefined
           }
         : task
     ));
@@ -238,8 +238,8 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
     if (selectedTask && selectedTask.id === taskId) {
       setSelectedTask({
         ...selectedTask,
-        assigned_to: assigneeId,
-        assigned_to_node: assigneeId ? orgNodes?.find(node => node.id === assigneeId) : undefined
+        assigned_to: typeof assigneeId === 'number' ? assigneeId : undefined,
+        assigned_to_node: typeof assigneeId === 'number' ? employees?.find(node => node.id === assigneeId) : undefined
       });
     }
 
@@ -249,8 +249,8 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
       if (updatedTask) {
         onTaskUpdated({
           ...updatedTask,
-          assigned_to: assigneeId,
-          assigned_to_node: assigneeId ? orgNodes?.find(node => node.id === assigneeId) : undefined
+          assigned_to: typeof assigneeId === 'number' ? assigneeId : undefined,
+          assigned_to_node: typeof assigneeId === 'number' ? employees?.find(node => node.id === assigneeId) : undefined
         });
       }
     }
@@ -350,7 +350,7 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
         onClose={() => setIsCreating(false)}
         onSuccess={handleTaskCreated}
         initiatives={initiatives}
-        orgNodes={orgNodes}
+        employees={employees}
         initiativeId={initiativeId}
       />
 
@@ -362,7 +362,7 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
           task={editTask}
           isEditing={true}
           initiatives={initiatives}
-          orgNodes={orgNodes}
+          employees={employees}
           initiativeId={editTask.initiative_id}
           onSuccess={(updatedTask) => {
             setEditTask(null);
@@ -425,7 +425,7 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
               >
                 <option value="">All Assignees</option>
                 <option value="unassigned">Unassigned</option>
-                {orgNodes?.map(node => (
+                {employees?.map(node => (
                   <option key={node.id} value={node.id.toString()}>
                     {`${node.first_name} ${node.last_name}`}
                   </option>
@@ -695,7 +695,7 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
                     <AssigneeDropdown
                       taskId={selectedTask.id}
                       currentAssigneeId={typeof selectedTask.assigned_to === 'number' ? selectedTask.assigned_to : undefined}
-                      orgNodes={orgNodes || []}
+                      orgNodes={employees || []}
                       onChange={(taskId, assigneeId) => {
                         const normalizedAssigneeId = typeof assigneeId === 'number' ? assigneeId : undefined;
                         // Optimistically update local state
@@ -703,7 +703,7 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
                           const updated = prev.map(t => t.id === taskId ? normalizeTask({
                             ...t,
                             assigned_to: normalizedAssigneeId,
-                            assigned_to_node: normalizedAssigneeId !== undefined ? orgNodes?.find(n => n.id === normalizedAssigneeId) : undefined
+                            assigned_to_node: normalizedAssigneeId !== undefined ? employees?.find(n => n.id === normalizedAssigneeId) : undefined
                           }) : normalizeTask(t)).filter(task => task.assigned_to === undefined || typeof task.assigned_to === 'number') as Task[];
                           assertNoNullAssignedTo(updated);
                           return updated;
@@ -712,12 +712,12 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
                           setSelectedTask({
                             ...selectedTask,
                             assigned_to: normalizedAssigneeId,
-                            assigned_to_node: normalizedAssigneeId !== undefined ? orgNodes?.find(n => n.id === normalizedAssigneeId) : undefined
+                            assigned_to_node: normalizedAssigneeId !== undefined ? employees?.find(n => n.id === normalizedAssigneeId) : undefined
                           });
                           if (onTaskUpdated) onTaskUpdated({
                             ...selectedTask,
                             assigned_to: normalizedAssigneeId,
-                            assigned_to_node: normalizedAssigneeId !== undefined ? orgNodes?.find(n => n.id === normalizedAssigneeId) : undefined
+                            assigned_to_node: normalizedAssigneeId !== undefined ? employees?.find(n => n.id === normalizedAssigneeId) : undefined
                           });
                         }
                         // Persist to backend

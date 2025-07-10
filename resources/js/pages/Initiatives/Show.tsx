@@ -9,7 +9,7 @@ interface Initiative extends Omit<InitiativeType, 'tags'> {
   tags: TagType[];
 }
 
-interface OrgNode {
+interface Employee {
   id: number;
   first_name: string;
   last_name: string;
@@ -27,7 +27,7 @@ interface Note {
 
 interface InitiativePageProps extends PageProps {
   initiative: Initiative;
-  assignees: OrgNode[];
+  assignees: Employee[];
   notes?: Note[];
   activeTab?: string; // Add activeTab prop
 }

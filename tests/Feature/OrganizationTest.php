@@ -14,28 +14,26 @@ class OrganizationTest extends TestCase
 
     public function test_can_list_organization_structures()
     {
-        $user = User::factory()->create();
-        $org = OrgStructure::factory()->create(['user_id' => $user->id, 'is_primary' => true]);
-        $root = Employee::factory()->create([
-            'org_structure_id' => $org->id,
-            'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
-            'email' => $user->email,
-            'status' => 'active',
-            'node_type' => 'person',
-            'manager_id' => null, // Ensure this is a root node
-        ]);
+        try {
+            $user = User::factory()->create();
+            // Let the controller create the primary org structure and root employee
 
-        $version = \Inertia\Inertia::getVersion() ?? config('inertia.version') ?? 'test-version';
-        $response = $this->actingAs($user)->get('/organisation', [
-            'X-Inertia' => 'true',
-            'X-Inertia-Version' => $version,
-        ]);
-        // Debug output
-        fwrite(STDERR, "Response status: " . $response->getStatusCode() . "\n");
-        fwrite(STDERR, "Response body: " . substr($response->getContent(), 0, 500) . "\n");
-        $response->assertOk();
-        $response->assertSee('Organization Structure');
+            $version = \Inertia\Inertia::getVersion() ?? config('inertia.version') ?? 'test-version';
+            $response = $this->actingAs($user)->get('/organisation', [
+                'X-Inertia-Version' => $version,
+                'X-Requested-With' => 'XMLHttpRequest',
+            ]);
+            // Debug output
+            fwrite(STDERR, "Response status: " . $response->getStatusCode() . "\n");
+            fwrite(STDERR, "Response body: " . $response->getContent() . "\n");
+            fwrite(STDERR, "User ID: " . $user->id . "\n");
+            $response->assertOk();
+            $orgName = $user->first_name . ' ' . $user->last_name . "'s Organization";
+            $response->assertSee($orgName);
+        } catch (\Throwable $e) {
+            fwrite(STDERR, "Exception: " . $e->getMessage() . "\n");
+            throw $e;
+        }
     }
 
     public function test_can_show_employee_profile()

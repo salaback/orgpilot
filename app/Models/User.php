@@ -50,6 +50,20 @@ class User extends Authenticatable
     }
 
     /**
+     * Boot the model and add logic to create a Customer for new users if needed.
+     */
+    protected static function booted()
+    {
+        static::created(function (User $user) {
+            if (!$user->customer_id) {
+                $customer = \App\Models\Customer::createIndividualFromUser($user);
+                $user->customer_id = $customer->id;
+                $user->save();
+            }
+        });
+    }
+
+    /**
      * Get the customer associated with the user.
      */
     public function customer(): BelongsTo

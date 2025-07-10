@@ -22,17 +22,17 @@ class OrganizationController extends Controller
         // Get the user's primary org structure or create one if it doesn't exist
         $orgStructure = $this->getOrCreatePrimaryOrgStructure($user);
 
-        // Get the root node (the user themselves) or create one if it doesn't exist
-        $rootNode = $this->getOrCreateRootNode($orgStructure, $user);
+        // Get the root employee (the user themselves) or create one if it doesn't exist
+        $rootEmployee = $this->getOrCreateRootEmployee($orgStructure, $user);
 
         // Get direct reports ONLY (no nested direct reports)
-        $directReports = $rootNode->directReports()
+        $directReports = $rootEmployee->directReports()
             ->withCount('directReports')
             ->get();
 
         return Inertia::render('organisation/index', [
             'orgStructure' => $orgStructure,
-            'rootNode' => $rootNode,
+            'rootEmployee' => $rootEmployee,
             'directReports' => $directReports,
         ]);
     }
@@ -110,18 +110,18 @@ class OrganizationController extends Controller
     }
 
     /**
-     * Get the root node or create one if it doesn't exist.
+     * Get the root employee or create one if it doesn't exist.
      *
      * @param  \App\Models\OrgStructure  $orgStructure
      * @param  \App\Models\User  $user
      * @return \App\Models\Employee
      */
-    private function getOrCreateRootNode($orgStructure, $user)
+    private function getOrCreateRootEmployee($orgStructure, $user)
     {
-        $rootNode = $orgStructure->rootNodes()->first();
+        $rootEmployee = $orgStructure->rootEmployees()->first();
 
-        if (!$rootNode) {
-            $rootNode = new Employee([
+        if (!$rootEmployee) {
+            $rootEmployee = new Employee([
                 'org_structure_id' => $orgStructure->id,
                 'first_name' => $user->first_name,
                 'last_name' => $user->last_name,
@@ -131,30 +131,30 @@ class OrganizationController extends Controller
                 'node_type' => Employee::TYPE_PERSON,
             ]);
 
-            $rootNode->save();
+            $rootEmployee->save();
         }
 
-        return $rootNode;
+        return $rootEmployee;
     }
 
     /**
-     * Get direct reports for a specific node.
+     * Get direct reports for a specific employee.
      *
-     * @param int $nodeId
+     * @param int $employeeId
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getNodeDirectReports($nodeId)
+    public function getEmployeeDirectReports($employeeId)
     {
         $user = Auth::user();
-        $node = Employee::with('manager')->findOrFail($nodeId);
-        $orgStructure = $node->orgStructure;
+        $employee = Employee::with('manager')->findOrFail($employeeId);
+        $orgStructure = $employee->orgStructure;
 
         // Check if the user has access to this org structure
         if ($orgStructure->user_id !== $user->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $directReports = $node->directReports()
+        $directReports = $employee->directReports()
             ->withCount('directReports')
             ->get();
 
@@ -164,16 +164,16 @@ class OrganizationController extends Controller
     }
 
     /**
-     * Display the view for a specific node.
+     * Display the view for a specific employee.
      *
-     * @param int $nodeId
+     * @param int $employeeId
      * @return \Inertia\Response
      */
-    public function viewNode($nodeId)
+    public function viewEmployee($employeeId)
     {
         $user = Auth::user();
-        $node = Employee::with('manager')->findOrFail($nodeId);
-        $orgStructure = $node->orgStructure;
+        $employee = Employee::with('manager')->findOrFail($employeeId);
+        $orgStructure = $employee->orgStructure;
 
         // Check if the user has access to this org structure
         if ($orgStructure->user_id !== $user->id) {
@@ -181,6 +181,6 @@ class OrganizationController extends Controller
         }
 
         // Redirect to the profile page instead of rendering a non-existent view
-        return redirect()->route('organisation.profile', $nodeId);
+        return redirect()->route('organisation.profile', $employeeId);
     }
 }

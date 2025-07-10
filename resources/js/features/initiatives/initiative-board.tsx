@@ -457,7 +457,7 @@ const InitiativeBoard: React.FC<InitiativeBoardProps> = ({ initiatives, assignee
         <InitiativeModal
           open={newModalOpen}
           onClose={() => setNewModalOpen(false)}
-          users={assignees}
+          assignees={assignees}
           onSave={handleCreate}
         />
         {/* Edit Initiative Modal */}
@@ -465,7 +465,7 @@ const InitiativeBoard: React.FC<InitiativeBoardProps> = ({ initiatives, assignee
           open={modalOpen}
           onClose={() => setModalOpen(false)}
           initiative={selected}
-          users={assignees}
+          assignees={assignees}
           onSave={handleSave}
         />
       </div>

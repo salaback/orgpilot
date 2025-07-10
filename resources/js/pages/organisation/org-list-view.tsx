@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { OrgNode } from '@/types';
+import { Employee } from '@/types';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useInitials } from '@/hooks/use-initials';
 import { Badge } from '@/components/ui/badge';
@@ -7,72 +7,72 @@ import { Button } from '@/components/ui/button';
 import { ChevronRight, ChevronDown, UserIcon } from 'lucide-react';
 import axios from 'axios';
 
-interface OrgListViewProps {
-  rootNode: OrgNode;
-  initialReports: OrgNode[];
-  onViewProfile?: (node: OrgNode) => void;
+interface EmployeeListViewProps {
+  rootEmployee: Employee;
+  initialReports: Employee[];
+  onViewProfile?: (employee: Employee) => void;
   onAddDirectReport?: (managerId: number) => void;
 }
 
-export function OrgListView({
-  rootNode,
+export function EmployeeListView({
+  rootEmployee,
   initialReports,
   onViewProfile,
   onAddDirectReport
-}: OrgListViewProps) {
+}: EmployeeListViewProps) {
   const getInitials = useInitials();
-  const [expandedNodes, setExpandedNodes] = useState<Record<number, boolean>>({ [rootNode.id]: true });
-  const [nodeDirectReports, setNodeDirectReports] = useState<Record<number, OrgNode[]>>({
-    [rootNode.id]: initialReports
+  const [expandedEmployees, setExpandedEmployees] = useState<Record<number, boolean>>({ [rootEmployee.id]: true });
+  const [employeeDirectReports, setEmployeeDirectReports] = useState<Record<number, Employee[]>>({
+    [rootEmployee.id]: initialReports
   });
-  const [loadingNodes, setLoadingNodes] = useState<Record<number, boolean>>({});
+  const [loadingEmployees, setLoadingEmployees] = useState<Record<number, boolean>>({});
 
   // Toggle the expanded state of a node
-  const toggleNodeExpansion = async (nodeId: number) => {
+  const toggleEmployeeExpansion = async (employeeId: number) => {
     // If we're expanding a node and don't have its direct reports yet, fetch them
-    if (!expandedNodes[nodeId] && (!nodeDirectReports[nodeId] || nodeDirectReports[nodeId].length === 0)) {
-      await fetchDirectReports(nodeId);
+    if (!expandedEmployees[employeeId] && (!employeeDirectReports[employeeId] || employeeDirectReports[employeeId].length === 0)) {
+      await fetchDirectReports(employeeId);
     }
 
-    setExpandedNodes(prev => ({
+    setExpandedEmployees(prev => ({
       ...prev,
-      [nodeId]: !prev[nodeId]
+      [employeeId]: !prev[employeeId]
     }));
   };
 
   // Fetch direct reports for a node
-  const fetchDirectReports = async (nodeId: number) => {
+  const fetchDirectReports = async (employeeId: number) => {
     // Don't fetch if we're already loading or have the data
-    if (loadingNodes[nodeId] || (nodeDirectReports[nodeId] && nodeDirectReports[nodeId].length > 0)) {
+    if (loadingEmployees[employeeId] || (employeeDirectReports[employeeId] && employeeDirectReports[employeeId].length > 0)) {
       return;
     }
 
-    setLoadingNodes(prev => ({ ...prev, [nodeId]: true }));
+    setLoadingEmployees(prev => ({ ...prev, [employeeId]: true }));
 
     try {
-      const response = await axios.get(`/organisation/person/${nodeId}/direct-reports`);
+      const response = await axios.get(`/organisation/person/${employeeId}/direct-reports`);
       const reports = response.data.directReports || [];
 
-      setNodeDirectReports(prev => ({
+      setEmployeeDirectReports(prev => ({
         ...prev,
-        [nodeId]: reports
+        [employeeId]: reports
       }));
     } catch (error) {
       console.error('Error fetching direct reports:', error);
     } finally {
-      setLoadingNodes(prev => ({ ...prev, [nodeId]: false }));
+      setLoadingEmployees(prev => ({ ...prev, [employeeId]: false }));
     }
   };
 
   // Render a single node in the list
-  const renderNode = (node: OrgNode, level = 0) => {
-    const hasDirectReports = (node.direct_reports_count ?? 0) > 0;
-    const isExpanded = expandedNodes[node.id] || false;
-    const directReports = nodeDirectReports[node.id] || [];
-    const isLoading = loadingNodes[node.id] || false;
+  const renderEmployee = (employee: Employee, level = 0) => {
+    const hasDirectReports = (employee.direct_reports_count ?? 0) > 0;
+    const isExpanded = expandedEmployees[employee.id] || false;
+    const directReports = employeeDirectReports[employee.id] || [];
+    const isLoading = loadingEmployees[employee.id] || false;
 
     return (
-      <React.Fragment key={node.id}>
+      <React.Fragment key={employee.id}>
         <div
           className={`
             flex items-center py-1.5 px-3 hover:bg-gray-100 dark:hover:bg-gray-800
@@ -86,7 +86,7 @@ export function OrgListView({
               variant="ghost"
               size="icon"
               className="mr-1.5 h-5 w-5 p-0"
-              onClick={() => toggleNodeExpansion(node.id)}
+              onClick={() => toggleEmployeeExpansion(employee.id)}
             >
               {isLoading ? (
                 <div className="h-3 w-3 animate-spin rounded-full border-b-2 border-primary"></div>
@@ -103,29 +103,29 @@ export function OrgListView({
           {/* Avatar */}
           <Avatar className="h-6 w-6 mr-2">
             <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-              {getInitials(node.full_name)}
+              {getInitials(employee.full_name)}
             </AvatarFallback>
           </Avatar>
 
           {/* Person info */}
           <div className="flex-1">
             <div className="flex items-center">
-              <span className="text-sm font-medium">{node.full_name}</span>
-              {(node.direct_reports_count ?? 0) > 0 && (
-                <span className="text-xs text-muted-foreground ml-2">({node.direct_reports_count})</span>
+              <span className="text-sm font-medium">{employee.full_name}</span>
+              {(employee.direct_reports_count ?? 0) > 0 && (
+                <span className="text-xs text-muted-foreground ml-2">({employee.direct_reports_count})</span>
               )}
             </div>
-            <div className="text-xs text-muted-foreground">{node.title}</div>
+            <div className="text-xs text-muted-foreground">{employee.title}</div>
           </div>
 
           {/* Status badges */}
           <div className="flex items-center gap-1.5 mr-1.5">
-            {node.status !== 'active' && (
-              <Badge variant={node.status === 'open' ? 'outline' : 'secondary'} className="text-xs px-1.5 py-0.5">
-                {node.status === 'open' ? 'Open Position' : 'Former'}
+            {employee.status !== 'active' && (
+              <Badge variant={employee.status === 'open' ? 'outline' : 'secondary'} className="text-xs px-1.5 py-0.5">
+                {employee.status === 'open' ? 'Open Position' : 'Former'}
               </Badge>
             )}
-            {node.node_type === 'placeholder' && (
+            {employee.node_type === 'placeholder' && (
               <Badge variant="outline" className="text-xs px-1.5 py-0.5">Placeholder</Badge>
             )}
           </div>
@@ -136,7 +136,7 @@ export function OrgListView({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => onViewProfile(node)}
+                onClick={() => onViewProfile(employee)}
                 className="h-6 w-6"
                 title="View Profile"
               >
@@ -147,7 +147,7 @@ export function OrgListView({
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => onAddDirectReport(node.id)}
+                onClick={() => onAddDirectReport(employee.id)}
                 className="h-6 w-6"
                 title="Add Direct Report"
               >
@@ -160,7 +160,7 @@ export function OrgListView({
         {/* Render children if expanded */}
         {isExpanded && directReports.length > 0 && (
           <div>
-            {directReports.map(report => renderNode(report, level + 1))}
+            {directReports.map(report => renderEmployee(report, level + 1))}
           </div>
         )}
       </React.Fragment>
@@ -181,9 +181,9 @@ export function OrgListView({
               variant="ghost"
               size="icon"
               className="mr-1.5 h-5 w-5 p-0"
-              onClick={() => toggleNodeExpansion(rootNode.id)}
+              onClick={() => toggleEmployeeExpansion(rootEmployee.id)}
             >
-              {expandedNodes[rootNode.id] ? (
+              {expandedEmployees[rootEmployee.id] ? (
                 <ChevronDown className="h-3 w-3" />
               ) : (
                 <ChevronRight className="h-3 w-3" />
@@ -196,12 +196,12 @@ export function OrgListView({
           {/* Root node information */}
           <div className="flex-1">
             <div className="flex items-center">
-              <span className="text-sm font-semibold">{rootNode.full_name}</span>
-              {(rootNode.direct_reports_count ?? 0) > 0 && (
-                <span className="text-xs text-muted-foreground ml-2">({rootNode.direct_reports_count})</span>
+              <span className="text-sm font-semibold">{rootEmployee.full_name}</span>
+              {(rootEmployee.direct_reports_count ?? 0) > 0 && (
+                <span className="text-xs text-muted-foreground ml-2">({rootEmployee.direct_reports_count})</span>
               )}
             </div>
-            <div className="text-xs text-muted-foreground">{rootNode.title}</div>
+            <div className="text-xs text-muted-foreground">{rootEmployee.title}</div>
           </div>
 
           {/* Add direct report button */}
@@ -209,7 +209,7 @@ export function OrgListView({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => onAddDirectReport(rootNode.id)}
+              onClick={() => onAddDirectReport(rootEmployee.id)}
               className="h-6 w-6"
               title="Add Direct Report"
             >
@@ -219,8 +219,8 @@ export function OrgListView({
         </div>
 
         {/* Direct reports */}
-        {expandedNodes[rootNode.id] && initialReports.map(report => (
-          renderNode(report, 1)
+        {expandedEmployees[rootEmployee.id] && initialReports.map(report => (
+          renderEmployee(report, 1)
         ))}
       </div>
     </div>

@@ -21,7 +21,7 @@ interface NotesSectionProps {
   entityType: string;
   entityId: number;
   entityUrl?: string; // Optional direct URL to the entity
-  orgNodes?: Array<{id: number, first_name: string, last_name: string, email: string}>;
+  employees?: Array<{id: number, first_name: string, last_name: string, email: string}>;
   onNotesUpdate?: (notes: Note[]) => void;
 }
 
@@ -30,7 +30,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
   entityType = 'item',
   entityId,
   entityUrl,
-  orgNodes = []
+  employees = []
 }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newNote, setNewNote] = useState({ title: '', content: '' });
@@ -57,21 +57,21 @@ const NotesSection: React.FC<NotesSectionProps> = ({
     const matches = text.match(mentionRegex);
     const mentions: Array<{id: number, name: string}> = [];
 
-    if (matches) {
+    if (matches && employees) {
       matches.forEach(match => {
         const mentionName = match.substring(1); // Remove @
-        // Try to find matching org node
-        const foundNode = orgNodes.find(node =>
-          `${node.first_name}${node.last_name}`.toLowerCase().replace(/\s/g, '') === mentionName.toLowerCase() ||
-          `${node.first_name}.${node.last_name}`.toLowerCase() === mentionName.toLowerCase() ||
-          node.first_name.toLowerCase() === mentionName.toLowerCase() ||
-          node.last_name.toLowerCase() === mentionName.toLowerCase()
+        // Try to find matching employee
+        const foundEmployee = employees.find(employee =>
+          `${employee.first_name}${employee.last_name}`.toLowerCase().replace(/\s/g, '') === mentionName.toLowerCase() ||
+          `${employee.first_name}.${employee.last_name}`.toLowerCase() === mentionName.toLowerCase() ||
+          employee.first_name.toLowerCase() === mentionName.toLowerCase() ||
+          employee.last_name.toLowerCase() === mentionName.toLowerCase()
         );
 
-        if (foundNode) {
+        if (foundEmployee) {
           mentions.push({
-            id: foundNode.id,
-            name: `${foundNode.first_name} ${foundNode.last_name}`.trim()
+            id: foundEmployee.id,
+            name: `${foundEmployee.first_name} ${foundEmployee.last_name}`.trim()
           });
         }
       });
@@ -84,11 +84,11 @@ const NotesSection: React.FC<NotesSectionProps> = ({
   const getMentionSuggestions = (query: string) => {
     if (!query || query.length < 2) return [];
 
-    return orgNodes.filter(node => {
+    return employees ? employees.filter(employee => {
       // Add null checks for all fields
-      const firstName = node.first_name?.toLowerCase() || '';
-      const lastName = node.last_name?.toLowerCase() || '';
-      const email = node.email?.toLowerCase() || '';
+      const firstName = employee.first_name?.toLowerCase() || '';
+      const lastName = employee.last_name?.toLowerCase() || '';
+      const email = employee.email?.toLowerCase() || '';
       const fullName = `${firstName} ${lastName}`.toLowerCase();
       const searchQuery = query.toLowerCase();
 
@@ -98,7 +98,7 @@ const NotesSection: React.FC<NotesSectionProps> = ({
              firstName.includes(searchQuery) ||
              lastName.includes(searchQuery) ||
              email.includes(searchQuery);
-    }).slice(0, 5);
+    }).slice(0, 5) : [];
   };
 
   // Process content to replace hashtags and mentions with styled spans for display
@@ -122,16 +122,16 @@ const NotesSection: React.FC<NotesSectionProps> = ({
         );
       } else if (match[1].startsWith('@')) {
         const mentionName = match[1].substring(1);
-        const foundNode = orgNodes.find(node =>
-          `${node.first_name}${node.last_name}`.toLowerCase().replace(/\s/g, '') === mentionName.toLowerCase() ||
-          `${node.first_name}.${node.last_name}`.toLowerCase() === mentionName.toLowerCase() ||
-          node.first_name.toLowerCase() === mentionName.toLowerCase() ||
-          node.last_name.toLowerCase() === mentionName.toLowerCase()
+        const foundEmployee = employees.find(employee =>
+          `${employee.first_name}${employee.last_name}`.toLowerCase().replace(/\s/g, '') === mentionName.toLowerCase() ||
+          `${employee.first_name}.${employee.last_name}`.toLowerCase() === mentionName.toLowerCase() ||
+          employee.first_name.toLowerCase() === mentionName.toLowerCase() ||
+          employee.last_name.toLowerCase() === mentionName.toLowerCase()
         );
         parts.push(
           <span
             key={`mention-${match.index}`}
-            className={foundNode ? MENTION_CLASS_VALID : MENTION_CLASS_INVALID}
+            className={foundEmployee ? MENTION_CLASS_VALID : MENTION_CLASS_INVALID}
           >
             {match[1]}
           </span>
@@ -179,8 +179,8 @@ const NotesSection: React.FC<NotesSectionProps> = ({
           // Check if we have at least 2 characters after @ and no spaces
           if (mentionQuery.length >= 2 && !mentionQuery.includes(' ') && !mentionQuery.includes('\t')) {
             const suggestions = getMentionSuggestions(mentionQuery);
-            setMentionSuggestions(suggestions);
-            setCurrentMentionQuery(mentionQuery);
+            // setMentionSuggestions(suggestions); // This line was removed as per the edit hint
+            // setCurrentMentionQuery(mentionQuery); // This line was removed as per the edit hint
             setShowMentionSuggestions(true);
           } else if (mentionQuery.length < 2) {
             setShowMentionSuggestions(false);

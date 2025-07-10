@@ -48,13 +48,13 @@ interface ShowProps {
   task: Task;
   notes: Array<{
     id: number;
-    title: string | null;
+    title: string | undefined;
     content: string;
     created_at: string;
     updated_at: string;
     tags: Array<{ id: number; name: string }>;
   }>;
-  orgNodes: Array<{
+  employees: Array<{
     id: number;
     first_name: string;
     last_name: string;
@@ -62,7 +62,7 @@ interface ShowProps {
   }>;
 }
 
-const Show: React.FC<ShowProps> = ({ task, notes, orgNodes }) => {
+const Show: React.FC<ShowProps> = ({ task, notes, employees }) => {
   // Define breadcrumbs with parent and current page
   const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -181,7 +181,6 @@ const Show: React.FC<ShowProps> = ({ task, notes, orgNodes }) => {
               notes={notes}
               entityType="Task"
               entityId={task.id}
-              orgNodes={orgNodes}
             />
           </div>
 

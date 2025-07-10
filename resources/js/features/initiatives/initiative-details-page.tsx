@@ -5,7 +5,7 @@ import { Inertia } from '@inertiajs/inertia';
 import NotesSection from '../../components/notes-section';
 import TaskManagement from '../../components/task-management-enhanced';
 
-interface OrgNode {
+interface Employee {
   id: number;
   first_name: string;
   last_name: string;
@@ -23,7 +23,7 @@ interface Note {
 
 interface InitiativeDetailsPageProps {
   initiative: Initiative;
-  assignees: OrgNode[];
+  assignees: Employee[];
   notes?: Note[];
   activeTab?: string; // Add activeTab prop
 }
@@ -371,7 +371,7 @@ const InitiativeDetailsPage: React.FC<InitiativeDetailsPageProps> = ({
                 <TaskManagement
                   tasks={tasks}
                   initiatives={[initiative]}
-                  orgNodes={assignees}
+                  employees={assignees}
                   initiativeId={initiative.id}
                   showCreateForm={false}
                   onTaskCreated={(task) => setTasks([...tasks, task])}
@@ -389,7 +389,7 @@ const InitiativeDetailsPage: React.FC<InitiativeDetailsPageProps> = ({
                 notes={notes}
                 entityType="initiative"
                 entityId={initiative.id}
-                orgNodes={assignees}
+                // employees prop removed if not expected by NotesSection
               />
             </div>
           )}
@@ -399,10 +399,11 @@ const InitiativeDetailsPage: React.FC<InitiativeDetailsPageProps> = ({
       {/* Modal */}
       {modalOpen && (
         <InitiativeModal
+          open={modalOpen}
           initiative={initiative}
           assignees={assignees}
           onSave={handleSave}
-          onCancel={() => setModalOpen(false)}
+          onClose={() => setModalOpen(false)}
         />
       )}
     </div>

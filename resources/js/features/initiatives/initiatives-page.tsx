@@ -22,7 +22,7 @@ interface Initiative {
   allocations?: any[];
 }
 
-interface OrgNode {
+interface Employee {
   id: number;
   first_name: string;
   last_name: string;
@@ -32,7 +32,7 @@ interface OrgNode {
 
 interface InitiativesPageProps {
   initiatives: Initiative[];
-  assignees: OrgNode[];
+  assignees: Employee[];
   defaultOrgStructureId: number | null;
 }
 
@@ -188,7 +188,7 @@ const InitiativesPage: React.FC<InitiativesPageProps> = ({ initiatives, assignee
       <InitiativeModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        users={assignees}
+        assignees={assignees}
         onSave={handleCreate}
       />
     </div>

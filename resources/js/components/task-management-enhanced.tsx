@@ -62,7 +62,7 @@ interface Task {
   }>;
 }
 
-interface OrgNode {
+interface Employee {
   id: number;
   first_name: string;
   last_name: string;
@@ -77,7 +77,7 @@ interface Initiative {
 interface TaskManagementProps {
   tasks?: Task[];
   initiatives?: Initiative[];
-  orgNodes?: OrgNode[];
+  employees?: Employee[];
   initiativeId?: number;
   showCreateForm?: boolean;
   onTaskCreated?: (task: Task) => void;
@@ -97,7 +97,7 @@ interface PageProps {
 const TaskManagement: React.FC<TaskManagementProps> = ({
   tasks = [],
   initiatives = [],
-  orgNodes = [],
+  employees = [],
   initiativeId,
   showCreateForm = false,
   onTaskCreated,
@@ -185,7 +185,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
         ? {
             ...task,
             assigned_to: assigneeId,
-            assigned_to_node: orgNodes.find(node => node.id === assigneeId)
+            assigned_to_node: employees.find(node => node.id === assigneeId)
           }
         : task
     ));
@@ -197,7 +197,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
         onTaskUpdated({
           ...updatedTask,
           assigned_to: assigneeId,
-          assigned_to_node: orgNodes.find(node => node.id === assigneeId)
+          assigned_to_node: employees.find(node => node.id === assigneeId)
         });
       }
     }
@@ -333,13 +333,13 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
       const response = await axios.patch(`/tasks/${taskId}`, { assigned_to: assigneeId });
       // Update local state
       setTaskList(prev => prev.map(t =>
-        t.id === taskId ? { ...t, assigned_to: assigneeId, assigned_to_node: orgNodes.find(n => n.id === assigneeId) || null } : t
+        t.id === taskId ? { ...t, assigned_to: assigneeId, assigned_to_node: employees.find(n => n.id === assigneeId) || null } : t
       ));
       if (onTaskUpdated) {
         onTaskUpdated({
           ...response.data.task,
           assigned_to: assigneeId,
-          assigned_to_node: orgNodes.find(n => n.id === assigneeId) || null
+          assigned_to_node: employees.find(n => n.id === assigneeId) || null
         });
       }
     } catch (error) {
@@ -658,9 +658,9 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                 className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800"
               >
                 <option value="">All Assignees</option>
-                {orgNodes.map(node => (
-                  <option key={node.id} value={node.id}>
-                    {node.first_name} {node.last_name}
+                {employees.map(employee => (
+                  <option key={employee.id} value={employee.id}>
+                    {employee.first_name} {employee.last_name}
                   </option>
                 ))}
               </select>
@@ -943,7 +943,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                         <AssigneeDropdown
                           taskId={task.id}
                           currentAssigneeId={task.assigned_to ?? undefined}
-                          orgNodes={orgNodes}
+                          employees={employees}
                           currentUser={currentUser}
                           onChange={handleAssigneeChange}
                         />
@@ -1110,7 +1110,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
           open={isCreating}
           onClose={() => setIsCreating(false)}
           initiatives={initiatives}
-          orgNodes={orgNodes}
+          employees={employees}
           initiativeId={initiativeId}
           onSuccess={handleTaskCreated}
         />

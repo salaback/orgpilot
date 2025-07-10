@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { CalendarIcon, ClockIcon, MapPinIcon, PlusIcon } from 'lucide-react';
-import { type BreadcrumbItem } from '@/types';
+import { Employee } from '@/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface Task {
@@ -43,26 +43,25 @@ interface User {
   title: string;
 }
 
-interface IndexProps {
-  directReport: User;
-  upcomingMeetings: Meeting[];
-  pastMeetings: Meeting[];
+interface OneOnOneIndexProps {
+  employee: Employee;
+  meetings: any[];
 }
 
-const Index: React.FC<IndexProps> = ({ directReport, upcomingMeetings, pastMeetings }) => {
+const Index: React.FC<OneOnOneIndexProps> = ({ employee, meetings }) => {
   // Define breadcrumbs for one-on-one meetings page
-  const breadcrumbs: BreadcrumbItem[] = [
+  const breadcrumbs = [
     {
       title: 'Organisation',
       href: '/organisation',
     },
     {
-      title: directReport.full_name,
-      href: `/organisation/profile/${directReport.id}`,
+      title: employee.full_name,
+      href: `/organisation/profile/${employee.id}`,
     },
     {
       title: '1:1 Meetings',
-      href: `/meetings?type=one_on_one&direct_report_id=${directReport.id}`,
+      href: `/meetings?type=one_on_one&direct_report_id=${employee.id}`,
     },
   ];
 
@@ -148,20 +147,20 @@ const Index: React.FC<IndexProps> = ({ directReport, upcomingMeetings, pastMeeti
 
   return (
     <AppLayout breadcrumbs={breadcrumbs}>
-      <Head title={`1:1 Meetings with ${directReport.full_name}`} />
+      <Head title={`1:1 Meetings with ${employee.full_name}`} />
 
       <div className="w-full px-4 py-6 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
-              1:1 Meetings with {directReport.full_name}
+              1:1 Meetings with {employee.full_name}
             </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-400">{directReport.title}</p>
+            <p className="text-xl text-gray-600 dark:text-gray-400">{employee.title}</p>
           </div>
 
           <Button asChild>
-            <Link href={`/meetings/one-on-one/create?direct_report_id=${directReport.id}`}>
+            <Link href={`/meetings/one-on-one/create?direct_report_id=${employee.id}`}>
               <PlusIcon className="mr-2 h-4 w-4" />
               Schedule Meeting
             </Link>
@@ -171,20 +170,20 @@ const Index: React.FC<IndexProps> = ({ directReport, upcomingMeetings, pastMeeti
         <Tabs defaultValue="upcoming" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="upcoming">
-              Upcoming Meetings ({upcomingMeetings.length})
+              Upcoming Meetings ({meetings.length})
             </TabsTrigger>
             <TabsTrigger value="past">
-              Past Meetings ({pastMeetings.length})
+              Past Meetings ({meetings.length})
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="upcoming" className="space-y-4">
-            {upcomingMeetings.length === 0 ? (
+            {meetings.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center">
                   <p className="text-gray-600 dark:text-gray-400 mb-4">No upcoming meetings scheduled.</p>
                   <Button asChild>
-                    <Link href={`/meetings/one-on-one/create?direct_report_id=${directReport.id}`}>
+                    <Link href={`/meetings/one-on-one/create?direct_report_id=${employee.id}`}>
                       <PlusIcon className="mr-2 h-4 w-4" />
                       Schedule a Meeting
                     </Link>
@@ -192,21 +191,21 @@ const Index: React.FC<IndexProps> = ({ directReport, upcomingMeetings, pastMeeti
                 </CardContent>
               </Card>
             ) : (
-              upcomingMeetings.map((meeting) => (
+              meetings.map((meeting) => (
                 <MeetingCard key={meeting.id} meeting={meeting} />
               ))
             )}
           </TabsContent>
 
           <TabsContent value="past" className="space-y-4">
-            {pastMeetings.length === 0 ? (
+            {meetings.length === 0 ? (
               <Card>
                 <CardContent className="py-8 text-center">
                   <p className="text-gray-600 dark:text-gray-400">No past meetings found.</p>
                 </CardContent>
               </Card>
             ) : (
-              pastMeetings.map((meeting) => (
+              meetings.map((meeting) => (
                 <MeetingCard key={meeting.id} meeting={meeting} />
               ))
             )}

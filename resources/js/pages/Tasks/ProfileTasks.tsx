@@ -57,7 +57,7 @@ interface Initiative {
   title: string;
 }
 
-interface OrgNode {
+interface Employee {
   id: number;
   full_name: string;
   title: string;
@@ -66,7 +66,7 @@ interface OrgNode {
 }
 
 interface ProfileTasksProps {
-  orgNode: OrgNode;
+  employee: Employee;
   tasks: {
     data: Task[];
     links: { url: string | null; label: string; active: boolean }[];
@@ -84,7 +84,7 @@ interface ProfileTasksProps {
   initiatives: Initiative[];
 }
 
-const ProfileTasks: React.FC<ProfileTasksProps> = ({ orgNode, tasks, filters, initiatives }) => {
+const ProfileTasks: React.FC<ProfileTasksProps> = ({ employee, tasks, filters, initiatives }) => {
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
   const [showFilters, setShowFilters] = useState(false);
   const [filterValues, setFilterValues] = useState({
@@ -119,7 +119,7 @@ const ProfileTasks: React.FC<ProfileTasksProps> = ({ orgNode, tasks, filters, in
   // Handle search
   const handleSearch = () => {
     router.get(
-      route('organisation.profile.tasks', orgNode.id),
+      route('organisation.profile.tasks', employee.id),
       { search: searchTerm, ...filterValues },
       { preserveState: true, replace: true }
     );
@@ -131,7 +131,7 @@ const ProfileTasks: React.FC<ProfileTasksProps> = ({ orgNode, tasks, filters, in
     setFilterValues(newFilters);
 
     router.get(
-      route('organisation.profile.tasks', orgNode.id),
+      route('organisation.profile.tasks', employee.id),
       { ...newFilters, search: searchTerm },
       { preserveState: true, replace: true }
     );
@@ -146,7 +146,7 @@ const ProfileTasks: React.FC<ProfileTasksProps> = ({ orgNode, tasks, filters, in
     });
 
     router.get(
-      route('organisation.profile.tasks', orgNode.id),
+      route('organisation.profile.tasks', employee.id),
       {},
       { preserveState: true, replace: true }
     );
@@ -169,7 +169,7 @@ const ProfileTasks: React.FC<ProfileTasksProps> = ({ orgNode, tasks, filters, in
 
   return (
     <AppLayout>
-      <Head title={`${orgNode.full_name}'s Tasks`} />
+      <Head title={`${employee.full_name}'s Tasks`} />
 
       <div className="w-full py-6 px-4 sm:px-6 lg:px-8">
         {/* Profile Card */}
@@ -178,21 +178,21 @@ const ProfileTasks: React.FC<ProfileTasksProps> = ({ orgNode, tasks, filters, in
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center">
                 <Link
-                  href={route('organisation.profile', orgNode.id)}
+                  href={route('organisation.profile', employee.id)}
                   className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 mr-3"
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </Link>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{orgNode.full_name}'s Tasks</h1>
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{employee.full_name}'s Tasks</h1>
                   <div className="flex items-center mt-1">
-                    <span className={`inline-block h-2 w-2 rounded-full ${profileStatusColors[orgNode.status] || 'bg-gray-500'} mr-2`}></span>
-                    <span className="text-gray-600 dark:text-gray-400">{orgNode.title}</span>
+                    <span className={`inline-block h-2 w-2 rounded-full ${profileStatusColors[employee.status] || 'bg-gray-500'} mr-2`}></span>
+                    <span className="text-gray-600 dark:text-gray-400">{employee.title}</span>
                   </div>
                 </div>
               </div>
               <Button asChild variant="outline">
-                <Link href={route('tasks.create', { assigned_to: orgNode.id })}>
+                <Link href={route('tasks.create', { assigned_to: employee.id })}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create Task
                 </Link>

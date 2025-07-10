@@ -6,6 +6,13 @@ import { usePathname } from '@/hooks/use-pathname';
 
 type ViewMode = 'list' | 'split';
 
+interface Employee {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
 interface TaskHeaderProps {
   viewMode: ViewMode;
   onViewModeChange: (mode: ViewMode) => void;

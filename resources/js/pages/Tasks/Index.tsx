@@ -39,7 +39,7 @@ interface Task {
   }>;
 }
 
-interface OrgNode {
+interface Employee {
   id: number;
   first_name: string;
   last_name: string;
@@ -60,7 +60,7 @@ interface TasksPageProps {
     total: number;
   };
   initiatives: Initiative[];
-  employees: OrgNode[];
+  employees: Employee[];
   filters: {
     status?: string;
     priority?: string;
@@ -116,7 +116,7 @@ export default function TasksPage({
   const taskProps = {
     tasks: tasks.data,
     initiatives,
-    orgNodes: employees,
+    employees,
     onTaskCreated: (task: any) => {
       console.log('Task created:', task);
     },

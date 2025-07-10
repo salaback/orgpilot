@@ -3,6 +3,7 @@ import { PageProps } from '@inertiajs/inertia';
 import AppLayout from '@/layouts/app-layout';
 import InitiativesPage from '../../features/initiatives/initiatives-page';
 import { type BreadcrumbItem } from '@/types';
+import { useState } from 'react';
 
 interface Initiative {
   id: number;
@@ -16,7 +17,7 @@ interface Initiative {
   allocations?: unknown[];
 }
 
-interface OrgNode {
+interface Employee {
   id: number;
   first_name: string;
   last_name: string;
@@ -26,7 +27,7 @@ interface OrgNode {
 
 interface InitiativesPageProps extends PageProps {
   initiatives: Initiative[];
-  assignees: OrgNode[];
+  assignees: Employee[];
   default_org_structure_id: number | null;
 }
 

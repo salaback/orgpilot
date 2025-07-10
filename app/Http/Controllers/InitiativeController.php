@@ -243,7 +243,7 @@ class InitiativeController extends Controller
             ->orderBy('id')
             ->first();
 
-        return Inertia::render('initiatives', [
+        return Inertia::render('Initiatives/Index', [
             'initiatives' => $initiatives,
             'assignees' => $employees,
             'default_org_structure_id' => $defaultOrg ? $defaultOrg->id : null,

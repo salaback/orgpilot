@@ -5,7 +5,7 @@ import { Input } from './input';
 import { User } from 'lucide-react';
 import Dropdown from './Dropdown';
 
-interface OrgNode {
+interface Employee {
   id: number;
   first_name: string;
   last_name: string;
@@ -15,7 +15,7 @@ interface OrgNode {
 interface AssigneeDropdownProps {
   taskId: number;
   currentAssigneeId?: number;
-  orgNodes: OrgNode[];
+  employees: Employee[];
   onChange: (taskId: number, assigneeId: number | null) => void;
   currentUser?: {
     id: number;
@@ -27,22 +27,22 @@ interface AssigneeDropdownProps {
 export default function AssigneeDropdown({
   taskId,
   currentAssigneeId,
-  orgNodes,
+  employees,
   onChange,
   currentUser
 }: AssigneeDropdownProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
-  const filtered = orgNodes.filter(node => {
-    const name = `${node.first_name} ${node.last_name}`.toLowerCase();
+  const filtered = employees.filter(employee => {
+    const name = `${employee.first_name} ${employee.last_name}`.toLowerCase();
     const search = searchTerm.toLowerCase();
     if (name.includes(search)) return true;
-    if (node.email && node.email.toLowerCase().includes(search)) return true;
+    if (employee.email && employee.email.toLowerCase().includes(search)) return true;
     return false;
   });
   const label = currentAssigneeId
     ? (() => {
-        const found = orgNodes.find(n => n.id === currentAssigneeId);
+        const found = employees.find(n => n.id === currentAssigneeId);
         return found ? `${found.first_name} ${found.last_name}` : 'Unassigned';
       })()
     : 'Unassigned';
@@ -95,22 +95,22 @@ export default function AssigneeDropdown({
             <>
               <hr className="my-2 border-gray-200 dark:border-gray-700" />
               <div className="max-h-40 overflow-y-auto space-y-1">
-                {filtered.map(node => (
+                {filtered.map(employee => (
                   <button
-                    key={node.id}
+                    key={employee.id}
                     className="w-full px-3 py-2 text-left text-sm rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center gap-2"
-                    onClick={() => onChange(taskId, node.id)}
+                    onClick={() => onChange(taskId, employee.id)}
                   >
                     <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center text-white text-xs font-medium">
-                      {node.first_name.charAt(0)}{node.last_name.charAt(0)}
+                      {employee.first_name.charAt(0)}{employee.last_name.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-gray-900 dark:text-gray-100 font-medium truncate">
-                        {node.first_name} {node.last_name}
+                        {employee.first_name} {employee.last_name}
                       </div>
-                      {node.email && (
+                      {employee.email && (
                         <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {node.email}
+                          {employee.email}
                         </div>
                       )}
                     </div>

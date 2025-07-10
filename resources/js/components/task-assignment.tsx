@@ -6,7 +6,7 @@ import { User, UserPlus, Search } from 'lucide-react';
 import { router } from '@inertiajs/react';
 import Dropdown from './ui/Dropdown';
 
-interface OrgNode {
+interface Employee {
   id: number;
   first_name: string;
   last_name: string;
@@ -15,7 +15,7 @@ interface OrgNode {
 
 interface TaskAssignmentProps {
   taskId: number;
-  orgNodes: OrgNode[];
+  employees: Employee[];
   currentUser?: {
     id: number;
     first_name: string;
@@ -26,7 +26,7 @@ interface TaskAssignmentProps {
 
 export default function TaskAssignment({
   taskId,
-  orgNodes,
+  employees,
   currentUser,
   onAssignmentComplete
 }: TaskAssignmentProps) {
@@ -34,7 +34,7 @@ export default function TaskAssignment({
   const [isAssigning, setIsAssigning] = useState(false);
 
   // Filter employees based on search term
-  const filteredEmployees = orgNodes.filter(employee =>
+  const filteredEmployees = employees.filter(employee =>
     // exclude current user from general list
     (employee.id !== currentUser?.id) && (
       `${employee.first_name} ${employee.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -83,8 +83,7 @@ class TagController extends Controller
         $map = [
             'initiative' => \App\Models\Initiative::class,
             'goal' => \App\Models\Goal::class,
-            'orgnode' => \App\Models\Employee::class, // Updated to use Employee instead of OrgNode
-            'employee' => \App\Models\Employee::class, // Added new key for explicit 'employee' references
+            'employee' => \App\Models\Employee::class,
         ];
         $type = strtolower($type);
         if (!isset($map[$type])) {

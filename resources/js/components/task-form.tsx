@@ -5,7 +5,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { SheetPanel } from './sheet-panel';
 
-interface OrgNode {
+interface Employee {
   id: number;
   first_name: string;
   last_name: string;
@@ -21,7 +21,7 @@ interface TaskFormProps {
   open: boolean;
   onClose: () => void;
   initiatives?: Initiative[];
-  orgNodes?: OrgNode[];
+  employees?: Employee[];
   initiativeId?: number;
   onSuccess?: (task: any) => void;
   task?: any;
@@ -30,7 +30,7 @@ interface TaskFormProps {
 
 const TaskForm: React.FC<Omit<TaskFormProps, 'open' | 'onClose'>> = ({
   initiatives = [],
-  orgNodes = [],
+  employees = [],
   initiativeId,
   onSuccess,
   task,
@@ -193,9 +193,9 @@ const TaskForm: React.FC<Omit<TaskFormProps, 'open' | 'onClose'>> = ({
             className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-md text-base focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors"
           >
             <option value="">Unassigned</option>
-            {orgNodes.map(node => (
-              <option key={node.id} value={node.id}>
-                {node.first_name} {node.last_name}
+            {employees.map(employee => (
+              <option key={employee.id} value={employee.id}>
+                {employee.first_name} {employee.last_name}
               </option>
             ))}
           </select>

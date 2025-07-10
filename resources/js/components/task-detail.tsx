@@ -50,7 +50,7 @@ interface Task {
   }>;
 }
 
-interface OrgNode {
+interface Employee {
   id: number;
   first_name: string;
   last_name: string;
@@ -59,12 +59,12 @@ interface OrgNode {
 
 interface TaskDetailProps {
   task: Task;
-  orgNodes?: OrgNode[];
+  employees?: Employee[];
 }
 
 const TaskDetail: React.FC<TaskDetailProps> = ({
   task,
-  orgNodes = []
+  employees = []
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
@@ -337,7 +337,7 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
             notes={task.notes || []}
             entityType="task"
             entityId={task.id}
-            orgNodes={orgNodes}
+            employees={employees}
           />
         </div>
 
@@ -359,9 +359,9 @@ const TaskDetail: React.FC<TaskDetailProps> = ({
                     className="w-full p-2 border-2 border-blue-600 dark:border-blue-400 rounded-md text-gray-900 dark:text-gray-100 bg-white dark:bg-gray-900"
                   >
                     <option value="">Unassigned</option>
-                    {orgNodes.map(node => (
-                      <option key={node.id} value={node.id}>
-                        {node.first_name} {node.last_name}
+                    {employees.map(employee => (
+                      <option key={employee.id} value={employee.id}>
+                        {employee.first_name} {employee.last_name}
                       </option>
                     ))}
                   </select>

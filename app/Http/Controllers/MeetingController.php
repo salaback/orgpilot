@@ -316,8 +316,8 @@ class MeetingController extends Controller
         })->where('status', 'active')->get();
 
         // Get initiatives
-        $initiatives = Initiative::whereHas('users', function($query) use ($directReport) {
-            $query->where('users.id', $directReport->id);
+        $initiatives = Initiative::whereHas('assignees', function($query) use ($directReport) {
+            $query->where('employees.id', $directReport->id);
         })->get();
 
         return Inertia::render('Meetings/OneOnOne/Create', [
@@ -483,8 +483,8 @@ class MeetingController extends Controller
         })->where('status', 'active')->get();
 
         // Get initiatives
-        $initiatives = Initiative::whereHas('users', function($query) use ($directReport) {
-            $query->where('users.id', $directReport->id);
+        $initiatives = Initiative::whereHas('assignees', function($query) use ($directReport) {
+            $query->where('employees.id', $directReport->id);
         })->get();
 
         return Inertia::render('Meetings/OneOnOne/Edit', [

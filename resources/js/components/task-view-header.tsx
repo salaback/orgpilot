@@ -5,6 +5,13 @@ import { ViewHeader, ViewMode } from './view-header';
 
 type TaskViewMode = 'list' | 'split';
 
+interface Employee {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
 interface TaskViewHeaderProps {
   title: string;
   description?: string;

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useTagOptions } from './useTagOptions';
 import type { MultiSelectOption } from '@/components/form/multi-select-field';
 
-interface OrgNode {
+interface Employee {
   id: number;
   first_name: string;
   last_name: string;
@@ -25,7 +25,7 @@ interface InitiativeModalProps {
   open: boolean;
   onClose: () => void;
   initiative?: Initiative;
-  users: OrgNode[];
+  assignees: Employee[];
   onSave: (initiative: Initiative) => void;
 }
 
@@ -39,9 +39,9 @@ const statusOptions = [
 
 const normalizeInitiative = (data: any): Initiative => {
   // Convert tag objects to string IDs for the form
-  let tags = [];
+  let tags: (string | number)[] = [];
   if (Array.isArray(data.tags)) {
-    tags = data.tags.map(tag => {
+    tags = data.tags.map((tag: any) => {
       if (typeof tag === 'object' && tag.id) {
         return String(tag.id);
       }
@@ -56,7 +56,7 @@ const normalizeInitiative = (data: any): Initiative => {
   };
 };
 
-const InitiativeModal: React.FC<InitiativeModalProps> = ({ open, onClose, initiative, users, onSave }) => {
+const InitiativeModal: React.FC<InitiativeModalProps> = ({ open, onClose, initiative, assignees, onSave }) => {
   const { options: tagOptions, createTag } = useTagOptions();
   const [form, setForm] = useState<Initiative>(
     initiative ? normalizeInitiative(initiative) : {
@@ -166,15 +166,16 @@ const InitiativeModal: React.FC<InitiativeModalProps> = ({ open, onClose, initia
             label="Assignees"
             values={form.assignees.map(String)}
             onChange={vals => setForm({ ...form, assignees: vals.map(Number) })}
-            options={users.map(u => ({ value: String(u.id), label: u.first_name + ' ' + u.last_name }))}
+            options={assignees.map(u => ({ value: String(u.id), label: u.first_name + ' ' + u.last_name }))}
             placeholder="Select people from your org"
+            onCreateOption={handleCreateTag}
           />
           <MultiSelectField
             id="tags"
             label="Tags"
             values={form.tags as string[]}
             onChange={handleTagIdsChange}
-            options={tagOptions as MultiSelectOption[]}
+            options={Array.isArray(tagOptions) ? tagOptions : []}
             placeholder="Add or create tags"
             onCreateOption={handleCreateTag}
           />

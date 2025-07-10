@@ -7,7 +7,7 @@ import NotesSection from '@/components/notes-section';
 import AppLayout from '@/layouts/app-layout';
 
 interface ProfileProps {
-  orgNode: {
+  employee: {
     id: number;
     first_name: string;
     last_name: string;
@@ -50,7 +50,7 @@ interface ProfileProps {
   }>;
 }
 
-const Profile: React.FC<ProfileProps> = ({ orgNode, notes }) => {
+const Profile: React.FC<ProfileProps> = ({ employee, notes }) => {
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString();
@@ -64,24 +64,24 @@ const Profile: React.FC<ProfileProps> = ({ orgNode, notes }) => {
 
   return (
     <AppLayout>
-      <Head title={`${orgNode.full_name} - Profile`} />
+      <Head title={`${employee.full_name} - Profile`} />
 
       <div className="w-full px-4 py-6 sm:px-6 lg:px-8">
         <div className="mb-6 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{orgNode.full_name}</h1>
-            <p className="text-xl text-gray-600 dark:text-gray-400">{orgNode.title}</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{employee.full_name}</h1>
+            <p className="text-xl text-gray-600 dark:text-gray-400">{employee.title}</p>
           </div>
 
           {/* 1:1 Meetings Button - Force full page reload */}
           <Button asChild>
             <a
-              href={`/organisation/profile/${orgNode.id}/one-on-one`}
+              href={`/organisation/profile/${employee.id}/one-on-one`}
               className="flex items-center"
               target="_self"
               onClick={(e) => {
                 // Force a full page reload
-                window.location.href = `/organisation/profile/${orgNode.id}/one-on-one`;
+                window.location.href = `/organisation/profile/${employee.id}/one-on-one`;
                 e.preventDefault();
               }}
             >
@@ -100,35 +100,35 @@ const Profile: React.FC<ProfileProps> = ({ orgNode, notes }) => {
               <div>
                 <span className="block text-sm font-medium text-gray-500 dark:text-gray-400">Status</span>
                 <div className="mt-1 flex items-center">
-                  <span className={`inline-block h-3 w-3 rounded-full ${statusColors[orgNode.status] || 'bg-gray-500'} mr-2`}></span>
-                  <span className="capitalize">{orgNode.status}</span>
+                  <span className={`inline-block h-3 w-3 rounded-full ${statusColors[employee.status] || 'bg-gray-500'} mr-2`}></span>
+                  <span className="capitalize">{employee.status}</span>
                 </div>
               </div>
 
               <div>
                 <span className="block text-sm font-medium text-gray-500 dark:text-gray-400">Email</span>
-                <a href={`mailto:${orgNode.email}`} className="mt-1 block text-blue-600 hover:underline">
-                  {orgNode.email || 'No email available'}
+                <a href={`mailto:${employee.email}`} className="mt-1 block text-blue-600 hover:underline">
+                  {employee.email || 'No email available'}
                 </a>
               </div>
 
               <div>
                 <span className="block text-sm font-medium text-gray-500 dark:text-gray-400">Start Date</span>
-                <span className="mt-1 block">{formatDate(orgNode.start_date)}</span>
+                <span className="mt-1 block">{formatDate(employee.start_date)}</span>
               </div>
 
-              {orgNode.status === 'former' && (
+              {employee.status === 'former' && (
                 <div>
                   <span className="block text-sm font-medium text-gray-500 dark:text-gray-400">End Date</span>
-                  <span className="mt-1 block">{formatDate(orgNode.end_date)}</span>
+                  <span className="mt-1 block">{formatDate(employee.end_date)}</span>
                 </div>
               )}
 
-              {orgNode.tags && orgNode.tags.length > 0 && (
+              {employee.tags && employee.tags.length > 0 && (
                 <div>
                   <span className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Tags</span>
                   <div className="flex flex-wrap gap-2">
-                    {orgNode.tags.map(tag => (
+                    {employee.tags.map(tag => (
                       <span
                         key={tag.id}
                         className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100"
@@ -150,13 +150,13 @@ const Profile: React.FC<ProfileProps> = ({ orgNode, notes }) => {
               {/* Manager */}
               <div>
                 <span className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Reports To</span>
-                {orgNode.manager ? (
+                {employee.manager ? (
                   <a
-                    href={`/organisation/profile/${orgNode.manager.id}`}
+                    href={`/organisation/profile/${employee.manager.id}`}
                     className="block p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
-                    <p className="font-medium text-blue-600 hover:underline">{orgNode.manager.full_name}</p>
-                    <p className="text-sm text-gray-500">{orgNode.manager.title}</p>
+                    <p className="font-medium text-blue-600 hover:underline">{employee.manager.full_name}</p>
+                    <p className="text-sm text-gray-500">{employee.manager.title}</p>
                   </a>
                 ) : (
                   <p className="text-sm italic text-gray-500">No manager assigned</p>
@@ -166,12 +166,12 @@ const Profile: React.FC<ProfileProps> = ({ orgNode, notes }) => {
               {/* Direct Reports */}
               <div>
                 <span className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-                  Direct Reports ({orgNode.directReports?.length || 0})
+                  Direct Reports ({employee.directReports?.length || 0})
                 </span>
 
-                {orgNode.directReports && orgNode.directReports.length > 0 ? (
+                {employee.directReports && employee.directReports.length > 0 ? (
                   <div className="space-y-2">
-                    {orgNode.directReports.map(report => (
+                    {employee.directReports.map(report => (
                       <a
                         key={report.id}
                         href={`/organisation/profile/${report.id}`}
@@ -198,12 +198,12 @@ const Profile: React.FC<ProfileProps> = ({ orgNode, notes }) => {
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <span className="block text-sm font-medium text-gray-500 dark:text-gray-400">Recent Tasks</span>
-                  <a href={route('organisation.profile.tasks', orgNode.id)} className="text-xs text-blue-600 hover:underline">View All</a>
+                  <a href={route('organisation.profile.tasks', employee.id)} className="text-xs text-blue-600 hover:underline">View All</a>
                 </div>
 
-                {orgNode.tasks && orgNode.tasks.length > 0 ? (
+                {employee.tasks && employee.tasks.length > 0 ? (
                   <div className="space-y-2">
-                    {orgNode.tasks.map(task => (
+                    {employee.tasks.map(task => (
                       <a
                         key={task.id}
                         href={`/tasks/${task.id}`}
@@ -226,12 +226,12 @@ const Profile: React.FC<ProfileProps> = ({ orgNode, notes }) => {
               <div>
                 <div className="flex justify-between items-center mb-2">
                   <span className="block text-sm font-medium text-gray-500 dark:text-gray-400">Recent Initiatives</span>
-                  <a href={route('organisation.profile.initiatives', orgNode.id)} className="text-xs text-blue-600 hover:underline">View All</a>
+                  <a href={route('organisation.profile.initiatives', employee.id)} className="text-xs text-blue-600 hover:underline">View All</a>
                 </div>
 
-                {orgNode.initiatives && orgNode.initiatives.length > 0 ? (
+                {employee.initiatives && employee.initiatives.length > 0 ? (
                   <div className="space-y-2">
-                    {orgNode.initiatives.map(initiative => (
+                    {employee.initiatives.map(initiative => (
                       <a
                         key={initiative.id}
                         href={`/initiatives/${initiative.id}`}
@@ -256,9 +256,9 @@ const Profile: React.FC<ProfileProps> = ({ orgNode, notes }) => {
         <div className="mt-6 w-full">
           <NotesSection
             notes={notes}
-            entityType="OrgNode"
-            entityId={orgNode.id}
-            orgNodes={[]}
+            entityType="Employee"
+            entityId={employee.id}
+            employees={[]}
           />
         </div>
       </div>

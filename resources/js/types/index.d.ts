@@ -41,7 +41,7 @@ export interface User {
 }
 
 // Organization Types
-export interface OrgNode {
+export interface Employee {
     id: number;
     org_structure_id: number;
     name: string;
@@ -55,7 +55,7 @@ export interface OrgNode {
     tags: string[] | null;
     created_at: string;
     updated_at: string;
-    directReports?: OrgNode[];
+    directReports?: Employee[];
     direct_reports_count?: number;
     first_name: string;
     last_name: string;

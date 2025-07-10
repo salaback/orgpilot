@@ -43,17 +43,17 @@ class OrgStructure extends Model
     /**
      * Get the employees for this org structure.
      */
-    public function nodes(): HasMany
+    public function employees(): HasMany
     {
         return $this->hasMany(Employee::class);
     }
 
     /**
-     * Alias for nodes() to provide more semantic naming
+     * Get the root employees (employees without managers) for this org structure.
      */
-    public function employees(): HasMany
+    public function rootEmployees()
     {
-        return $this->hasMany(Employee::class);
+        return $this->employees()->whereNull('manager_id');
     }
 
     /**
@@ -62,14 +62,6 @@ class OrgStructure extends Model
     public function initiatives(): HasMany
     {
         return $this->hasMany(Initiative::class);
-    }
-
-    /**
-     * Get the root nodes (nodes without managers) for this org structure.
-     */
-    public function rootNodes()
-    {
-        return $this->nodes()->whereNull('manager_id');
     }
 
     /**

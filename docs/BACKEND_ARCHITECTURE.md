@@ -79,7 +79,7 @@ public function employees()
 
 public function rootNode()
 {
-    return $this->hasOne(OrgNode::class)->whereNull('manager_id');
+    return $this->hasOne(Employee::class)->whereNull('manager_id');
 }
 
 // Example from Employee model
@@ -105,7 +105,7 @@ Authorization in OrgPilot is handled through Laravel Policies:
 
 - **EmployeePolicy** - Controls access to employee records
 - **OneOnOneMeetingPolicy** - Controls access to one-on-one meetings
-- **OrgNodePolicy** - Controls access to organization nodes
+- **EmployeePolicy** - Controls access to employees in the organization
 
 Example policy method:
 

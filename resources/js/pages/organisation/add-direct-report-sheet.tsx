@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TextField } from '@/components/form/text-field';
 import { Label } from '@/components/ui/label';
+import { Employee } from '@/types';
 
 interface AddDirectReportSheetProps {
-  isOpen: boolean;
+  manager: Employee;
+  onSuccess: (managerId: number) => void;
+  open: boolean;
   onClose: () => void;
-  managerId: number;
-  onSuccess?: (managerId: number) => void; // New callback for success
 }
 
 export function AddDirectReportSheet({ isOpen, onClose, managerId, onSuccess }: AddDirectReportSheetProps) {

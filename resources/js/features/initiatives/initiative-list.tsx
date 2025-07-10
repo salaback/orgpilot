@@ -67,7 +67,8 @@ const InitiativeList: React.FC<InitiativeListProps> = ({ initiatives, assignees 
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         initiative={selected}
-        users={assignees}
+        assignees={assignees}
+        onSave={() => {}}
       />
     </>
   );

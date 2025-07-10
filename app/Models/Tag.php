@@ -30,9 +30,9 @@ class Tag extends Model
         return $this->morphedByMany(Goal::class, 'taggable');
     }
 
-    public function orgNodes(): MorphToMany
+    public function employees(): MorphToMany
     {
-        return $this->morphedByMany(OrgNode::class, 'taggable');
+        return $this->morphedByMany(Employee::class, 'taggable');
     }
 }
 

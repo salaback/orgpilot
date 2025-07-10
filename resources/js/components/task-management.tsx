@@ -63,7 +63,7 @@ interface Task {
   }>;
 }
 
-interface OrgNode {
+interface Employee {
   id: number;
   first_name: string;
   last_name: string;
@@ -78,7 +78,7 @@ interface Initiative {
 interface TaskManagementProps {
   tasks?: Task[];
   initiatives?: Initiative[];
-  orgNodes?: OrgNode[];
+  employees?: Employee[];
   initiativeId?: number;
   showCreateForm?: boolean;
   onTaskCreated?: (task: Task) => void;
@@ -88,7 +88,7 @@ interface TaskManagementProps {
 const TaskManagement: React.FC<TaskManagementProps> = ({
   tasks = [],
   initiatives = [],
-  orgNodes = [],
+  employees = [],
   initiativeId,
   showCreateForm = false,
   onTaskCreated,
@@ -428,9 +428,9 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
               className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm bg-white dark:bg-gray-800"
             >
               <option value="">All Assignees</option>
-              {orgNodes.map(node => (
-                <option key={node.id} value={node.id}>
-                  {node.first_name} {node.last_name}
+              {employees.map(employee => (
+                <option key={employee.id} value={employee.id}>
+                  {employee.first_name} {employee.last_name}
                 </option>
               ))}
             </select>
@@ -726,7 +726,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
         title="Create New Task"
         size="lg"
         initiatives={initiatives}
-        orgNodes={orgNodes}
+        employees={employees}
         initiativeId={initiativeId}
         onSuccess={handleTaskCreated}
       />
@@ -738,7 +738,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
           title="Edit Task"
           size="lg"
           initiatives={initiatives}
-          orgNodes={orgNodes}
+          employees={employees}
           initiativeId={editTask.initiative_id}
           task={editTask}
           isEditing={true}

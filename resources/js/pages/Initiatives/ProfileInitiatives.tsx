@@ -47,7 +47,7 @@ interface Initiative {
   tags: Array<{ id: number; name: string }>;
 }
 
-interface OrgNode {
+interface Employee {
   id: number;
   full_name: string;
   title: string;
@@ -56,7 +56,7 @@ interface OrgNode {
 }
 
 interface ProfileInitiativesProps {
-  orgNode: OrgNode;
+  employee: Employee;
   initiatives: {
     data: Initiative[];
     links: { url: string | null; label: string; active: boolean }[];
@@ -72,7 +72,7 @@ interface ProfileInitiativesProps {
   };
 }
 
-const ProfileInitiatives: React.FC<ProfileInitiativesProps> = ({ orgNode, initiatives, filters }) => {
+const ProfileInitiatives: React.FC<ProfileInitiativesProps> = ({ employee, initiatives, filters }) => {
   const [searchTerm, setSearchTerm] = useState(filters.search || '');
   const [showFilters, setShowFilters] = useState(false);
   const [filterValues, setFilterValues] = useState({
@@ -97,7 +97,7 @@ const ProfileInitiatives: React.FC<ProfileInitiativesProps> = ({ orgNode, initia
   // Apply filters
   const applyFilters = () => {
     router.get(
-      route('organisation.profile.initiatives', orgNode.id),
+      route('organisation.profile.initiatives', employee.id),
       { ...filterValues, search: searchTerm },
       { preserveState: true }
     );
@@ -108,7 +108,7 @@ const ProfileInitiatives: React.FC<ProfileInitiativesProps> = ({ orgNode, initia
     setFilterValues({ status: '' });
     setSearchTerm('');
     router.get(
-      route('organisation.profile.initiatives', orgNode.id),
+      route('organisation.profile.initiatives', employee.id),
       {},
       { preserveState: true }
     );
@@ -129,23 +129,23 @@ const ProfileInitiatives: React.FC<ProfileInitiativesProps> = ({ orgNode, initia
 
   return (
     <AppLayout>
-      <Head title={`${orgNode.full_name} - Initiatives`} />
+      <Head title={`${employee.full_name} - Initiatives`} />
 
       <div className="w-full px-4 py-6 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
           <div className="mb-4 md:mb-0">
             <div className="flex items-center space-x-2">
-              <Link href={route('organisation.profile', orgNode.id)}>
+              <Link href={route('organisation.profile', employee.id)}>
                 <Button variant="ghost" size="sm" className="h-8 gap-1">
                   <ArrowLeft className="h-4 w-4" />
                   Back to Profile
                 </Button>
               </Link>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{orgNode.full_name}'s Initiatives</h1>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{employee.full_name}'s Initiatives</h1>
             <p className="text-xl text-gray-600 dark:text-gray-400">
-              {orgNode.title}
+              {employee.title}
               <span className="text-sm ml-2 text-gray-500">
                 ({initiatives.total} {initiatives.total === 1 ? 'initiative' : 'initiatives'})
               </span>
