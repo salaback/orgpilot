@@ -16,6 +16,28 @@ jobs:
   ci:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:15
+        ports: [5432:5432]
+        env:
+          POSTGRES_DB: orgpilot_test
+          POSTGRES_USER: orgpilot
+          POSTGRES_PASSWORD: password
+        options: >-
+          --health-cmd="pg_isready -U orgpilot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: orgpilot_test
+      DB_USERNAME: orgpilot
+      DB_PASSWORD: password
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
