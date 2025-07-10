@@ -12,6 +12,9 @@ class TagController extends Controller
     public function index(Request $request): JsonResponse
     {
         $customer = $request->user()->customer;
+        if (!$customer) {
+            return response()->json(['error' => 'No customer found for user'], 403);
+        }
         $tags = Tag::where('customer_id', $customer->id)->get();
         return response()->json($tags);
     }

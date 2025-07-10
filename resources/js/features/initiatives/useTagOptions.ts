@@ -13,10 +13,32 @@ export function useTagOptions() {
   useEffect(() => {
     setLoading(true);
     fetch('/api/tags')
-      .then(res => res.json())
-      .then(data => {
-        setOptions(data.map((tag: any) => ({ value: String(tag.id), label: tag.name })));
+      .then(async res => {
+        let data;
+        try {
+          data = await res.json();
+        } catch (e) {
+          console.error('Failed to parse /api/tags response as JSON', e);
+          setOptions([]);
+          setLoading(false);
+          return;
+        }
+        if (Array.isArray(data)) {
+          setOptions(data.map((tag: any) => ({ value: String(tag.id), label: tag.name })));
+        } else {
+          setOptions([]);
+          if (data && data.error) {
+            console.error('Failed to fetch tags:', data.error);
+          } else {
+            console.error('Failed to fetch tags: Unexpected response', data);
+          }
+        }
         setLoading(false);
+      })
+      .catch(err => {
+        setOptions([]);
+        setLoading(false);
+        console.error('Failed to fetch tags:', err);
       });
   }, []);
 
