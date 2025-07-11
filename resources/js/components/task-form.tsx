@@ -1,307 +1,281 @@
-import React, { useState } from 'react';
 import { Inertia } from '@inertiajs/inertia';
+import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { SheetPanel } from './sheet-panel';
-
-interface Employee {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-}
-
-interface Initiative {
-  id: number;
-  title: string;
-}
+import { Employee, Task } from '@/types';
 
 interface TaskFormProps {
-  open: boolean;
-  onClose: () => void;
-  initiatives?: Initiative[];
-  employees?: Employee[];
-  initiativeId?: number;
-  onSuccess?: (task: any) => void;
-  task?: any;
-  isEditing?: boolean;
+    task?: Task;
+    onSave: (task: Task) => void;
+    onCancel: () => void;
+    employees: Employee[];
+    initiatives: Array<{
+        id: number;
+        title: string;
+        status: string;
+    }>;
 }
 
 const TaskForm: React.FC<Omit<TaskFormProps, 'open' | 'onClose'>> = ({
-  initiatives = [],
-  employees = [],
-  initiativeId,
-  onSuccess,
-  task,
-  isEditing
+    initiatives = [],
+    employees = [],
+    task,
+    onSave,
 }) => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    title: task?.title || '',
-    description: task?.description || '',
-    initiative_id: task?.initiative_id || initiativeId || '',
-    assigned_to: task?.assigned_to || '',
-    due_date: task?.due_date || '',
-    priority: task?.priority || 'medium',
-    status: task?.status || 'not_started',
-    percentage_complete: task?.percentage_complete || 0,
-    tags: task?.tags ? task.tags.map((t: any) => t.name) : []
-  });
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [formData, setFormData] = useState({
+        title: task?.title || '',
+        description: task?.description || '',
+        initiative_id: task?.initiative_id || '',
+        assigned_to: task?.assigned_to || '',
+        due_date: task?.due_date || '',
+        priority: task?.priority || 'medium',
+        status: task?.status || 'not_started',
+        percentage_complete: task?.percentage_complete || 0,
+        tags: task?.tags ? (Array.isArray(task.tags) ? task.tags.map((t: { name: string } | string) => typeof t === 'string' ? t : t.name) : []) : [],
+    });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!formData.title.trim()) {
-      setErrors({ title: 'Title is required' });
-      return;
+    // Add a type guard for Task
+    function isTask(obj: unknown): obj is Task {
+        return typeof obj === 'object' && obj !== null && 'id' in obj && typeof (obj as Record<string, unknown>).id === 'number' && 'title' in obj && typeof (obj as Record<string, unknown>).title === 'string';
     }
 
-    setIsSubmitting(true);
-    setErrors({});
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
 
-    // Ensure initiativeId is prioritized over form state when available
-    const taskData = {
-      ...formData,
-      initiative_id: initiativeId || formData.initiative_id || null,
-      assigned_to: formData.assigned_to || null,
-      due_date: formData.due_date || null,
-      redirect_back: !!initiativeId, // Add redirect_back parameter when creating from an initiative
+        if (!formData.title.trim()) {
+            setErrors({ title: 'Title is required' });
+            return;
+        }
+
+        setIsSubmitting(true);
+        setErrors({});
+
+        // Ensure initiativeId is prioritized over form state when available
+        const taskData = {
+            ...formData,
+            initiative_id: formData.initiative_id || null,
+            assigned_to: formData.assigned_to || null,
+            due_date: formData.due_date || null,
+            redirect_back: !!task?.initiative_id, // Add redirect_back parameter when creating from an initiative
+        };
+
+        if (task?.id) {
+            Inertia.patch(`/tasks/${task.id}`, taskData, {
+                onSuccess: (page) => {
+                    if (isTask(page.props.task)) {
+                        onSave(page.props.task);
+                    }
+                },
+                onError: (errors) => {
+                    setErrors(errors);
+                    console.error('Failed to update task:', errors);
+                },
+                onFinish: () => {
+                    setIsSubmitting(false);
+                },
+            });
+        } else {
+            Inertia.post('/tasks', taskData, {
+                onSuccess: (page) => {
+                    setFormData({
+                        title: '',
+                        description: '',
+                        initiative_id: '',
+                        assigned_to: '',
+                        due_date: '',
+                        priority: 'medium',
+                        status: 'not_started',
+                        percentage_complete: 0,
+                        tags: [],
+                    });
+
+                    if (isTask(page.props.task)) {
+                        onSave(page.props.task);
+                    }
+                },
+                onError: (errors) => {
+                    setErrors(errors);
+                    console.error('Failed to create task:', errors);
+                },
+                onFinish: () => {
+                    setIsSubmitting(false);
+                },
+            });
+        }
     };
 
-    if (isEditing && task?.id) {
-      Inertia.patch(`/tasks/${task.id}`, taskData, {
-        onSuccess: (page) => {
-          if (onSuccess && page.props.task) {
-            onSuccess(page.props.task);
-          }
-        },
-        onError: (errors) => {
-          setErrors(errors);
-          console.error('Failed to update task:', errors);
-        },
-        onFinish: () => {
-          setIsSubmitting(false);
+    const updateFormData = (field: string, value: string) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+        // Clear error when user starts typing
+        if (errors[field]) {
+            setErrors((prev) => ({ ...prev, [field]: '' }));
         }
-      });
-    } else {
-      Inertia.post('/tasks', taskData, {
-        onSuccess: (page) => {
-          setFormData({
-            title: '',
-            description: '',
-            initiative_id: initiativeId || '',
-            assigned_to: '',
-            due_date: '',
-            priority: 'medium',
-            status: 'not_started',
-            percentage_complete: 0,
-            tags: []
-          });
+    };
 
-          if (onSuccess && page.props.task) {
-            onSuccess(page.props.task);
-          }
-        },
-        onError: (errors) => {
-          setErrors(errors);
-          console.error('Failed to create task:', errors);
-        },
-        onFinish: () => {
-          setIsSubmitting(false);
-        }
-      });
-    }
-  };
+    return (
+        <form onSubmit={handleSubmit} className="flex h-full flex-col">
+            <div className="flex flex-1 flex-col gap-5">
+                {/* Title */}
+                <div>
+                    <Label htmlFor="title" className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
+                        Task Title *
+                    </Label>
+                    <Input
+                        id="title"
+                        type="text"
+                        value={formData.title}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('title', e.target.value)}
+                        placeholder="Enter task title..."
+                        className={`w-full rounded-md border-2 px-3 py-2 text-base transition-colors focus:border-blue-500 focus:outline-none ${errors.title ? 'border-red-500' : 'border-gray-200 bg-white text-gray-900 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100'}`}
+                    />
+                    {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title}</p>}
+                </div>
 
-  const updateFormData = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
+                {/* Description */}
+                <div>
+                    <Label htmlFor="description" className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
+                        Description
+                    </Label>
+                    <textarea
+                        id="description"
+                        value={formData.description}
+                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => updateFormData('description', e.target.value)}
+                        placeholder="Describe the task..."
+                        className="font-inherit resize-vertical min-h-[100px] w-full rounded-md border-2 border-gray-200 bg-white px-3 py-2 text-base text-gray-900 transition-colors focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                    />
+                </div>
 
-  return (
-    <form onSubmit={handleSubmit} className="h-full flex flex-col">
-      <div className="flex-1 flex flex-col gap-5">
-        {/* Title */}
-        <div>
-          <Label htmlFor="title" className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
-            Task Title *
-          </Label>
-          <Input
-            id="title"
-            type="text"
-            value={formData.title}
-            onChange={(e) => updateFormData('title', e.target.value)}
-            placeholder="Enter task title..."
-            className={`w-full border-2 rounded-md px-3 py-2 text-base focus:outline-none focus:border-blue-500 transition-colors ${errors.title ? 'border-red-500' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100'}`}
-          />
-          {errors.title && (
-            <p className="text-red-500 text-sm mt-1">
-              {errors.title}
-            </p>
-          )}
-        </div>
+                {/* Initiative */}
+                <div>
+                    <Label htmlFor="initiative" className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
+                        Initiative
+                    </Label>
+                    <select
+                        id="initiative"
+                        value={formData.initiative_id}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateFormData('initiative_id', e.target.value)}
+                        className="w-full rounded-md border-2 border-gray-200 bg-white px-3 py-2 text-base text-gray-900 transition-colors focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                    >
+                        <option value="">No Initiative</option>
+                        {initiatives.map((initiative) => (
+                            <option key={initiative.id} value={initiative.id}>
+                                {initiative.title}
+                            </option>
+                        ))}
+                    </select>
+                </div>
 
-        {/* Description */}
-        <div>
-          <Label htmlFor="description" className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
-            Description
-          </Label>
-          <textarea
-            id="description"
-            value={formData.description}
-            onChange={(e) => updateFormData('description', e.target.value)}
-            placeholder="Describe the task..."
-            className="w-full min-h-[100px] px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-md text-base font-inherit resize-vertical focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors"
-          />
-        </div>
+                {/* Assigned To */}
+                <div>
+                    <Label htmlFor="assignee" className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
+                        Assign To
+                    </Label>
+                    <select
+                        id="assignee"
+                        value={formData.assigned_to}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateFormData('assigned_to', e.target.value)}
+                        className="w-full rounded-md border-2 border-gray-200 bg-white px-3 py-2 text-base text-gray-900 transition-colors focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                    >
+                        <option value="">Unassigned</option>
+                        {employees.map((employee) => (
+                            <option key={employee.id} value={employee.id}>
+                                {employee.first_name} {employee.last_name}
+                            </option>
+                        ))}
+                    </select>
+                </div>
 
-        {/* Initiative */}
-        <div>
-          <Label htmlFor="initiative" className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
-            Initiative
-          </Label>
-          <select
-            id="initiative"
-            value={formData.initiative_id}
-            onChange={(e) => updateFormData('initiative_id', e.target.value)}
-            className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-md text-base focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors"
-          >
-            <option value="">No Initiative</option>
-            {initiatives.map(initiative => (
-              <option key={initiative.id} value={initiative.id}>
-                {initiative.title}
-              </option>
-            ))}
-          </select>
-        </div>
+                {/* Due Date */}
+                <div>
+                    <Label htmlFor="due_date" className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
+                        Due Date
+                    </Label>
+                    <Input
+                        id="due_date"
+                        type="date"
+                        value={formData.due_date}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('due_date', e.target.value)}
+                        className="w-full rounded-md border-2 border-gray-200 bg-white px-3 py-2 text-base text-gray-900 transition-colors focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                    />
+                </div>
 
-        {/* Assigned To */}
-        <div>
-          <Label htmlFor="assignee" className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
-            Assign To
-          </Label>
-          <select
-            id="assignee"
-            value={formData.assigned_to}
-            onChange={(e) => updateFormData('assigned_to', e.target.value)}
-            className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-md text-base focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors"
-          >
-            <option value="">Unassigned</option>
-            {employees.map(employee => (
-              <option key={employee.id} value={employee.id}>
-                {employee.first_name} {employee.last_name}
-              </option>
-            ))}
-          </select>
-        </div>
+                {/* Priority and Status Row */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <Label htmlFor="priority" className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
+                            Priority
+                        </Label>
+                        <select
+                            id="priority"
+                            value={formData.priority}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateFormData('priority', e.target.value)}
+                            className="w-full rounded-md border-2 border-gray-200 bg-white px-3 py-2 text-base text-gray-900 transition-colors focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                        >
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
 
-        {/* Due Date */}
-        <div>
-          <Label htmlFor="due_date" className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
-            Due Date
-          </Label>
-          <Input
-            id="due_date"
-            type="date"
-            value={formData.due_date}
-            onChange={(e) => updateFormData('due_date', e.target.value)}
-            className="w-full border-2 border-gray-200 dark:border-gray-700 rounded-md px-3 py-2 text-base focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors"
-          />
-        </div>
+                    <div>
+                        <Label htmlFor="status" className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
+                            Status
+                        </Label>
+                        <select
+                            id="status"
+                            value={formData.status}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => updateFormData('status', e.target.value)}
+                            className="w-full rounded-md border-2 border-gray-200 bg-white px-3 py-2 text-base text-gray-900 transition-colors focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+                        >
+                            <option value="not_started">Not Started</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="on_hold">On Hold</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </div>
 
-        {/* Priority and Status Row */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="priority" className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
-              Priority
-            </Label>
-            <select
-              id="priority"
-              value={formData.priority}
-              onChange={(e) => updateFormData('priority', e.target.value)}
-              className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-md text-base focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors"
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-            </select>
-          </div>
-
-          <div>
-            <Label htmlFor="status" className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
-              Status
-            </Label>
-            <select
-              id="status"
-              value={formData.status}
-              onChange={(e) => updateFormData('status', e.target.value)}
-              className="w-full px-3 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-md text-base focus:outline-none focus:border-blue-500 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors"
-            >
-              <option value="not_started">Not Started</option>
-              <option value="in_progress">In Progress</option>
-              <option value="completed">Completed</option>
-              <option value="on_hold">On Hold</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Initial Progress */}
-        <div>
-          <Label htmlFor="progress" className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
-            Initial Progress: {formData.percentage_complete}%
-          </Label>
-          <input
-            id="progress"
-            type="range"
-            min="0"
-            max="100"
-            value={formData.percentage_complete}
-            onChange={(e) => updateFormData('percentage_complete', parseInt(e.target.value))}
-            className="w-full h-1.5 rounded bg-gray-200 dark:bg-gray-700 appearance-none focus:outline-none"
-          />
-          <div className="flex justify-between text-xs text-gray-400 dark:text-gray-500 mt-1">
-            <span>0%</span>
-            <span>25%</span>
-            <span>50%</span>
-            <span>75%</span>
-            <span>100%</span>
-          </div>
-        </div>
-      </div>
-      {/* Footer Actions */}
-      <div className="border-t border-gray-200 dark:border-gray-700 pt-5 mt-5 flex gap-3 justify-end">
-        <Button
-          type="submit"
-          disabled={isSubmitting || !formData.title.trim()}
-          className={`text-white rounded-md px-5 py-2 text-base font-medium transition-colors ${formData.title.trim() && !isSubmitting ? 'bg-blue-600 hover:bg-blue-700 cursor-pointer' : 'bg-gray-400 cursor-not-allowed'} ${isSubmitting ? 'opacity-70' : ''}`}
-        >
-          {isSubmitting ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Update Task' : 'Create Task')}
-        </Button>
-      </div>
-    </form>
-  );
+                {/* Initial Progress */}
+                <div>
+                    <Label htmlFor="progress" className="mb-1.5 block font-medium text-gray-700 dark:text-gray-200">
+                        Initial Progress: {formData.percentage_complete}%
+                    </Label>
+                    <input
+                        id="progress"
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={formData.percentage_complete}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => updateFormData('percentage_complete', e.target.value)}
+                        className="h-1.5 w-full appearance-none rounded bg-gray-200 focus:outline-none dark:bg-gray-700"
+                    />
+                    <div className="mt-1 flex justify-between text-xs text-gray-400 dark:text-gray-500">
+                        <span>0%</span>
+                        <span>25%</span>
+                        <span>50%</span>
+                        <span>75%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
+            </div>
+            {/* Footer Actions */}
+            <div className="mt-5 flex justify-end gap-3 border-t border-gray-200 pt-5 dark:border-gray-700">
+                <Button
+                    type="submit"
+                    disabled={isSubmitting || !formData.title.trim()}
+                    className={`rounded-md px-5 py-2 text-base font-medium text-white transition-colors ${formData.title.trim() && !isSubmitting ? 'cursor-pointer bg-blue-600 hover:bg-blue-700' : 'cursor-not-allowed bg-gray-400'} ${isSubmitting ? 'opacity-70' : ''}`}
+                >
+                    {isSubmitting ? (task?.id ? 'Updating...' : 'Creating...') : task?.id ? 'Update Task' : 'Create Task'}
+                </Button>
+            </div>
+        </form>
+    );
 };
 
-export const TaskFormSheet: React.FC<TaskFormProps> = ({ open, onClose, isEditing, task, ...props }) => {
-  return (
-    <SheetPanel
-      open={open}
-      onClose={onClose}
-      title={isEditing ? 'Edit Task' : 'Create Task'}
-      description={isEditing ? 'Edit the details of your task.' : 'Add a new task to your workspace.'}
-      footer={null}
-    >
-      <TaskForm {...props} isEditing={isEditing} task={task} />
-    </SheetPanel>
-  );
-};
-
-export default TaskFormSheet;
+export default TaskForm;

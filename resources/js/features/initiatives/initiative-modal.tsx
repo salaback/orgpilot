@@ -1,25 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Initiative, InitiativeStatus } from './types';
+import { Initiative, InitiativeStatus, Tag } from './types';
+import { Employee } from '@/types';
 import { SheetPanel } from '@/components/sheet-panel';
 import { TextField } from '@/components/form/text-field';
 import { SelectField } from '@/components/form/select-field';
 import { MultiSelectField } from '@/components/form/multi-select-field';
 import { Button } from '@/components/ui/button';
 import { useTagOptions } from './useTagOptions';
-import type { MultiSelectOption } from '@/components/form/multi-select-field';
-
-interface Employee {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  title: string;
-}
-
-interface User {
-  id: number;
-  name: string;
-}
 
 interface InitiativeModalProps {
   open: boolean;
@@ -37,11 +24,11 @@ const statusOptions = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
-const normalizeInitiative = (data: any): Initiative => {
+const normalizeInitiative = (data: Initiative): Initiative => {
   // Convert tag objects to string IDs for the form
-  let tags: (string | number)[] = [];
+  let tags: string[] = [];
   if (Array.isArray(data.tags)) {
-    tags = data.tags.map((tag: any) => {
+    tags = data.tags.map((tag: Tag | string) => {
       if (typeof tag === 'object' && tag.id) {
         return String(tag.id);
       }
@@ -51,7 +38,7 @@ const normalizeInitiative = (data: any): Initiative => {
 
   return {
     ...data,
-    dueDate: data.dueDate || data.due_date || '',
+    dueDate: data.dueDate || '',
     tags: tags,
   };
 };
@@ -97,10 +84,6 @@ const InitiativeModal: React.FC<InitiativeModalProps> = ({ open, onClose, initia
   };
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setForm({ ...form, status: e.target.value as InitiativeStatus });
-  };
-  const handleAssigneesChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selected = Array.from(e.target.selectedOptions).map(opt => Number(opt.value));
-    setForm({ ...form, assignees: selected });
   };
   const handleTagIdsChange = (ids: string[]) => {
     setForm({ ...form, tags: ids });
@@ -158,7 +141,7 @@ const InitiativeModal: React.FC<InitiativeModalProps> = ({ open, onClose, initia
             id="status"
             label="Status"
             value={form.status}
-            onChange={val => handleStatusChange({ target: { value: val } } as any)}
+            onChange={val => handleStatusChange({ target: { value: val } } as React.ChangeEvent<HTMLSelectElement>)}
             options={statusOptions}
           />
           <MultiSelectField

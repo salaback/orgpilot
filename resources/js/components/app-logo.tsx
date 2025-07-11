@@ -1,11 +1,12 @@
-import AppLogoIcon from './app-logo-icon';
+import React from 'react';
 
-export default function AppLogo() {
-    return (
-        <>
-            <div className="flex items-center">
-                <img src="/logo.png" alt="OrgPilot Logo" className="h-8 mr-2" />
-            </div>
-        </>
-    );
-}
+const AppLogo: React.FC = () => {
+  return (
+    <div className="flex items-center space-x-2">
+      <img src="/logo.svg" alt="App Logo" className="h-8 w-auto" />
+      <span className="text-xl font-semibold">OrgPilot</span>
+    </div>
+  );
+};
+
+export default AppLogo;

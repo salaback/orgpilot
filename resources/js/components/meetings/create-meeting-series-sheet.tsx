@@ -1,10 +1,10 @@
-import React from 'react';
-import { useForm } from '@inertiajs/react';
+import { TextField } from '@/components/form/text-field';
 import { SheetPanel } from '@/components/sheet-panel';
 import { Button } from '@/components/ui/button';
-import { TextField } from '@/components/form/text-field';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useForm } from '@inertiajs/react';
+import React from 'react';
 
 interface CreateMeetingSeriesSheetProps {
     isOpen: boolean;
@@ -15,7 +15,7 @@ interface CreateMeetingSeriesSheetProps {
 interface MeetingSeriesFormData {
     title: string;
     description: string;
-    [key: string]: any;
+    [key: string]: string;
 }
 
 export function CreateMeetingSeriesSheet({ isOpen, onClose, onSuccess }: CreateMeetingSeriesSheetProps) {
@@ -44,7 +44,7 @@ export function CreateMeetingSeriesSheet({ isOpen, onClose, onSuccess }: CreateM
             title="Create New Meeting Series"
             description="Create a series of recurring meetings for your team."
             footer={
-                <div className="flex justify-end space-x-2 w-full">
+                <div className="flex w-full justify-end space-x-2">
                     <Button type="button" variant="outline" onClick={onClose}>
                         Cancel
                     </Button>
@@ -60,7 +60,7 @@ export function CreateMeetingSeriesSheet({ isOpen, onClose, onSuccess }: CreateM
                         id="title"
                         label="Series Title"
                         value={data.title}
-                        onChange={e => setData('title', e.target.value)}
+                        onChange={(e) => setData('title', e.target.value)}
                         placeholder="Weekly Team Standup"
                         error={errors.title}
                         required
@@ -76,9 +76,7 @@ export function CreateMeetingSeriesSheet({ isOpen, onClose, onSuccess }: CreateM
                             rows={4}
                             placeholder="Describe the purpose and goals of this meeting series..."
                         />
-                        {errors.description && (
-                            <p className="mt-1 text-sm text-red-600">{errors.description}</p>
-                        )}
+                        {errors.description && <p className="mt-1 text-sm text-red-600">{errors.description}</p>}
                     </div>
                 </div>
             </form>

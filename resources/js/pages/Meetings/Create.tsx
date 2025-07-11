@@ -1,12 +1,12 @@
-import React from 'react';
-import { Head, useForm } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import AppLayout from '@/layouts/app-layout';
+import { Head, useForm } from '@inertiajs/react';
+import React from 'react';
 
 interface MeetingSeries {
     id: number;
@@ -22,7 +22,7 @@ interface MeetingFormData {
     meeting_series_id: string;
     meeting_time: string;
     notes: string;
-    [key: string]: any;
+    [key: string]: string;
 }
 
 export default function CreateMeeting({ meetingSeries }: Props) {
@@ -43,11 +43,9 @@ export default function CreateMeeting({ meetingSeries }: Props) {
             <Head title="Create Meeting" />
 
             <div className="py-12">
-                <div className="max-w-2xl mx-auto sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-2xl sm:px-6 lg:px-8">
                     <div className="mb-6">
-                        <h2 className="font-semibold text-xl text-gray-800 leading-tight">
-                            Create New Meeting
-                        </h2>
+                        <h2 className="text-xl leading-tight font-semibold text-gray-800">Create New Meeting</h2>
                     </div>
 
                     <Card>
@@ -66,17 +64,12 @@ export default function CreateMeeting({ meetingSeries }: Props) {
                                         className="mt-1"
                                         required
                                     />
-                                    {errors.title && (
-                                        <p className="mt-1 text-sm text-red-600">{errors.title}</p>
-                                    )}
+                                    {errors.title && <p className="mt-1 text-sm text-red-600">{errors.title}</p>}
                                 </div>
 
                                 <div>
                                     <Label htmlFor="meeting_series_id">Meeting Series (Optional)</Label>
-                                    <Select
-                                        value={data.meeting_series_id}
-                                        onValueChange={(value) => setData('meeting_series_id', value)}
-                                    >
+                                    <Select value={data.meeting_series_id} onValueChange={(value) => setData('meeting_series_id', value)}>
                                         <SelectTrigger className="mt-1">
                                             <SelectValue placeholder="Select a meeting series" />
                                         </SelectTrigger>
@@ -88,9 +81,7 @@ export default function CreateMeeting({ meetingSeries }: Props) {
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    {errors.meeting_series_id && (
-                                        <p className="mt-1 text-sm text-red-600">{errors.meeting_series_id}</p>
-                                    )}
+                                    {errors.meeting_series_id && <p className="mt-1 text-sm text-red-600">{errors.meeting_series_id}</p>}
                                 </div>
 
                                 <div>
@@ -103,9 +94,7 @@ export default function CreateMeeting({ meetingSeries }: Props) {
                                         className="mt-1"
                                         required
                                     />
-                                    {errors.meeting_time && (
-                                        <p className="mt-1 text-sm text-red-600">{errors.meeting_time}</p>
-                                    )}
+                                    {errors.meeting_time && <p className="mt-1 text-sm text-red-600">{errors.meeting_time}</p>}
                                 </div>
 
                                 <div>
@@ -118,17 +107,11 @@ export default function CreateMeeting({ meetingSeries }: Props) {
                                         rows={4}
                                         placeholder="Add any notes or agenda items for this meeting..."
                                     />
-                                    {errors.notes && (
-                                        <p className="mt-1 text-sm text-red-600">{errors.notes}</p>
-                                    )}
+                                    {errors.notes && <p className="mt-1 text-sm text-red-600">{errors.notes}</p>}
                                 </div>
 
                                 <div className="flex justify-end space-x-3">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => window.history.back()}
-                                    >
+                                    <Button type="button" variant="outline" onClick={() => window.history.back()}>
                                         Cancel
                                     </Button>
                                     <Button type="submit" disabled={processing}>

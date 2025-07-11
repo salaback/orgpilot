@@ -1,32 +1,26 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Head, Link } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { CalendarIcon, ClockIcon, UsersIcon, TagIcon, PlusIcon } from 'lucide-react';
-import { CreateMeetingSheet } from '@/components/meetings/create-meeting-sheet';
 import { CreateMeetingSeriesSheet } from '@/components/meetings/create-meeting-series-sheet';
-import { type BreadcrumbItem } from '@/types';
+import { CreateMeetingSheet } from '@/components/meetings/create-meeting-sheet';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import AppLayout from '@/layouts/app-layout';
 import { getCookie } from '@/lib/cookies';
+import { type BreadcrumbItem } from '@/types';
+import { Head, Link } from '@inertiajs/react';
+import { CalendarIcon, ClockIcon, PlusIcon, UsersIcon } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 // FullCalendar imports
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin from '@fullcalendar/interaction';
 import { DateSelectArg } from '@fullcalendar/core';
-import { EventSourceInput } from '@fullcalendar/core/index.js';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import FullCalendar from '@fullcalendar/react';
+import timeGridPlugin from '@fullcalendar/timegrid';
 
 interface Meeting {
     id: number;
     title: string;
     meeting_time: string;
-    notes?: string;
-    created_by: {
-        id: number;
-        first_name: string;
-        last_name: string;
-    };
+    status: string;
     meeting_series?: {
         id: number;
         title: string;
@@ -47,7 +41,7 @@ interface Meeting {
     }>;
 }
 
-interface Props {
+interface IndexProps {
     meetings: Meeting[];
     meetingSeries: Array<{
         id: number;
@@ -56,13 +50,13 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-  {
-    title: 'Meetings',
-    href: '/meetings',
-  },
+    {
+        title: 'Meetings',
+        href: '/meetings',
+    },
 ];
 
-export default function MeetingsIndex({ meetings: initialMeetings, meetingSeries }: Props) {
+export default function MeetingsIndex({ meetings: initialMeetings, meetingSeries }: IndexProps) {
     // State for tracking meetings locally (so we can add without refreshing)
     const [meetings, setMeetings] = useState<Meeting[]>(initialMeetings);
     const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
@@ -80,14 +74,14 @@ export default function MeetingsIndex({ meetings: initialMeetings, meetingSeries
 
         if (typeof window !== 'undefined') {
             const savedMode = localStorage.getItem('meetingViewMode');
-            return (savedMode === 'calendar' || savedMode === 'list') ? savedMode as 'calendar' | 'list' : 'calendar';
+            return savedMode === 'calendar' || savedMode === 'list' ? (savedMode as 'calendar' | 'list') : 'calendar';
         }
 
         return 'calendar'; // Default
     });
 
     // Reference to the calendar instance
-    const calendarRef = useRef<any>(null);
+    const calendarRef = useRef<FullCalendar | null>(null);
 
     // Listen for view mode changes from the header
     useEffect(() => {
@@ -135,9 +129,7 @@ export default function MeetingsIndex({ meetings: initialMeetings, meetingSeries
         id: String(meeting.id),
         title: meeting.title,
         start: meeting.meeting_time,
-        end: meeting.duration_minutes
-            ? new Date(new Date(meeting.meeting_time).getTime() + meeting.duration_minutes * 60 * 1000)
-            : new Date(new Date(meeting.meeting_time).getTime() + 60 * 60 * 1000), // Use duration if available
+        end: new Date(new Date(meeting.meeting_time).getTime() + 60 * 60 * 1000),
         extendedProps: {
             participants: meeting.participants,
             tags: meeting.tags,
@@ -151,21 +143,30 @@ export default function MeetingsIndex({ meetings: initialMeetings, meetingSeries
     const calendarEvents = meetings.map(transformMeetingToCalendarEvent);
 
     // Event render function for custom styling
-    const renderEventContent = (eventInfo: any) => {
+    const renderEventContent = (eventInfo: unknown) => {
+        const info = eventInfo as unknown as {
+            event: {
+                title: string;
+                extendedProps: {
+                    participants: { id: number; first_name: string; last_name: string }[];
+                    meeting_series?: { title: string };
+                };
+            };
+        };
         return (
             <div className="fc-content">
-                <div className="fc-title font-medium">{eventInfo.event.title}</div>
-                <div className="fc-description text-xs mt-1">
-                    {eventInfo.event.extendedProps.participants.length > 0 && (
+                <div className="fc-title font-medium">{info.event.title}</div>
+                <div className="fc-description mt-1 text-xs">
+                    {info.event.extendedProps.participants.length > 0 && (
                         <span className="mr-2">
-                            <UsersIcon className="h-3 w-3 inline mr-1" />
-                            {eventInfo.event.extendedProps.participants.length}
+                            <UsersIcon className="mr-1 inline h-3 w-3" />
+                            {info.event.extendedProps.participants.length}
                         </span>
                     )}
-                    {eventInfo.event.extendedProps.meeting_series && (
+                    {info.event.extendedProps.meeting_series && (
                         <span className="text-xs">
                             <Badge variant="secondary" className="text-xs">
-                                {eventInfo.event.extendedProps.meeting_series.title}
+                                {info.event.extendedProps.meeting_series.title}
                             </Badge>
                         </span>
                     )}
@@ -206,7 +207,7 @@ export default function MeetingsIndex({ meetings: initialMeetings, meetingSeries
     // Handle successful meeting creation
     const handleMeetingCreated = (newMeeting: Meeting) => {
         // Add the meeting to our local state
-        setMeetings(prevMeetings => [...prevMeetings, newMeeting]);
+        setMeetings((prevMeetings) => [...prevMeetings, newMeeting]);
 
         // If calendar view is active, refresh the calendar to show the new meeting
         if (viewMode === 'calendar' && calendarRef.current) {
@@ -228,19 +229,17 @@ export default function MeetingsIndex({ meetings: initialMeetings, meetingSeries
             <Head title="Meetings" />
 
             <div className="py-12">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="mb-6">
-                        <div className="flex justify-between items-center">
-                            <h2 className="font-semibold text-xl text-gray-800 leading-tight">
-                                Meetings
-                            </h2>
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-xl leading-tight font-semibold text-gray-800">Meetings</h2>
                             <div className="flex gap-2">
                                 <Button onClick={() => setIsCreateSeriesSheetOpen(true)}>
-                                    <PlusIcon className="h-4 w-4 mr-2" />
+                                    <PlusIcon className="mr-2 h-4 w-4" />
                                     New Meeting Series
                                 </Button>
                                 <Button onClick={() => setIsCreateSheetOpen(true)}>
-                                    <PlusIcon className="h-4 w-4 mr-2" />
+                                    <PlusIcon className="mr-2 h-4 w-4" />
                                     New Meeting
                                 </Button>
                             </div>
@@ -250,20 +249,16 @@ export default function MeetingsIndex({ meetings: initialMeetings, meetingSeries
                     <div className="mb-6">
                         <div className="flex gap-4">
                             <Button variant="outline" asChild>
-                                <Link href={route('meetings.index')}>
-                                    All Meetings
-                                </Link>
+                                <Link href={route('meetings.index')}>All Meetings</Link>
                             </Button>
                             <Button variant="outline" asChild>
-                                <Link href={route('meeting-series.index')}>
-                                    Meeting Series
-                                </Link>
+                                <Link href={route('meeting-series.index')}>Meeting Series</Link>
                             </Button>
                         </div>
                     </div>
 
                     {viewMode === 'calendar' ? (
-                        <div className="bg-white p-6 rounded-lg shadow">
+                        <div className="rounded-lg bg-white p-6 shadow">
                             <div className="h-[800px]">
                                 <FullCalendar
                                     ref={calendarRef}
@@ -294,19 +289,19 @@ export default function MeetingsIndex({ meetings: initialMeetings, meetingSeries
                             </div>
                         </div>
                     ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                             {meetings.map((meeting) => (
                                 <Link href={route('meetings.show', meeting.id)} key={meeting.id}>
-                                    <div className="bg-white shadow rounded-lg p-6 hover:shadow-md transition-shadow">
-                                        <h3 className="text-lg font-semibold mb-2">{meeting.title}</h3>
+                                    <div className="rounded-lg bg-white p-6 shadow transition-shadow hover:shadow-md">
+                                        <h3 className="mb-2 text-lg font-semibold">{meeting.title}</h3>
 
-                                        <div className="text-sm text-gray-600 mb-3">
-                                            <div className="flex items-center mb-1">
-                                                <CalendarIcon className="h-4 w-4 mr-2" />
+                                        <div className="mb-3 text-sm text-gray-600">
+                                            <div className="mb-1 flex items-center">
+                                                <CalendarIcon className="mr-2 h-4 w-4" />
                                                 {formatDate(meeting.meeting_time)}
                                             </div>
                                             <div className="flex items-center">
-                                                <ClockIcon className="h-4 w-4 mr-2" />
+                                                <ClockIcon className="mr-2 h-4 w-4" />
                                                 {formatTime(meeting.meeting_time)}
                                             </div>
                                         </div>
@@ -317,11 +312,9 @@ export default function MeetingsIndex({ meetings: initialMeetings, meetingSeries
                                             </Badge>
                                         )}
 
-                                        <div className="flex items-center gap-2 mb-3">
+                                        <div className="mb-3 flex items-center gap-2">
                                             <UsersIcon className="h-4 w-4" />
-                                            <span className="text-sm text-gray-600">
-                                                {meeting.participants.length} participants
-                                            </span>
+                                            <span className="text-sm text-gray-600">{meeting.participants.length} participants</span>
                                         </div>
 
                                         {meeting.tags.length > 0 && (
@@ -349,13 +342,12 @@ export default function MeetingsIndex({ meetings: initialMeetings, meetingSeries
                 }}
                 meetingSeries={meetingSeries || []}
                 initialDateTime={selectedDateTime}
-                onSuccess={handleMeetingCreated}
+                onSuccess={(newMeeting?: Meeting) => {
+                    if (newMeeting) handleMeetingCreated(newMeeting);
+                }}
             />
 
-            <CreateMeetingSeriesSheet
-                isOpen={isCreateSeriesSheetOpen}
-                onClose={() => setIsCreateSeriesSheetOpen(false)}
-            />
+            <CreateMeetingSeriesSheet isOpen={isCreateSeriesSheetOpen} onClose={() => setIsCreateSeriesSheetOpen(false)} />
         </AppLayout>
     );
 }

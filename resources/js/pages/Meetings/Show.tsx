@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
-import { Head, useForm } from '@inertiajs/react';
-import AppLayout from '@/layouts/app-layout';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarIcon, ClockIcon, UsersIcon, PlusIcon, EditIcon, SaveIcon, XIcon } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
+import { Head, useForm } from '@inertiajs/react';
+import { CalendarIcon, ClockIcon, EditIcon, PlusIcon, SaveIcon, UsersIcon, XIcon } from 'lucide-react';
+import React, { useState } from 'react';
 
 interface Meeting {
     id: number;
@@ -73,12 +73,23 @@ export default function ShowMeeting({ meeting, participants = [] }: Props) {
     ];
 
     // Form for updating notes
-    const { data: notesData, setData: setNotesData, put: updateNotes, processing: notesProcessing } = useForm({
+    const {
+        data: notesData,
+        setData: setNotesData,
+        put: updateNotes,
+        processing: notesProcessing,
+    } = useForm({
         notes: meeting.notes || '',
     });
 
     // Form for adding tasks
-    const { data: taskData, setData: setTaskData, post: createTask, processing: taskProcessing, reset: resetTask } = useForm({
+    const {
+        data: taskData,
+        setData: setTaskData,
+        post: createTask,
+        processing: taskProcessing,
+        reset: resetTask,
+    } = useForm({
         title: '',
         description: '',
         status: 'pending',
@@ -139,14 +150,12 @@ export default function ShowMeeting({ meeting, participants = [] }: Props) {
             <Head title={`Meeting: ${meeting.title}`} />
 
             <div className="py-12">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     {/* Meeting Header */}
                     <div className="mb-8">
-                        <div className="flex justify-between items-start">
+                        <div className="flex items-start justify-between">
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                                    {meeting.title}
-                                </h1>
+                                <h1 className="mb-2 text-3xl font-bold text-gray-900">{meeting.title}</h1>
                                 {meeting.meeting_series && (
                                     <Badge variant="outline" className="mb-4">
                                         Series: {meeting.meeting_series.title}
@@ -155,14 +164,14 @@ export default function ShowMeeting({ meeting, participants = [] }: Props) {
                             </div>
                             <Button variant="outline" asChild>
                                 <a href={route('meetings.edit', meeting.id)}>
-                                    <EditIcon className="h-4 w-4 mr-2" />
+                                    <EditIcon className="mr-2 h-4 w-4" />
                                     Edit Meeting
                                 </a>
                             </Button>
                         </div>
 
                         {/* Meeting Info */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
                             <div className="flex items-center gap-2">
                                 <CalendarIcon className="h-5 w-5 text-gray-500" />
                                 <span>{formatDate(meeting.meeting_time)}</span>
@@ -173,24 +182,22 @@ export default function ShowMeeting({ meeting, participants = [] }: Props) {
                             </div>
                             <div className="flex items-center gap-2">
                                 <UsersIcon className="h-5 w-5 text-gray-500" />
-                                <span>{meeting.participants.length} participant{meeting.participants.length !== 1 ? 's' : ''}</span>
+                                <span>
+                                    {meeting.participants.length} participant{meeting.participants.length !== 1 ? 's' : ''}
+                                </span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
                         {/* Notes Section */}
                         <Card>
                             <CardHeader>
-                                <div className="flex justify-between items-center">
+                                <div className="flex items-center justify-between">
                                     <CardTitle>Meeting Notes</CardTitle>
                                     {!isEditingNotes && (
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => setIsEditingNotes(true)}
-                                        >
-                                            <EditIcon className="h-4 w-4 mr-2" />
+                                        <Button variant="outline" size="sm" onClick={() => setIsEditingNotes(true)}>
+                                            <EditIcon className="mr-2 h-4 w-4" />
                                             Edit Notes
                                         </Button>
                                     )}
@@ -215,11 +222,11 @@ export default function ShowMeeting({ meeting, participants = [] }: Props) {
                                                     setNotesData('notes', meeting.notes || '');
                                                 }}
                                             >
-                                                <XIcon className="h-4 w-4 mr-2" />
+                                                <XIcon className="mr-2 h-4 w-4" />
                                                 Cancel
                                             </Button>
                                             <Button type="submit" disabled={notesProcessing}>
-                                                <SaveIcon className="h-4 w-4 mr-2" />
+                                                <SaveIcon className="mr-2 h-4 w-4" />
                                                 {notesProcessing ? 'Saving...' : 'Save Notes'}
                                             </Button>
                                         </div>
@@ -239,14 +246,10 @@ export default function ShowMeeting({ meeting, participants = [] }: Props) {
                         {/* Tasks Section */}
                         <Card>
                             <CardHeader>
-                                <div className="flex justify-between items-center">
+                                <div className="flex items-center justify-between">
                                     <CardTitle>Action Items & Tasks</CardTitle>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setIsAddingTask(true)}
-                                    >
-                                        <PlusIcon className="h-4 w-4 mr-2" />
+                                    <Button variant="outline" size="sm" onClick={() => setIsAddingTask(true)}>
+                                        <PlusIcon className="mr-2 h-4 w-4" />
                                         Add Task
                                     </Button>
                                 </div>
@@ -280,10 +283,7 @@ export default function ShowMeeting({ meeting, participants = [] }: Props) {
                                                 <div className="grid grid-cols-2 gap-4">
                                                     <div>
                                                         <Label htmlFor="status">Status</Label>
-                                                        <Select
-                                                            value={taskData.status}
-                                                            onValueChange={(value) => setTaskData('status', value)}
-                                                        >
+                                                        <Select value={taskData.status} onValueChange={(value) => setTaskData('status', value)}>
                                                             <SelectTrigger>
                                                                 <SelectValue />
                                                             </SelectTrigger>
@@ -336,22 +336,18 @@ export default function ShowMeeting({ meeting, participants = [] }: Props) {
                                 {/* Tasks List */}
                                 <div className="space-y-4">
                                     {meeting.tasks.length === 0 ? (
-                                        <p className="text-gray-500 italic text-center py-8">
+                                        <p className="py-8 text-center text-gray-500 italic">
                                             No tasks added yet. Click "Add Task" to create action items from this meeting.
                                         </p>
                                     ) : (
                                         meeting.tasks.map((task) => (
                                             <Card key={task.id} className="border-l-4 border-blue-500">
                                                 <CardContent className="pt-4">
-                                                    <div className="flex justify-between items-start mb-2">
+                                                    <div className="mb-2 flex items-start justify-between">
                                                         <h4 className="font-semibold">{task.title}</h4>
-                                                        <Badge className={getStatusColor(task.status)}>
-                                                            {task.status.replace('_', ' ')}
-                                                        </Badge>
+                                                        <Badge className={getStatusColor(task.status)}>{task.status.replace('_', ' ')}</Badge>
                                                     </div>
-                                                    {task.description && (
-                                                        <p className="text-gray-600 text-sm mb-2">{task.description}</p>
-                                                    )}
+                                                    {task.description && <p className="mb-2 text-sm text-gray-600">{task.description}</p>}
                                                     {task.assigned_to && (
                                                         <p className="text-sm text-gray-500">
                                                             Assigned to: {task.assigned_to.first_name} {task.assigned_to.last_name}
@@ -373,12 +369,13 @@ export default function ShowMeeting({ meeting, participants = [] }: Props) {
                                 <CardTitle>Participants</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                                     {meeting.participants.map((participant) => (
-                                        <div key={participant.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                                        <div key={participant.id} className="flex items-center space-x-3 rounded-lg bg-gray-50 p-3">
                                             <div className="flex-shrink-0">
-                                                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                                                    {participant.first_name.charAt(0)}{participant.last_name.charAt(0)}
+                                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500 text-sm font-medium text-white">
+                                                    {participant.first_name.charAt(0)}
+                                                    {participant.last_name.charAt(0)}
                                                 </div>
                                             </div>
                                             <div>

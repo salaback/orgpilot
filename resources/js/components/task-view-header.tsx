@@ -1,74 +1,49 @@
 import React from 'react';
-import { PlusIcon, FilterIcon } from 'lucide-react';
-import { Button } from './ui/button';
-import { ViewHeader, ViewMode } from './view-header';
-
-type TaskViewMode = 'list' | 'split';
-
-interface Employee {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-}
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Filter } from 'lucide-react';
 
 interface TaskViewHeaderProps {
-  title: string;
-  description?: string;
-  viewMode: TaskViewMode;
-  onViewModeChange: (mode: TaskViewMode) => void;
-  onAddTask?: () => void;
-  filterActive?: boolean;
-  onToggleFilter?: () => void;
+  onAddTask: () => void;
+  onFilterChange: (filter: string) => void;
+  currentFilter: string;
 }
 
-export function TaskViewHeader({
-  title,
-  description,
-  viewMode,
-  onViewModeChange,
-  onAddTask,
-  filterActive,
-  onToggleFilter
-}: TaskViewHeaderProps) {
-  // Create action buttons
-  const actionButtons = (
-    <>
-      {/* Task actions */}
-      {onAddTask && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onAddTask}
-          className="flex items-center gap-1"
-        >
-          <PlusIcon className="h-4 w-4" />
-          <span>New Task</span>
-        </Button>
-      )}
-
-      {onToggleFilter && (
-        <Button
-          variant={filterActive ? "secondary" : "outline"}
-          size="sm"
-          onClick={onToggleFilter}
-          className="flex items-center gap-1"
-        >
-          <FilterIcon className="h-4 w-4" />
-          <span>Filter</span>
-        </Button>
-      )}
-    </>
-  );
-
+const TaskViewHeader: React.FC<TaskViewHeaderProps> = ({ onAddTask, onFilterChange, currentFilter }) => {
   return (
-    <ViewHeader
-      title={title}
-      description={description}
-      cookieKey={`task-view-${title.toLowerCase().replace(/\s+/g, '-')}`}
-      defaultViewMode={viewMode}
-      onViewModeChange={(mode) => onViewModeChange(mode as TaskViewMode)}
-      actions={actionButtons}
-    />
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>Tasks</span>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm">
+              <Filter className="h-4 w-4 mr-2" />
+              Filter
+            </Button>
+            <Button onClick={onAddTask} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Task
+            </Button>
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex gap-2">
+          {['All', 'Active', 'Completed'].map((filter) => (
+            <Badge
+              key={filter}
+              variant={currentFilter === filter ? 'default' : 'secondary'}
+              className="cursor-pointer"
+              onClick={() => onFilterChange(filter)}
+            >
+              {filter}
+            </Badge>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
-}
+};
+
+export default TaskViewHeader;

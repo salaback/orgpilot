@@ -1,80 +1,67 @@
-import { router } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 
-export interface TagOption {
+interface TagOption {
   value: string;
   label: string;
 }
 
-export function useTagOptions() {
+interface Tag {
+  id: number;
+  name: string;
+}
+
+export const useTagOptions = () => {
   const [options, setOptions] = useState<TagOption[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    setLoading(true);
-    fetch('/api/tags')
-      .then(async res => {
-        let data;
-        try {
-          data = await res.json();
-        } catch (e) {
-          console.error('Failed to parse /api/tags response as JSON', e);
-          setOptions([]);
-          setLoading(false);
-          return;
+    const fetchTags = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch('/api/tags');
+        if (response.ok) {
+          const tags: Tag[] = await response.json();
+          const tagOptions: TagOption[] = tags.map(tag => ({
+            value: String(tag.id),
+            label: tag.name,
+          }));
+          setOptions(tagOptions);
         }
-        if (Array.isArray(data)) {
-          setOptions(data.map((tag: any) => ({ value: String(tag.id), label: tag.name })));
-        } else {
-          setOptions([]);
-          if (data && data.error) {
-            console.error('Failed to fetch tags:', data.error);
-          } else {
-            console.error('Failed to fetch tags: Unexpected response', data);
-          }
-        }
+      } catch (error) {
+        console.error('Error fetching tags:', error);
+      } finally {
         setLoading(false);
-      })
-      .catch(err => {
-        setOptions([]);
-        setLoading(false);
-        console.error('Failed to fetch tags:', err);
-      });
+      }
+    };
+
+    fetchTags();
   }, []);
 
   const createTag = async (name: string): Promise<TagOption | null> => {
-    // Use fetch for AJAX-style tag creation to avoid Inertia 302/redirect issues
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-    const tempId = `temp-${Date.now()}`;
-    const tempOption = { value: tempId, label: name };
-    setOptions(prev => [...prev, tempOption]);
     try {
-      const res = await fetch('/api/tags', {
+      const response = await fetch('/api/tags', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': csrf || '',
-          'Accept': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
         },
         body: JSON.stringify({ name }),
       });
-      if (res.ok) {
-        const tag = await res.json();
-        const option = { value: String(tag.id), label: tag.name };
-        setOptions(prev => {
-          return prev.map(o => o.value === tempId ? option : o).some(o => o.value === option.value)
-            ? prev.map(o => o.value === tempId ? option : o)
-            : [...prev.filter(o => o.value !== tempId), option];
-        });
-        return option;
-      } else {
-        setOptions(prev => prev.filter(o => o.value !== tempId));
+
+      if (response.ok) {
+        const newTag: Tag = await response.json();
+        const tagOption: TagOption = {
+          value: String(newTag.id),
+          label: newTag.name,
+        };
+        setOptions(prev => [...prev, tagOption]);
+        return tagOption;
       }
-    } catch {
-      setOptions(prev => prev.filter(o => o.value !== tempId));
+    } catch (error) {
+      console.error('Error creating tag:', error);
     }
     return null;
   };
 
   return { options, loading, createTag };
-}
+};

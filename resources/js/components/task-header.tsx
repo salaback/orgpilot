@@ -1,58 +1,49 @@
 // filepath: /Users/seanalaback/PhpstormProjects/OrgPilot/resources/js/components/task-header.tsx
 import React from 'react';
-import { SplitIcon, LayoutListIcon } from 'lucide-react';
-import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
-import { usePathname } from '@/hooks/use-pathname';
-
-type ViewMode = 'list' | 'split';
-
-interface Employee {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-}
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Filter } from 'lucide-react';
 
 interface TaskHeaderProps {
-  viewMode: ViewMode;
-  onViewModeChange: (mode: ViewMode) => void;
+  onAddTask: () => void;
+  onFilterChange: (filter: string) => void;
+  currentFilter: string;
 }
 
-const TaskHeader: React.FC<TaskHeaderProps> = ({ viewMode, onViewModeChange }) => {
-  const pathname = usePathname();
-  const isTasksRoute = pathname === '/tasks' || pathname.startsWith('/tasks/');
-
-  // Only show the toggle on the tasks routes
-  if (!isTasksRoute) {
-    return null;
-  }
-
+const TaskHeader: React.FC<TaskHeaderProps> = ({ onAddTask, onFilterChange, currentFilter }) => {
   return (
-    <div className="ml-auto flex items-center">
-      <ToggleGroup
-        type="single"
-        value={viewMode}
-        onValueChange={(value) => value && onViewModeChange(value as ViewMode)}
-        className="border rounded-md"
-      >
-        <ToggleGroupItem
-          value="list"
-          aria-label="Toggle list view"
-          title="List"
-          className="data-[state=on]:bg-gray-100 px-2 py-1"
-        >
-          <LayoutListIcon className="h-4 w-4" />
-        </ToggleGroupItem>
-        <ToggleGroupItem
-          value="split"
-          aria-label="Toggle split view"
-          title="Split"
-          className="data-[state=on]:bg-gray-100 px-2 py-1"
-        >
-          <SplitIcon className="h-4 w-4" />
-        </ToggleGroupItem>
-      </ToggleGroup>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>Tasks</span>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm">
+              <Filter className="h-4 w-4 mr-2" />
+              Filter
+            </Button>
+            <Button onClick={onAddTask} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Task
+            </Button>
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex gap-2">
+          {['All', 'Active', 'Completed'].map((filter) => (
+            <Badge
+              key={filter}
+              variant={currentFilter === filter ? 'default' : 'secondary'}
+              className="cursor-pointer"
+              onClick={() => onFilterChange(filter)}
+            >
+              {filter}
+            </Badge>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

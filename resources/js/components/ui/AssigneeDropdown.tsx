@@ -4,13 +4,7 @@ import { Card } from './card';
 import { Input } from './input';
 import { User } from 'lucide-react';
 import Dropdown from './Dropdown';
-
-interface Employee {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-}
+import { Employee } from '@/types';
 
 interface AssigneeDropdownProps {
   taskId: number;
@@ -108,11 +102,11 @@ export default function AssigneeDropdown({
                       <div className="text-gray-900 dark:text-gray-100 font-medium truncate">
                         {employee.first_name} {employee.last_name}
                       </div>
-                      {employee.email && (
+                      {employee.email ? (
                         <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {employee.email}
+                          {employee.email || 'N/A'}
                         </div>
-                      )}
+                      ) : null}
                     </div>
                   </button>
                 ))}
