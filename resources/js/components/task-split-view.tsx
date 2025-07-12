@@ -8,8 +8,7 @@ import TaskForm from './task-form';
 import AssigneeDropdown from './ui/AssigneeDropdown';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { Card } from './ui/card';
-import Dropdown from './ui/Dropdown';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { Input } from './ui/input';
 import { Progress } from './ui/progress';
 import { Employee, Task } from '@/types';
@@ -94,7 +93,20 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
     // Set initial selected task if tasks are available
     useEffect(() => {
         if (tasks.length > 0 && !selectedTask) {
-            setSelectedTask(tasks[0]);
+            // Check if there's a selectedTaskId in the URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const selectedTaskId = urlParams.get('selectedTaskId');
+            
+            if (selectedTaskId) {
+                const task = tasks.find(t => t.id === parseInt(selectedTaskId));
+                if (task) {
+                    setSelectedTask(task);
+                } else {
+                    setSelectedTask(tasks[0]);
+                }
+            } else {
+                setSelectedTask(tasks[0]);
+            }
         }
     }, [tasks, selectedTask]);
 
@@ -482,69 +494,102 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
                                     {' '}
                                     {/* Less gap */}
                                     {/* Status - editable dropdown */}
-                                    <Dropdown className="relative inline-block">
-                                        <div
-                                            className={STATUS_CLASS[selectedTask.status] + ' cursor-pointer'}
-                                            tabIndex={0}
-                                            role="button"
-                                        >
-                                            {formatStatus(selectedTask.status)}
-                                        </div>
-                                        <Card className="mt-2 w-40 p-2">
-                                            <div className="space-y-1">
-                                                {['not_started', 'in_progress', 'completed', 'on_hold', 'cancelled'].map((s) => (
-                                                    <button
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="sm" className="p-0">
+                                                <Badge
+                                                    variant={
+                                                        selectedTask.status === 'completed'
+                                                            ? 'default'
+                                                            : selectedTask.status === 'in_progress'
+                                                            ? 'secondary'
+                                                            : selectedTask.status === 'on_hold'
+                                                            ? 'outline'
+                                                            : selectedTask.status === 'cancelled'
+                                                            ? 'destructive'
+                                                            : 'outline'
+                                                    }
+                                                >
+                                                    {formatStatus(selectedTask.status)}
+                                                </Badge>
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="w-48">
+                                            {['not_started', 'in_progress', 'completed', 'on_hold', 'cancelled'].map((s) => {
+                                                const statusConfig = {
+                                                    not_started: { icon: '⚪', label: 'Not Started', color: 'text-gray-600' },
+                                                    in_progress: { icon: '🔵', label: 'In Progress', color: 'text-blue-600' },
+                                                    completed: { icon: '✅', label: 'Completed', color: 'text-green-600' },
+                                                    on_hold: { icon: '⏸️', label: 'On Hold', color: 'text-yellow-600' },
+                                                    cancelled: { icon: '❌', label: 'Cancelled', color: 'text-red-600' },
+                                                };
+                                                const config = statusConfig[s as keyof typeof statusConfig];
+                                                return (
+                                                    <DropdownMenuItem
                                                         key={s}
-                                                        className="w-full rounded px-2 py-1 text-left text-xs transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
                                                         onClick={() => {
                                                             setTaskList((prev) =>
-                                                                prev.map((t) =>
-                                                                    t.id === selectedTask.id ? { ...t, status: s as Task['status'] } : t,
-                                                                ),
+                                                                prev.map((t) => (t.id === selectedTask.id ? { ...t, status: s as Task['status'] } : t)),
                                                             );
                                                             setSelectedTask({ ...selectedTask, status: s as Task['status'] });
                                                             if (onTaskUpdated) onTaskUpdated({ ...selectedTask, status: s as Task['status'] });
                                                             Inertia.patch(`/tasks/${selectedTask.id}`, { status: s }, { preserveScroll: true });
                                                         }}
                                                     >
-                                                        {formatStatus(s)}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </Card>
-                                    </Dropdown>
+                                                        <span className="text-base">{config.icon}</span>
+                                                        <span className={`font-medium ${config.color} dark:text-gray-100`}>{config.label}</span>
+                                                    </DropdownMenuItem>
+                                                );
+                                            })}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                     {/* Priority - editable dropdown */}
-                                    <Dropdown className="relative inline-block">
-                                        <div
-                                            className={PRIORITY_CLASS[selectedTask.priority] + ' cursor-pointer'}
-                                            tabIndex={0}
-                                            role="button"
-                                        >
-                                            {formatPriority(selectedTask.priority)}
-                                        </div>
-                                        <Card className="mt-2 w-40 p-2">
-                                            <div className="space-y-1">
-                                                {['urgent', 'high', 'medium', 'low'].map((p) => (
-                                                    <button
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="sm" className="p-0">
+                                                <Badge
+                                                    variant={
+                                                        selectedTask.priority === 'urgent'
+                                                            ? 'destructive'
+                                                            : selectedTask.priority === 'high'
+                                                            ? 'default'
+                                                            : selectedTask.priority === 'medium'
+                                                            ? 'secondary'
+                                                            : 'outline'
+                                                    }
+                                                >
+                                                    {formatPriority(selectedTask.priority)}
+                                                </Badge>
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent className="w-40">
+                                            {['urgent', 'high', 'medium', 'low'].map((p) => {
+                                                const priorityConfig = {
+                                                    urgent: { color: 'bg-red-500', icon: '🔴', label: 'Urgent' },
+                                                    high: { color: 'bg-orange-500', icon: '🟠', label: 'High' },
+                                                    medium: { color: 'bg-yellow-500', icon: '🟡', label: 'Medium' },
+                                                    low: { color: 'bg-green-500', icon: '🟢', label: 'Low' },
+                                                };
+                                                const config = priorityConfig[p as keyof typeof priorityConfig];
+                                                return (
+                                                    <DropdownMenuItem
                                                         key={p}
-                                                        className="w-full rounded px-2 py-1 text-left text-xs transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
                                                         onClick={() => {
                                                             setTaskList((prev) =>
-                                                                prev.map((t) =>
-                                                                    t.id === selectedTask.id ? { ...t, priority: p as Task['priority'] } : t,
-                                                                ),
+                                                                prev.map((t) => (t.id === selectedTask.id ? { ...t, priority: p as Task['priority'] } : t)),
                                                             );
                                                             setSelectedTask({ ...selectedTask, priority: p as Task['priority'] });
                                                             if (onTaskUpdated) onTaskUpdated({ ...selectedTask, priority: p as Task['priority'] });
                                                             Inertia.patch(`/tasks/${selectedTask.id}`, { priority: p }, { preserveScroll: true });
                                                         }}
                                                     >
-                                                        {formatPriority(p)}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </Card>
-                                    </Dropdown>
+                                                        <div className={`h-3 w-3 rounded-full ${config.color}`}></div>
+                                                        <span className="font-medium text-gray-900 dark:text-gray-100">{config.label}</span>
+                                                    </DropdownMenuItem>
+                                                );
+                                            })}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                     {isOverdue(selectedTask.due_date) && <Badge className="bg-red-200 text-red-800">OVERDUE</Badge>}
                                     {isDueToday(selectedTask.due_date) && <Badge className="bg-yellow-200 text-yellow-800">DUE TODAY</Badge>}
                                     {isDueTomorrow(selectedTask.due_date) && <Badge className="bg-blue-200 text-blue-800">DUE TOMORROW</Badge>}
@@ -563,15 +608,17 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-1">
                                         <Calendar size={14} className="text-gray-600" />
-                                        <Dropdown className="relative inline-block">
-                                            <span
-                                                className={
-                                                    'cursor-pointer ' + (isOverdue(selectedTask.due_date) ? 'font-medium text-red-600' : '')
-                                                }
-                                            >
-                                                {selectedTask.due_date ? formatDate(selectedTask.due_date) : 'No due date'}
-                                            </span>
-                                            <Card className="mt-2 w-48 p-3">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <span
+                                                    className={
+                                                        'cursor-pointer ' + (isOverdue(selectedTask.due_date) ? 'font-medium text-red-600' : '')
+                                                    }
+                                                >
+                                                    {selectedTask.due_date ? formatDate(selectedTask.due_date) : 'No due date'}
+                                                </span>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent className="w-48 p-3">
                                                 <input
                                                     type="date"
                                                     value={selectedTask.due_date ? new Date(selectedTask.due_date).toISOString().split('T')[0] : ''}
@@ -634,8 +681,8 @@ const TaskSplitView: React.FC<TaskSplitViewProps> = ({
                                                         Clear
                                                     </button>
                                                 )}
-                                            </Card>
-                                        </Dropdown>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </div>
                                 </div>
                                 {/* Assignee - editable */}

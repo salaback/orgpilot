@@ -1,4 +1,4 @@
-import { usePage } from '@inertiajs/react';
+import { usePage, router } from '@inertiajs/react';
 import axios from 'axios';
 import { AlertCircle, ArrowUpDown, Calendar, CheckCircle, Clock, Eye, FileText, Plus, Search, Target, Trash2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -34,7 +34,7 @@ interface AuthUser {
 }
 interface PageProps {
     auth: { user: AuthUser };
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 const TaskManagement: React.FC<TaskManagementProps> = ({
@@ -188,12 +188,16 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
         return formatDate(dateString);
     };
 
-    const handleDueDateChange = (taskId: number, newDate: string) => {
+    // Update handleDueDateChange signature
+    type DueDateType = string | null | undefined;
+    const handleDueDateChange = (taskId: number, newDate: DueDateType) => {
         // Implementation for due date change
         console.log('Due date change:', taskId, newDate);
     };
 
-    const handleAssigneeChange = (taskId: number, assigneeId: number) => {
+    // Update handleAssigneeChange signature
+    type AssigneeIdType = number | null;
+    const handleAssigneeChange = (taskId: number, assigneeId: AssigneeIdType) => {
         // Implementation for assignee change
         console.log('Assignee change:', taskId, assigneeId);
     };
@@ -655,24 +659,24 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                                                             <Calendar className="h-3 w-3" />
                                                             <span
                                                                 className={
-                                                                    isOverdue(task.due_date)
+                                                                    isOverdue(task.due_date || '')
                                                                         ? 'font-medium text-red-600'
-                                                                        : isDueToday(task.due_date)
+                                                                        : isDueToday(task.due_date || '')
                                                                           ? 'font-medium text-yellow-600'
-                                                                          : isDueTomorrow(task.due_date)
+                                                                          : isDueTomorrow(task.due_date || '')
                                                                             ? 'font-medium text-blue-600'
                                                                             : ''
                                                                 }
                                                             >
                                                                 {task.due_date ? formatDateSafe(task.due_date) : 'No due date'}
                                                             </span>
-                                                            {isOverdue(task.due_date) && (
+                                                            {isOverdue(task.due_date || '') && (
                                                                 <Badge className="ml-2 bg-red-100 px-1 text-xs text-red-800">Overdue</Badge>
                                                             )}
-                                                            {isDueToday(task.due_date) && (
+                                                            {isDueToday(task.due_date || '') && (
                                                                 <Badge className="ml-2 bg-yellow-100 px-1 text-xs text-yellow-800">Today</Badge>
                                                             )}
-                                                            {isDueTomorrow(task.due_date) && (
+                                                            {isDueTomorrow(task.due_date || '') && (
                                                                 <Badge className="ml-2 bg-blue-100 px-1 text-xs text-blue-800">Tomorrow</Badge>
                                                             )}
                                                         </button>
@@ -881,7 +885,10 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => setSelectedTask(task)}
+                                                    onClick={() => {
+                                                        // Navigate to the individual task page
+                                                        router.visit(`/tasks/${task.id}`);
+                                                    }}
                                                     className="flex items-center gap-1"
                                                 >
                                                     <Eye className="h-3 w-3" />
