@@ -3,7 +3,7 @@ import axios from 'axios';
 import { AlertCircle, ArrowUpDown, Calendar, CheckCircle, Clock, Eye, FileText, Plus, Search, Target, Trash2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import TaskDetail from './task-detail';
-import TaskFormSheet from './task-form';
+import { TaskFormSheet } from './task-form';
 import AssigneeDropdown from './ui/AssigneeDropdown';
 import Dropdown from './ui/Dropdown';
 import { Badge } from './ui/badge';
@@ -167,6 +167,21 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
     const handleAssigneeChange = (taskId: number, assigneeId: number) => {
         // Implementation for assignee change
         console.log('Assignee change:', taskId, assigneeId);
+    };
+
+    const handlePriorityChange = (taskId: number, priority: Task['priority']) => {
+        // Implementation for priority change
+        console.log('Priority change:', taskId, priority);
+    };
+
+    const handleStatusChange = (taskId: number, status: Task['status']) => {
+        // Implementation for status change
+        console.log('Status change:', taskId, status);
+    };
+
+    const handleProgressChange = (taskId: number, progress: number) => {
+        // Implementation for progress change
+        console.log('Progress change:', taskId, progress);
     };
 
     const isOverdue = (dueDate: string) => {

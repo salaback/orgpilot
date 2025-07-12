@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from './ui/sheet';
 import { Employee, Task } from '@/types';
 
 interface TaskFormProps {
@@ -15,6 +16,19 @@ interface TaskFormProps {
         title: string;
         status: string;
     }>;
+}
+
+interface TaskFormSheetProps {
+    open: boolean;
+    onClose: () => void;
+    onSuccess?: (task: Task) => void;
+    initiatives?: Array<{
+        id: number;
+        title: string;
+        status: string;
+    }>;
+    employees?: Employee[];
+    initiativeId?: number;
 }
 
 const TaskForm: React.FC<Omit<TaskFormProps, 'open' | 'onClose'>> = ({
@@ -278,4 +292,46 @@ const TaskForm: React.FC<Omit<TaskFormProps, 'open' | 'onClose'>> = ({
     );
 };
 
+const TaskFormSheet: React.FC<TaskFormSheetProps> = ({
+    open,
+    onClose,
+    onSuccess,
+    initiatives = [],
+    employees = [],
+    initiativeId,
+}) => {
+    const handleSave = (task: Task) => {
+        if (onSuccess) {
+            onSuccess(task);
+        }
+        onClose();
+    };
+
+    const handleCancel = () => {
+        onClose();
+    };
+
+    return (
+        <Sheet open={open} onOpenChange={onClose}>
+            <SheetContent className="w-[600px] sm:w-[700px]">
+                <SheetHeader>
+                    <SheetTitle>Create New Task</SheetTitle>
+                    <SheetDescription>
+                        Create a new task for your team. Fill in the details below.
+                    </SheetDescription>
+                </SheetHeader>
+                <div className="mt-6 px-6">
+                    <TaskForm
+                        initiatives={initiatives}
+                        employees={employees}
+                        onSave={handleSave}
+                        onCancel={handleCancel}
+                    />
+                </div>
+            </SheetContent>
+        </Sheet>
+    );
+};
+
 export default TaskForm;
+export { TaskFormSheet };
