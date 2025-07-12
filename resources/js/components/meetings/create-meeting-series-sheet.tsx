@@ -2,7 +2,7 @@ import { TextField } from '@/components/form/text-field';
 import { SheetPanel } from '@/components/sheet-panel';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import Textarea from '@/components/ui/textarea';
 import { useForm } from '@inertiajs/react';
 import React from 'react';
 

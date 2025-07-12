@@ -34,6 +34,7 @@ interface AuthUser {
 }
 interface PageProps {
     auth: { user: AuthUser };
+    [key: string]: any;
 }
 
 const TaskManagement: React.FC<TaskManagementProps> = ({
@@ -61,6 +62,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
         initiative: '',
     });
     const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+    const [selectedTasks, setSelectedTasks] = useState<number[]>([]);
 
     useEffect(() => {
         // setTaskList(tasks); // This line is removed as per the edit hint
@@ -72,12 +74,99 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
         }
     }, [showCreateForm]);
 
+    // Filter and sort tasks
+    const filteredAndSortedTasks = tasks.filter((task) => {
+        if (filters.status && task.status !== filters.status) return false;
+        if (filters.priority && task.priority !== filters.priority) return false;
+        if (filters.assigned_to && task.assigned_to !== parseInt(filters.assigned_to)) return false;
+        if (filters.initiative && task.initiative_id !== parseInt(filters.initiative)) return false;
+        if (filters.overdue && !isOverdue(task.due_date || '')) return false;
+        if (filters.search) {
+            const searchLower = filters.search.toLowerCase();
+            const matchesSearch = 
+                task.title.toLowerCase().includes(searchLower) ||
+                task.description?.toLowerCase().includes(searchLower) ||
+                (task.assigned_to && employees.find(e => e.id === task.assigned_to)?.first_name?.toLowerCase().includes(searchLower)) ||
+                (task.assigned_to && employees.find(e => e.id === task.assigned_to)?.last_name?.toLowerCase().includes(searchLower));
+            if (!matchesSearch) return false;
+        }
+        return true;
+    }).sort((a, b) => {
+        // Simple sorting by title for now
+        return a.title.localeCompare(b.title);
+    });
+
+    // Task statistics
+    const taskStats = {
+        total: tasks.length,
+        completed: tasks.filter((t) => t.status === 'completed').length,
+        inProgress: tasks.filter((t) => t.status === 'in_progress').length,
+        overdue: tasks.filter((t) => isOverdue(t.due_date || '')).length,
+        avgProgress: tasks.length > 0 ? Math.round(tasks.reduce((sum, t) => sum + (t.percentage_complete || 0), 0) / tasks.length) : 0,
+    };
+
+    const handleSort = (column: string) => {
+        // Simple sorting implementation
+        console.log('Sort by:', column);
+    };
+
+    const handleBulkStatusUpdate = (status: string) => {
+        if (selectedTasks.length === 0) return;
+
+        // Implementation for bulk status update
+        console.log('Bulk status update:', status, selectedTasks);
+    };
+
+    const handleTaskSelect = (taskId: number, selected: boolean) => {
+        if (selected) {
+            setSelectedTasks((prev) => [...prev, taskId]);
+        } else {
+            setSelectedTasks((prev) => prev.filter((id) => id !== taskId));
+        }
+    };
+
+    const handleSelectAll = (selected: boolean) => {
+        if (selected) {
+            setSelectedTasks(filteredAndSortedTasks.map((t) => t.id));
+        } else {
+            setSelectedTasks([]);
+        }
+    };
+
+    const clearFilters = () => {
+        setFilters({
+            status: '',
+            priority: '',
+            assigned_to: '',
+            search: '',
+            overdue: false,
+            initiative: '',
+        });
+    };
+
+    const hasActiveFilters = Object.values(filters).some((v) => v !== '' && v !== false);
+
     const formatDate = (dateString: string) => {
         try {
             return new Date(dateString).toLocaleDateString();
         } catch {
             return dateString;
         }
+    };
+
+    const formatDateSafe = (dateString: string | undefined) => {
+        if (!dateString) return 'No due date';
+        return formatDate(dateString);
+    };
+
+    const handleDueDateChange = (taskId: number, newDate: string) => {
+        // Implementation for due date change
+        console.log('Due date change:', taskId, newDate);
+    };
+
+    const handleAssigneeChange = (taskId: number, assigneeId: number) => {
+        // Implementation for assignee change
+        console.log('Assignee change:', taskId, assigneeId);
     };
 
     const isOverdue = (dueDate: string) => {
@@ -559,7 +648,7 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                                                                             : ''
                                                                 }
                                                             >
-                                                                {task.due_date ? formatDate(task.due_date) : 'No due date'}
+                                                                {task.due_date ? formatDateSafe(task.due_date) : 'No due date'}
                                                             </span>
                                                             {isOverdue(task.due_date) && (
                                                                 <Badge className="ml-2 bg-red-100 px-1 text-xs text-red-800">Overdue</Badge>

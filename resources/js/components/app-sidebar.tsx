@@ -1,52 +1,76 @@
-import React from 'react';
-import { NavMain } from './nav-main';
-import { NavFooter } from './nav-footer';
-import { NavUser } from './nav-user';
+import { NavFooter } from '@/components/nav-footer';
+import { NavMain } from '@/components/nav-main';
+import { NavUser } from '@/components/nav-user';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
-import { Calendar, CheckSquare, LayoutGrid, Target, Users } from 'lucide-react';
+import { Link } from '@inertiajs/react';
+import { LayoutGrid, Users, Calendar, CheckSquare, Target } from 'lucide-react';
+import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
-  {
-    title: 'Dashboard',
-    href: '/dashboard',
-    icon: LayoutGrid,
-  },
-  {
-    title: 'Initiatives',
-    href: '/initiatives',
-    icon: Target,
-  },
-  {
-    title: 'Tasks',
-    href: '/tasks',
-    icon: CheckSquare,
-  },
-  {
-    title: 'Meetings',
-    href: '/meetings',
-    icon: Calendar,
-  },
-  {
-    title: 'My Organization',
-    href: '/organisation',
-    icon: Users,
-  },
+    {
+        title: 'Dashboard',
+        href: '/dashboard',
+        icon: LayoutGrid,
+    },
+    {
+        title: 'Initiatives',
+        href: '/initiatives',
+        icon: Target,
+    },
+    {
+        title: 'Tasks',
+        href: '/tasks',
+        icon: CheckSquare,
+    },
+    {
+        title: 'Meetings',
+        href: '/meetings',
+        icon: Calendar,
+    },
+    {
+        title: 'My Organization',
+        href: '/organisation',
+        icon: Users
+    },
 ];
 
 const footerNavItems: NavItem[] = [
-  // Add footer items here if needed
+    // {
+    //     title: 'Repository',
+    //     href: 'https://github.com/laravel/react-starter-kit',
+    //     icon: Folder,
+    // },
+    // {
+    //     title: 'Documentation',
+    //     href: 'https://laravel.com/docs/starter-kits#react',
+    //     icon: BookOpen,
+    // },
 ];
 
-const AppSidebar: React.FC = () => {
-  return (
-    <aside className="flex w-64 flex-col border-r border-sidebar-border/50 bg-sidebar text-sidebar-foreground">
-      <div className="flex flex-1 flex-col gap-2">
-        <NavMain items={mainNavItems} />
-        <NavFooter items={footerNavItems} />
-      </div>
-      <NavUser />
-    </aside>
-  );
-};
+export function AppSidebar() {
+    return (
+        <Sidebar collapsible="icon" variant="inset">
+            <SidebarHeader>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton size="lg" asChild>
+                            <Link href="/dashboard" prefetch>
+                                <AppLogo />
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarHeader>
 
-export default AppSidebar;
+            <SidebarContent>
+                <NavMain items={mainNavItems} />
+            </SidebarContent>
+
+            <SidebarFooter>
+                <NavFooter items={footerNavItems} className="mt-auto" />
+                <NavUser />
+            </SidebarFooter>
+        </Sidebar>
+    );
+}
