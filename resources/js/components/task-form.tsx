@@ -297,8 +297,7 @@ const TaskFormSheet: React.FC<TaskFormSheetProps> = ({
     onClose,
     onSuccess,
     initiatives = [],
-    employees = [],
-    initiativeId,
+    employees = []
 }) => {
     const handleSave = (task: Task) => {
         if (onSuccess) {
