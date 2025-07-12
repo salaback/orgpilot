@@ -3,7 +3,7 @@ import { Button } from './button';
 import { Card } from './card';
 import { Input } from './input';
 import { User } from 'lucide-react';
-import Dropdown from './Dropdown';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from './dropdown-menu';
 import { Employee } from '@/types';
 
 interface AssigneeDropdownProps {
@@ -42,16 +42,14 @@ export default function AssigneeDropdown({
     : 'Unassigned';
 
   return (
-    <Dropdown
-      onOpen={() => setTimeout(() => inputRef.current?.focus(), 0)}
-      trigger={
+    <DropdownMenu onOpenChange={(open) => open && setTimeout(() => inputRef.current?.focus(), 0)}>
+      <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="flex items-center gap-1 p-0">
           <User className="w-3 h-3" /> {label}
         </Button>
-      }
-      className="mt-2 w-48"
-    >
-      <Card className="p-2">
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-48">
+        <Card className="p-2">
         <div className="space-y-1">
           <Input
             ref={inputRef}
@@ -115,6 +113,7 @@ export default function AssigneeDropdown({
           )}
         </div>
       </Card>
-    </Dropdown>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

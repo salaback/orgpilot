@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import TaskDetail from './task-detail';
 import { TaskFormSheet } from './task-form';
 import AssigneeDropdown from './ui/AssigneeDropdown';
-import Dropdown from './ui/Dropdown';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -96,6 +96,35 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
         return a.title.localeCompare(b.title);
     });
 
+    // Helper functions for date calculations
+    const isOverdue = (dueDate: string) => {
+        if (!dueDate) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Normalize to start of day
+        const dueDateObj = new Date(dueDate);
+        dueDateObj.setHours(0, 0, 0, 0); // Normalize to start of day
+        return dueDateObj < today;
+    };
+
+    const isDueToday = (dueDate: string) => {
+        if (!dueDate) return false;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Normalize to start of day
+        const dueDateObj = new Date(dueDate);
+        dueDateObj.setHours(0, 0, 0, 0); // Normalize to start of day
+        return dueDateObj.getTime() === today.getTime();
+    };
+
+    const isDueTomorrow = (dueDate: string) => {
+        if (!dueDate) return false;
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0); // Normalize to start of day
+        const dueDateObj = new Date(dueDate);
+        dueDateObj.setHours(0, 0, 0, 0); // Normalize to start of day
+        return dueDateObj.getTime() === tomorrow.getTime();
+    };
+
     // Task statistics
     const taskStats = {
         total: tasks.length,
@@ -182,34 +211,6 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
     const handleProgressChange = (taskId: number, progress: number) => {
         // Implementation for progress change
         console.log('Progress change:', taskId, progress);
-    };
-
-    const isOverdue = (dueDate: string) => {
-        if (!dueDate) return false;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Normalize to start of day
-        const dueDateObj = new Date(dueDate);
-        dueDateObj.setHours(0, 0, 0, 0); // Normalize to start of day
-        return dueDateObj < today;
-    };
-
-    const isDueToday = (dueDate: string) => {
-        if (!dueDate) return false;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Normalize to start of day
-        const dueDateObj = new Date(dueDate);
-        dueDateObj.setHours(0, 0, 0, 0); // Normalize to start of day
-        return dueDateObj.getTime() === today.getTime();
-    };
-
-    const isDueTomorrow = (dueDate: string) => {
-        if (!dueDate) return false;
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        tomorrow.setHours(0, 0, 0, 0); // Normalize to start of day
-        const dueDateObj = new Date(dueDate);
-        dueDateObj.setHours(0, 0, 0, 0); // Normalize to start of day
-        return dueDateObj.getTime() === tomorrow.getTime();
     };
 
     const handleTaskCreated = (task: Task) => {
@@ -648,8 +649,8 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
-                                                <Dropdown
-                                                    trigger={
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
                                                         <button className="flex items-center gap-1 rounded px-2 py-1 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
                                                             <Calendar className="h-3 w-3" />
                                                             <span
@@ -675,9 +676,8 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                                                                 <Badge className="ml-2 bg-blue-100 px-1 text-xs text-blue-800">Tomorrow</Badge>
                                                             )}
                                                         </button>
-                                                    }
-                                                >
-                                                    <Card className="mt-2 w-64 p-4">
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent className="w-64 p-4">
                                                         <div className="space-y-3">
                                                             <div className="flex items-center justify-between">
                                                                 <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Due Date</span>
@@ -725,8 +725,8 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    </Card>
-                                                </Dropdown>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-400">
                                                 <AssigneeDropdown
@@ -738,8 +738,8 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                                                 />
                                             </td>
                                             <td className="px-4 py-3">
-                                                <Dropdown
-                                                    trigger={
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
                                                         <Button variant="ghost" size="sm" className="p-0">
                                                             <Badge
                                                                 variant={
@@ -755,38 +755,34 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                                                                 {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
                                                             </Badge>
                                                         </Button>
-                                                    }
-                                                >
-                                                    <Card className="mt-2 w-40 p-2">
-                                                        <div className="space-y-1">
-                                                            {['urgent', 'high', 'medium', 'low'].map((p) => {
-                                                                const priorityConfig = {
-                                                                    urgent: { color: 'bg-red-500', icon: '🔴', label: 'Urgent' },
-                                                                    high: { color: 'bg-orange-500', icon: '🟠', label: 'High' },
-                                                                    medium: { color: 'bg-yellow-500', icon: '🟡', label: 'Medium' },
-                                                                    low: { color: 'bg-green-500', icon: '🟢', label: 'Low' },
-                                                                };
-                                                                const config = priorityConfig[p as keyof typeof priorityConfig];
-                                                                return (
-                                                                    <button
-                                                                        key={p}
-                                                                        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
-                                                                        onClick={() => handlePriorityChange(task.id, p as Task['priority'])}
-                                                                    >
-                                                                        <div className={`h-3 w-3 rounded-full ${config.color}`}></div>
-                                                                        <span className="font-medium text-gray-900 dark:text-gray-100">
-                                                                            {config.label}
-                                                                        </span>
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </Card>
-                                                </Dropdown>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent className="w-40">
+                                                        {['urgent', 'high', 'medium', 'low'].map((p) => {
+                                                            const priorityConfig = {
+                                                                urgent: { color: 'bg-red-500', icon: '🔴', label: 'Urgent' },
+                                                                high: { color: 'bg-orange-500', icon: '🟠', label: 'High' },
+                                                                medium: { color: 'bg-yellow-500', icon: '🟡', label: 'Medium' },
+                                                                low: { color: 'bg-green-500', icon: '🟢', label: 'Low' },
+                                                            };
+                                                            const config = priorityConfig[p as keyof typeof priorityConfig];
+                                                            return (
+                                                                <DropdownMenuItem
+                                                                    key={p}
+                                                                    onClick={() => handlePriorityChange(task.id, p as Task['priority'])}
+                                                                >
+                                                                    <div className={`h-3 w-3 rounded-full ${config.color}`}></div>
+                                                                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                                                                        {config.label}
+                                                                    </span>
+                                                                </DropdownMenuItem>
+                                                            );
+                                                        })}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <Dropdown
-                                                    trigger={
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
                                                         <Button variant="ghost" size="sm" className="p-0">
                                                             <Badge
                                                                 variant={
@@ -804,48 +800,43 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                                                                 {task.status.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                                                             </Badge>
                                                         </Button>
-                                                    }
-                                                >
-                                                    <Card className="mt-2 w-48 p-2">
-                                                        <div className="space-y-1">
-                                                            {['not_started', 'in_progress', 'completed', 'on_hold', 'cancelled'].map((s) => {
-                                                                const statusConfig = {
-                                                                    not_started: { icon: '⚪', label: 'Not Started', color: 'text-gray-600' },
-                                                                    in_progress: { icon: '🔵', label: 'In Progress', color: 'text-blue-600' },
-                                                                    completed: { icon: '✅', label: 'Completed', color: 'text-green-600' },
-                                                                    on_hold: { icon: '⏸️', label: 'On Hold', color: 'text-yellow-600' },
-                                                                    cancelled: { icon: '❌', label: 'Cancelled', color: 'text-red-600' },
-                                                                };
-                                                                const config = statusConfig[s as keyof typeof statusConfig];
-                                                                return (
-                                                                    <button
-                                                                        key={s}
-                                                                        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
-                                                                        onClick={() => handleStatusChange(task.id, s as Task['status'])}
-                                                                    >
-                                                                        <span className="text-base">{config.icon}</span>
-                                                                        <span className={`font-medium ${config.color} dark:text-gray-100`}>
-                                                                            {config.label}
-                                                                        </span>
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </Card>
-                                                </Dropdown>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent className="w-48">
+                                                        {['not_started', 'in_progress', 'completed', 'on_hold', 'cancelled'].map((s) => {
+                                                            const statusConfig = {
+                                                                not_started: { icon: '⚪', label: 'Not Started', color: 'text-gray-600' },
+                                                                in_progress: { icon: '🔵', label: 'In Progress', color: 'text-blue-600' },
+                                                                completed: { icon: '✅', label: 'Completed', color: 'text-green-600' },
+                                                                on_hold: { icon: '⏸️', label: 'On Hold', color: 'text-yellow-600' },
+                                                                cancelled: { icon: '❌', label: 'Cancelled', color: 'text-red-600' },
+                                                            };
+                                                            const config = statusConfig[s as keyof typeof statusConfig];
+                                                            return (
+                                                                <DropdownMenuItem
+                                                                    key={s}
+                                                                    onClick={() => handleStatusChange(task.id, s as Task['status'])}
+                                                                >
+                                                                    <span className="text-base">{config.icon}</span>
+                                                                    <span className={`font-medium ${config.color} dark:text-gray-100`}>
+                                                                        {config.label}
+                                                                    </span>
+                                                                </DropdownMenuItem>
+                                                            );
+                                                        })}
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </td>
                                             <td className="px-4 py-3">
-                                                <Dropdown
-                                                    trigger={
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
                                                         <button className="flex items-center gap-2 rounded px-2 py-1 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
                                                             <Progress value={task.percentage_complete} className="w-16" />
                                                             <span className="text-xs text-gray-600 dark:text-gray-400">
                                                                 {task.percentage_complete}%
                                                             </span>
                                                         </button>
-                                                    }
-                                                >
-                                                    <Card className="mt-2 w-64 p-4">
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent className="w-64 p-4">
                                                         <div className="space-y-3">
                                                             <div className="flex items-center justify-between">
                                                                 <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Progress</span>
@@ -883,8 +874,8 @@ const TaskManagement: React.FC<TaskManagementProps> = ({
                                                                 ))}
                                                             </div>
                                                         </div>
-                                                    </Card>
-                                                </Dropdown>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <Button
