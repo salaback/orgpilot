@@ -16,6 +16,7 @@ interface TaskFormProps {
         title: string;
         status: string;
     }>;
+    hideFooter?: boolean;
 }
 
 interface TaskFormSheetProps {
@@ -36,6 +37,7 @@ const TaskForm: React.FC<Omit<TaskFormProps, 'open' | 'onClose'>> = ({
     employees = [],
     task,
     onSave,
+    hideFooter = false,
 }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
@@ -131,7 +133,7 @@ const TaskForm: React.FC<Omit<TaskFormProps, 'open' | 'onClose'>> = ({
     };
 
     return (
-        <form onSubmit={handleSubmit} className="flex h-full flex-col">
+        <form onSubmit={handleSubmit} className="flex h-full flex-col" id="task-form">
             <div className="flex flex-1 flex-col gap-5">
                 {/* Title */}
                 <div>
@@ -279,15 +281,18 @@ const TaskForm: React.FC<Omit<TaskFormProps, 'open' | 'onClose'>> = ({
                 </div>
             </div>
             {/* Footer Actions */}
-            <div className="mt-5 flex justify-end gap-3 border-t border-gray-200 pt-5 dark:border-gray-700">
-                <Button
-                    type="submit"
-                    disabled={isSubmitting || !formData.title.trim()}
-                    className={`rounded-md px-5 py-2 text-base font-medium text-white transition-colors ${formData.title.trim() && !isSubmitting ? 'cursor-pointer bg-blue-600 hover:bg-blue-700' : 'cursor-not-allowed bg-gray-400'} ${isSubmitting ? 'opacity-70' : ''}`}
-                >
-                    {isSubmitting ? (task?.id ? 'Updating...' : 'Creating...') : task?.id ? 'Update Task' : 'Create Task'}
-                </Button>
-            </div>
+            {!hideFooter && (
+                <div className="mt-5 flex justify-end gap-3 border-t border-gray-200 pt-5 dark:border-gray-700">
+                    <Button
+                        id="create-task-button"
+                        type="submit"
+                        disabled={isSubmitting || !formData.title.trim()}
+                        className={`rounded-md px-5 py-2 text-base font-medium text-white transition-colors ${formData.title.trim() && !isSubmitting ? 'cursor-pointer bg-blue-600 hover:bg-blue-700' : 'cursor-not-allowed bg-gray-400'} ${isSubmitting ? 'opacity-70' : ''}`}
+                    >
+                        {isSubmitting ? (task?.id ? 'Updating...' : 'Creating...') : task?.id ? 'Update Task' : 'Create Task'}
+                    </Button>
+                </div>
+            )}
         </form>
     );
 };
@@ -312,20 +317,33 @@ const TaskFormSheet: React.FC<TaskFormSheetProps> = ({
 
     return (
         <Sheet open={open} onOpenChange={onClose}>
-            <SheetContent className="w-[600px] sm:w-[700px]">
-                <SheetHeader>
+            <SheetContent className="w-[600px] sm:w-[700px] flex flex-col max-h-screen">
+                <SheetHeader className="flex-shrink-0">
                     <SheetTitle>Create New Task</SheetTitle>
                     <SheetDescription>
                         Create a new task for your team. Fill in the details below.
                     </SheetDescription>
                 </SheetHeader>
-                <div className="mt-6 px-6">
+                <div className="mt-6 px-6 pb-6 flex-1 overflow-y-auto">
                     <TaskForm
                         initiatives={initiatives}
                         employees={employees}
                         onSave={handleSave}
                         onCancel={handleCancel}
+                        hideFooter={true}
                     />
+                </div>
+                <div className="flex-shrink-0 px-6 pb-6 border-t border-gray-200 pt-4 dark:border-gray-700">
+                    <div className="flex justify-end gap-3">
+                        <Button
+                            id="create-task-button"
+                            type="submit"
+                            form="task-form"
+                            className="bg-blue-600 text-white hover:bg-blue-700"
+                        >
+                            Create Task
+                        </Button>
+                    </div>
                 </div>
             </SheetContent>
         </Sheet>

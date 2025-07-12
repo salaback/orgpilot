@@ -51,7 +51,11 @@ Cypress.Commands.add('login', () => {
   
   // For local development, we need to handle the WorkOS redirect manually
   // Wait for the redirect to happen and then visit the dashboard
-  cy.wait(1000)
+
+  
+  cy.wait(500)
+  cy.visit('/dashboard')
+
 })
 
 // Custom command to logout
